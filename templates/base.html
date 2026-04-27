@@ -11,51 +11,299 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- استایل‌های مربوط به هدر متحرک -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.95) 0%, rgba(245, 166, 35, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: top 0.3s ease-in-out, box-shadow 0.3s ease;
+            padding: 0;
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo span {
+            white-space: nowrap;
+        }
+
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            z-index: 1001;
+            padding: 8px;
+        }
+
+        .menu-toggle span {
+            width: 28px;
+            height: 3px;
+            background: #fff;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .menu-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 50%;
+            width: 0;
+            height: 2px;
+            background: #fff;
+            transition: all 0.3s ease;
+            transform: translateX(50%);
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .nav-links a:hover::before {
+            width: 70%;
+        }
+
+        #auth-nav-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .points-badge {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            color: #fff;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .points-badge:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .points-badge i {
+            color: #FFD700;
+            font-size: 1.1rem;
+        }
+
+        body {
+            padding-top: 85px;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .navbar-container {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                gap: 0.3rem;
+            }
+
+            .nav-links a {
+                padding: 0.5rem 0.9rem;
+                font-size: 0.95rem;
+            }
+
+            .points-badge {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: flex;
+            }
+
+            .nav-links {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 280px;
+                height: 100vh;
+                background: linear-gradient(180deg, rgba(108, 63, 197, 0.98) 0%, rgba(245, 166, 35, 0.98) 100%);
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 6rem 2rem 2rem;
+                gap: 0.5rem;
+                transition: left 0.4s ease;
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+                overflow-y: auto;
+            }
+
+            .nav-links.active {
+                left: 0;
+            }
+
+            .nav-links a {
+                width: 100%;
+                padding: 1rem;
+                border-radius: 8px;
+            }
+
+            #auth-nav-links {
+                width: 100%;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            #auth-nav-links a {
+                width: 100%;
+            }
+
+            .points-badge {
+                width: 100%;
+                justify-content: center;
+                margin-top: 1rem;
+            }
+
+            body {
+                padding-top: 75px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar-container {
+                padding: 0.8rem 1rem;
+            }
+
+            .logo {
+                font-size: 1.3rem;
+            }
+
+            .logo svg {
+                width: 38px;
+                height: 38px;
+            }
+        }
+    </style>
+    
     {% block extra_head %}{% endblock %}
 </head>
 <body data-page="{{ page_name|default:'' }}">
-    <nav class="navbar">
-        <a href="{% url 'home' %}" class="logo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="45" height="45">
-                <defs>
-                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#F5A623" />
-                        <stop offset="100%" stop-color="#6C3FC5" />
-                    </linearGradient>
-                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="4" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                </defs>
-                <circle cx="50" cy="15" r="5" fill="#F5A623" filter="url(#glow)"/>
-                <path d="M50 28 L85 45 L50 62 L15 45 Z" fill="url(#logoGrad)" filter="url(#glow)"/>
-                <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
-                <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
-            </svg>
-            <span>نقطه</span>
-        </a>
+    <nav class="navbar" id="navbar">
+        <div class="navbar-container">
+            <a href="{% url 'home' %}" class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="45" height="45">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F5A623" />
+                            <stop offset="100%" stop-color="#6C3FC5" />
+                        </linearGradient>
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+                    <circle cx="50" cy="15" r="5" fill="#F5A623" filter="url(#glow)"/>
+                    <path d="M50 28 L85 45 L50 62 L15 45 Z" fill="url(#logoGrad)" filter="url(#glow)"/>
+                    <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+                <span>نقطه</span>
+            </a>
 
-        <div class="menu-toggle" aria-label="منوی موبایل">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-
-        <div class="nav-links">
-            <a href="{% url 'home' %}" data-nav="home">خانه</a>
-            <a href="{% url 'challenges' %}" data-nav="challenges">چالش‌ها</a>
-            <a href="{% url 'learning:learning_path_list' %}" data-nav="learning-paths">سیر مطالعاتی</a>
-            <a href="{% url 'shop' %}" data-nav="shop">فروشگاه</a>
-            
-            <!-- بخش شرطی برای لاگین/پروفایل -->
-            <div id="auth-nav-links">
-                <!-- اینجا توسط JS پر می‌شه -->
+            <div class="menu-toggle" id="menu-toggle" aria-label="منوی موبایل">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
-            
-            <div class="points-badge" id="points-badge" style="display: none;">
-                <i class="fas fa-star"></i>
-                <span class="user-points">0</span>
-                <span>امتیاز</span>
+
+            <div class="nav-links" id="nav-links">
+                <a href="{% url 'home' %}" data-nav="home">خانه</a>
+                <a href="{% url 'challenges' %}" data-nav="challenges">چالش‌ها</a>
+                <a href="{% url 'learning:learning_path_list' %}" data-nav="learning-paths">سیر مطالعاتی</a>
+                <a href="{% url 'shop' %}" data-nav="shop">فروشگاه</a>
+                
+                <div id="auth-nav-links">
+                    <!-- اینجا توسط JS پر می‌شه -->
+                </div>
+                
+                <div class="points-badge" id="points-badge" style="display: none;">
+                    <i class="fas fa-star"></i>
+                    <span class="user-points">0</span>
+                    <span>امتیاز</span>
+                </div>
             </div>
         </div>
     </nav>
@@ -96,7 +344,6 @@
         </div>
     </footer>
 
-
     <script src="{% static 'js/main.js' %}"></script>
     <script>
     // مدیریت نوار ناوبری بر اساس وضعیت لاگین
@@ -114,7 +361,6 @@
             `;
             if (pointsBadge) pointsBadge.style.display = 'flex';
             
-            // اضافه کردن event listener برای خروج
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
@@ -138,7 +384,57 @@
     }
     
     document.addEventListener('DOMContentLoaded', updateNavBar);
-</script>
+
+    // مدیریت منوی موبایل
+    const menuToggle = document.getElementById('menu-toggle');
+    const navLinks = document.getElementById('nav-links');
+    
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        // بستن منو با کلیک روی لینک‌ها
+        const links = navLinks.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // بستن منو با کلیک خارج از آن
+        document.addEventListener('click', function(e) {
+            if (!navLinks.contains(e.target) && !menuToggle.contains(e.target)) {
+                menuToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+            }
+        });
+    }
+
+    // مدیریت هدر متحرک هنگام اسکرول
+    let lastScrollTop = 0;
+    const navbar = document.getElementById('navbar');
+    
+    window.addEventListener('scroll', function() {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (scrollTop > 100) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+        
+        if (scrollTop > lastScrollTop && scrollTop > 80) {
+            navbar.style.top = "-100px";
+        } else {
+            navbar.style.top = "0";
+        }
+        
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
