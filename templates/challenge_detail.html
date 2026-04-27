@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+    <section class="container" style="padding-top: 3rem;">
+        <div class="glass-card" style="text-align: center;">
+            <h1 class="text-gold" style="margin-bottom: 1rem;">{{ challenge.title }}</h1>
+            <p style="color: var(--gray-light);">{{ challenge.description }}</p>
+        </div>
+    </section>
+
+    <main class="container" style="padding: 2rem 5%;">
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2 style="color: var(--primary-gold); margin-bottom: 1rem;">جزئیات چالش</h2>
+            <p style="margin-bottom: 0.5rem;"><strong>سطح دشواری:</strong> {{ challenge.get_difficulty_display }}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>تعداد مراحل:</strong> {{ challenge.stages.count }}</p>
+            <p style="margin-bottom: 1rem;"><strong>وضعیت انتشار:</strong> {{ challenge.get_publish_status_display }}</p>
+            <a href="{% url 'learning:learning_path_detail' pk=challenge.pk %}" class="btn btn-primary">مشاهده سیر مطالعاتی</a>
+        </div>
+    </main>
+{% endblock %}

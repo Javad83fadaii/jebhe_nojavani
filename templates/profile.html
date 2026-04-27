@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container" style="padding-top: 3rem;">
+    <div class="glass-card" style="padding: 2rem;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div>
+                <h1 class="text-gold" style="margin-bottom: 0.5rem;">پروفایل کاربری</h1>
+                <p style="color: var(--gray-light); margin: 0;">اطلاعات حساب و وضعیت امتیازات</p>
+            </div>
+            <button id="toggle-edit" class="btn btn-secondary" style="height: 44px;">ویرایش پروفایل</button>
+        </div>
+
+        <div id="message-container" style="margin-top: 1.25rem;"></div>
+
+        <div id="profile-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem;"></div>
+
+        <div id="edit-section" class="glass-card" style="display: none; margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.03);">
+            <h3 style="margin-bottom: 1rem;">ویرایش اطلاعات</h3>
+            <form id="profile-edit-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">نام</label>
+                        <input type="text" id="first_name" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">نام خانوادگی</label>
+                        <input type="text" id="last_name" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">کد ملی</label>
+                        <input type="text" id="national_code" pattern="[0-9]{10}" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">تاریخ تولد</label>
+                        <input type="date" id="birth_date" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">جنسیت</label>
+                        <select id="gender" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                            <option value="">انتخاب کنید</option>
+                            <option value="male">مرد</option>
+                            <option value="female">زن</option>
+                            <option value="other">سایر</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">مدرسه</label>
+                        <select id="school" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                            <option value="">انتخاب کنید</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">مسجد</label>
+                    <select id="mosque" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                        <option value="">انتخاب کنید</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">شهر</label>
+                        <input type="text" id="city" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">استان</label>
+                        <input type="text" id="province" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">ذخیره</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: var(--primary-gold);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px var(--primary-gold-glow);
+    }
+
+    .error-message {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .success-message {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #81c784;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const access = localStorage.getItem('access_token');
+        const userType = localStorage.getItem('user_type');
+        if (!access || userType !== 'user') {
+            window.location.href = '/login/';
+            return;
+        }
+
+        const messageContainer = document.getElementById('message-container');
+        const profileInfo = document.getElementById('profile-info');
+        const toggleEditBtn = document.getElementById('toggle-edit');
+        const editSection = document.getElementById('edit-section');
+        const form = document.getElementById('profile-edit-form');
+        const schoolSelect = document.getElementById('school');
+        const mosqueSelect = document.getElementById('mosque');
+
+        async function loadSelect(url, selectEl) {
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+            const results = data.results || data;
+            results.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.name;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        loadSelect('/api/geography/schools/', schoolSelect);
+        loadSelect('/api/geography/mosques/', mosqueSelect);
+
+        toggleEditBtn.addEventListener('click', function() {
+            editSection.style.display = editSection.style.display === 'none' ? 'block' : 'none';
+        });
+
+        async function loadProfile() {
+            const res = await fetch('/api/accounts/profile/me/', {
+                headers: { 'Authorization': 'Bearer ' + access }
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showMessage(data.detail || 'خطا در دریافت پروفایل', 'error');
+                return null;
+            }
+            renderProfile(data);
+            fillForm(data);
+            return data;
+        }
+
+        function renderProfile(p) {
+            const rankHtml = p.current_rank ? `
+                <span style="display:inline-flex; align-items:center; gap:0.5rem;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:${p.current_rank.color}; display:inline-block;"></span>
+                    <span>${p.current_rank.name}</span>
+                </span>
+            ` : '-';
+
+            profileInfo.innerHTML = `
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">نام کامل</div>
+                    <div style="margin-top: 0.25rem;">${p.first_name} ${p.last_name}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">شماره تلفن</div>
+                    <div style="margin-top: 0.25rem;">${p.phone_number}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">کد ملی</div>
+                    <div style="margin-top: 0.25rem;">${p.national_code || '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">تاریخ تولد</div>
+                    <div style="margin-top: 0.25rem;">${p.birth_date || '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">جنسیت</div>
+                    <div style="margin-top: 0.25rem;">${p.gender || '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">مدرسه</div>
+                    <div style="margin-top: 0.25rem;">${p.school ? p.school.name : '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">مسجد</div>
+                    <div style="margin-top: 0.25rem;">${p.mosque ? p.mosque.name : '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">شهر / استان</div>
+                    <div style="margin-top: 0.25rem;">${p.city || '-'} / ${p.province || '-'}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">امتیاز کل</div>
+                    <div style="margin-top: 0.25rem;">${p.total_points}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">موجودی کیف پول</div>
+                    <div style="margin-top: 0.25rem;">${p.wallet_balance}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">رتبه فعلی</div>
+                    <div style="margin-top: 0.25rem;">${rankHtml}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">تاریخ عضویت</div>
+                    <div style="margin-top: 0.25rem;">${p.date_joined}</div>
+                </div>
+            `;
+        }
+
+        function fillForm(p) {
+            document.getElementById('first_name').value = p.first_name || '';
+            document.getElementById('last_name').value = p.last_name || '';
+            document.getElementById('national_code').value = p.national_code || '';
+            document.getElementById('birth_date').value = p.birth_date || '';
+            document.getElementById('gender').value = p.gender || '';
+            document.getElementById('city').value = p.city || '';
+            document.getElementById('province').value = p.province || '';
+            schoolSelect.value = p.school ? p.school.id : '';
+            mosqueSelect.value = p.mosque ? p.mosque.id : '';
+        }
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            messageContainer.innerHTML = '';
+
+            const payload = {
+                first_name: document.getElementById('first_name').value.trim(),
+                last_name: document.getElementById('last_name').value.trim(),
+                national_code: document.getElementById('national_code').value.trim() || null,
+                birth_date: document.getElementById('birth_date').value || null,
+                gender: document.getElementById('gender').value || null,
+                school: schoolSelect.value || null,
+                mosque: mosqueSelect.value || null,
+                city: document.getElementById('city').value.trim() || null,
+                province: document.getElementById('province').value.trim() || null
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'در حال ذخیره...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/accounts/profile/me/', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + access
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const detail = data.detail || Object.values(data).flat().join(' ');
+                    showMessage(detail || 'خطا در ویرایش', 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                showMessage('تغییرات ذخیره شد.', 'success');
+                renderProfile(data);
+                fillForm(data);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                editSection.style.display = 'none';
+            } catch (err) {
+                showMessage('خطای شبکه', 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showMessage(message, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.textContent = message;
+            messageContainer.appendChild(msgDiv);
+        }
+
+        loadProfile();
+    });
+</script>
+{% endblock %}

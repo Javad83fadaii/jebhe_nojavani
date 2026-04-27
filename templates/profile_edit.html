@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="profile-edit-container" style="max-width: 800px; margin: 0 auto; padding: 3rem 5%;">
+    <div class="glass-card" style="padding: 2rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 class="text-gold" style="font-size: 2rem; margin-bottom: 0.5rem;">ویرایش پروفایل</h1>
+            <p style="color: var(--gray-light);">اطلاعات خود را به‌روزرسانی کنید</p>
+        </div>
+        
+        <div id="message-container"></div>
+        
+        <!-- بخش آواتار -->
+        <div class="avatar-section" style="text-align: center; margin-bottom: 2rem;">
+            <div class="avatar-preview" id="avatar-preview" style="width: 120px; height: 120px; margin: 0 auto 1rem; position: relative; cursor: pointer;">
+                <div class="avatar-image" id="current-avatar" style="width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); display: flex; align-items: center; justify-content: center; font-size: 4rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    👤
+                </div>
+                <div class="edit-overlay" style="position: absolute; bottom: 0; right: 0; background: var(--primary-gold); width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: var(--dark-bg); border: 2px solid var(--dark-bg);">
+                    ✎
+                </div>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--gray-light);">برای تغییر آواتار کلیک کنید</p>
+            
+            <!-- انتخابگر آواتار -->
+            <div id="avatar-selector" style="display: none; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 1rem; margin-top: 1rem; padding: 1rem; background: rgba(255, 255, 255, 0.05); border-radius: 20px;">
+                <div class="avatar-option" data-avatar="👨‍🎓" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">👨‍🎓</div>
+                <div class="avatar-option" data-avatar="👩‍🎓" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">👩‍🎓</div>
+                <div class="avatar-option" data-avatar="🧑‍🎓" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">🧑‍🎓</div>
+                <div class="avatar-option" data-avatar="🌟" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">🌟</div>
+                <div class="avatar-option" data-avatar="⭐" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">⭐</div>
+                <div class="avatar-option" data-avatar="🎯" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">🎯</div>
+                <div class="avatar-option" data-avatar="📚" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">📚</div>
+                <div class="avatar-option" data-avatar="🎓" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">🎓</div>
+            </div>
+        </div>
+        
+        <form id="profile-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">نام</label>
+                    <input type="text" id="first_name" name="first_name" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">نام خانوادگی</label>
+                    <input type="text" id="last_name" name="last_name" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">نام کاربری</label>
+                <input type="text" id="username" name="username" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                <p style="font-size: 0.7rem; color: #ff6b6b; margin-top: 0.25rem;" id="username-warning"></p>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">ایمیل</label>
+                <input type="email" id="email" name="email" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">شماره موبایل</label>
+                <input type="tel" id="phone" name="phone" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">تاریخ تولد</label>
+                <input type="date" id="birthdate" name="birthdate" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+            </div>
+            
+            <div style="margin: 1.5rem 0;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--gray-light);">
+                    <input type="checkbox" id="change-password" style="accent-color: var(--primary-gold);">
+                    <span>تغییر رمز عبور</span>
+                </label>
+            </div>
+            
+            <div id="password-fields" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">رمز عبور جدید</label>
+                        <input type="password" id="new_password" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                        <div style="margin-top: 0.5rem; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden;">
+                            <div id="edit-strength-bar" style="height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">تکرار رمز عبور جدید</label>
+                        <input type="password" id="new_password_confirm" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">ذخیره تغییرات</button>
+                <a href="{% url 'profile' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">انصراف</a>
+            </div>
+        </form>
+        
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
+            <a href="#" id="delete-account" style="color: #f44336; text-decoration: none; font-size: 0.9rem;">حذف حساب کاربری</a>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="delete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); align-items: center; justify-content: center; z-index: 2000;">
+    <div class="glass-card" style="max-width: 400px; width: 90%; position: relative; padding: 2rem; text-align: center;">
+        <span id="close-delete-modal" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: var(--gray-light);">&times;</span>
+        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f44336; margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 1rem;">حذف حساب کاربری</h3>
+        <p style="margin-bottom: 1rem; color: var(--gray-light);">آیا از حذف حساب خود اطمینان دارید؟ این عمل غیرقابل بازگشت است و تمام داده‌های شما پاک خواهد شد.</p>
+        <input type="text" id="delete-confirm" placeholder='برای تأیید عبارت "حذف" را وارد کنید' style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; margin-bottom: 1rem;">
+        <div style="display: flex; gap: 1rem;">
+            <button id="confirm-delete" class="btn btn-primary" style="flex: 1; background: #f44336;">حذف حساب</button>
+            <button id="cancel-delete" class="btn btn-secondary" style="flex: 1;">انصراف</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-gold);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px var(--primary-gold-glow);
+    }
+    
+    .avatar-option:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px var(--primary-gold);
+    }
+    
+    .error-message {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+    
+    .success-message {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #81c784;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // دریافت اطلاعات کاربر جاری
+        function getCurrentUser() {
+            const session = sessionStorage.getItem('userSession') || localStorage.getItem('userSession');
+            if (session) return JSON.parse(session);
+            return null;
+        }
+        
+        function getUserFullInfo() {
+            const currentUser = getCurrentUser();
+            if (!currentUser) return null;
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            return users.find(u => u.id === currentUser.userId);
+        }
+        
+        const user = getUserFullInfo();
+        if (!user) {
+            window.location.href = '/login/';
+            return;
+        }
+        
+        // پر کردن فرم با اطلاعات کاربر
+        document.getElementById('first_name').value = user.firstName || '';
+        document.getElementById('last_name').value = user.lastName || '';
+        document.getElementById('username').value = user.username || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('phone').value = user.phone || '';
+        document.getElementById('birthdate').value = user.birthdate || '';
+        document.getElementById('current-avatar').textContent = user.avatar || '👤';
+        
+        let selectedAvatar = user.avatar || '👤';
+        
+        // نمایش/مخفی کردن فیلدهای رمز
+        const changePasswordCheck = document.getElementById('change-password');
+        const passwordFields = document.getElementById('password-fields');
+        
+        changePasswordCheck.addEventListener('change', function() {
+            passwordFields.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // انتخابگر آواتار
+        const avatarPreview = document.getElementById('avatar-preview');
+        const avatarSelector = document.getElementById('avatar-selector');
+        
+        avatarPreview.addEventListener('click', function() {
+            avatarSelector.style.display = avatarSelector.style.display === 'none' ? 'grid' : 'none';
+        });
+        
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.addEventListener('click', function() {
+                selectedAvatar = this.dataset.avatar;
+                document.getElementById('current-avatar').textContent = selectedAvatar;
+                avatarSelector.style.display = 'none';
+            });
+        });
+        
+        // بررسی قدرت رمز در ویرایش
+        const newPassword = document.getElementById('new_password');
+        const editStrengthBar = document.getElementById('edit-strength-bar');
+        
+        function checkEditPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/\d/)) strength++;
+            if (password.match(/[^a-zA-Z\d]/)) strength++;
+            
+            const colors = ['#f44336', '#ff9800', '#ffc107', '#4caf50', '#4caf50'];
+            const widths = ['20%', '40%', '60%', '80%', '100%'];
+            editStrengthBar.style.width = widths[strength];
+            editStrengthBar.style.backgroundColor = colors[strength];
+        }
+        
+        if (newPassword) {
+            newPassword.addEventListener('input', function() {
+                checkEditPasswordStrength(this.value);
+            });
+        }
+        
+        // بررسی یکتا بودن نام کاربری
+        const usernameInput = document.getElementById('username');
+        const usernameWarning = document.getElementById('username-warning');
+        const originalUsername = user.username;
+        
+        usernameInput.addEventListener('blur', function() {
+            const newUsername = this.value;
+            if (newUsername === originalUsername) {
+                usernameWarning.textContent = '';
+                return;
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (users.some(u => u.username === newUsername)) {
+                usernameWarning.textContent = 'این نام کاربری قبلاً گرفته شده است';
+                this.style.borderColor = '#f44336';
+            } else {
+                usernameWarning.textContent = '';
+                this.style.borderColor = '#4caf50';
+            }
+        });
+        
+        // ذخیره تغییرات
+        const form = document.getElementById('profile-form');
+        const messageContainer = document.getElementById('message-container');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            messageContainer.innerHTML = '';
+            
+            const firstName = document.getElementById('first_name').value;
+            const lastName = document.getElementById('last_name').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const birthdate = document.getElementById('birthdate').value;
+            const changePassword = changePasswordCheck.checked;
+            const newPasswordValue = newPassword ? newPassword.value : '';
+            const newPasswordConfirm = document.getElementById('new_password_confirm') ? document.getElementById('new_password_confirm').value : '';
+            
+            // اعتبارسنجی
+            if (!firstName || !lastName) {
+                showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
+                return;
+            }
+            
+            if (!username || username.length < 3) {
+                showMessage('نام کاربری باید حداقل ۳ کاراکتر باشد.', 'error');
+                return;
+            }
+            
+            if (!email || !email.match(/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/)) {
+                showMessage('لطفاً ایمیل معتبر وارد کنید.', 'error');
+                return;
+            }
+            
+            // بررسی یکتا بودن نام کاربری
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (username !== originalUsername && users.some(u => u.username === username)) {
+                showMessage('این نام کاربری قبلاً گرفته شده است.', 'error');
+                return;
+            }
+            
+            // بررسی رمز
+            if (changePassword) {
+                if (!newPasswordValue) {
+                    showMessage('لطفاً رمز عبور جدید را وارد کنید.', 'error');
+                    return;
+                }
+                if (newPasswordValue !== newPasswordConfirm) {
+                    showMessage('رمز عبور جدید و تکرار آن مطابقت ندارند.', 'error');
+                    return;
+                }
+                if (newPasswordValue.length < 8) {
+                    showMessage('رمز عبور باید حداقل ۸ کاراکتر باشد.', 'error');
+                    return;
+                }
+            }
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...';
+            submitBtn.disabled = true;
+            
+            setTimeout(() => {
+                // به‌روزرسانی اطلاعات کاربر
+                const userIndex = users.findIndex(u => u.id === user.id);
+                if (userIndex !== -1) {
+                    users[userIndex].firstName = firstName;
+                    users[userIndex].lastName = lastName;
+                    users[userIndex].username = username;
+                    users[userIndex].email = email;
+                    users[userIndex].phone = phone;
+                    users[userIndex].birthdate = birthdate;
+                    users[userIndex].avatar = selectedAvatar;
+                    
+                    if (changePassword) {
+                        users[userIndex].password = btoa(newPasswordValue);
+                    }
+                    
+                    localStorage.setItem('users', JSON.stringify(users));
+                    
+                    // به‌روزرسانی سشن
+                    const updatedSession = {
+                        userId: users[userIndex].id,
+                        username: username,
+                        email: email,
+                        fullName: `${firstName} ${lastName}`,
+                        avatar: selectedAvatar
+                    };
+                    sessionStorage.setItem('userSession', JSON.stringify(updatedSession));
+                    localStorage.setItem('userSession', JSON.stringify(updatedSession));
+                    
+                    showMessage('اطلاعات با موفقیت به‌روزرسانی شد!', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/profile/';
+                    }, 1500);
+                }
+            }, 800);
+        });
+        
+        // حذف حساب
+        const deleteAccountBtn = document.getElementById('delete-account');
+        const deleteModal = document.getElementById('delete-modal');
+        const closeDeleteModal = document.getElementById('close-delete-modal');
+        const cancelDelete = document.getElementById('cancel-delete');
+        const confirmDelete = document.getElementById('confirm-delete');
+        
+        deleteAccountBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            deleteModal.style.display = 'flex';
+        });
+        
+        function closeDeleteModalFunc() {
+            deleteModal.style.display = 'none';
+            document.getElementById('delete-confirm').value = '';
+        }
+        
+        closeDeleteModal.addEventListener('click', closeDeleteModalFunc);
+        cancelDelete.addEventListener('click', closeDeleteModalFunc);
+        
+        window.addEventListener('click', function(e) {
+            if (e.target === deleteModal) closeDeleteModalFunc();
+        });
+        
+        confirmDelete.addEventListener('click', function() {
+            const confirmText = document.getElementById('delete-confirm').value;
+            if (confirmText === 'حذف') {
+                // حذف کاربر
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const newUsers = users.filter(u => u.id !== user.id);
+                localStorage.setItem('users', JSON.stringify(newUsers));
+                
+                // حذف سشن
+                localStorage.removeItem('userSession');
+                sessionStorage.removeItem('userSession');
+                localStorage.removeItem('userPoints');
+                
+                showMessage('حساب کاربری شما حذف شد.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                showMessage('لطفاً عبارت "حذف" را در کادر وارد کنید.', 'error');
+            }
+        });
+        
+        function showMessage(message, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.innerHTML = message;
+            messageContainer.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                msgDiv.remove();
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

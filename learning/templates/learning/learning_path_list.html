@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}سیرهای مطالعاتی{% endblock %}
+
+{% block content %}
+    <h1>سیرهای مطالعاتی موجود</h1>
+    <ul>
+        {% for path in learning_paths %}
+            <li>
+                <a href="{% url 'learning:learning_path_detail' pk=path.pk %}">{{ path.title }}</a>
+                - {{ path.get_difficulty_display }} ({{ path.total_stages }} مرحله)
+            </li>
+        {% empty %}
+            <li>هیچ سیر مطالعاتی در دسترس نیست.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

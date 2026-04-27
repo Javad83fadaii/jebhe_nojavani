@@ -1,0 +1,22 @@
+/* Doran - Medium (وزن متوسط) */
+@font-face {
+  font-family: 'Doran';
+  src: url('../fonts/Doran-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Doran - ExtraBold (وزن خیلی ضخیم) */
+@font-face {
+  font-family: 'Doran';
+  src: url('../fonts/Doran-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* اعمال فونت جدید به عنوان فونت پیش‌فرض کل سایت */
+body {
+  font-family: 'Doran', sans-serif;
+}

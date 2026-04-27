@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}پیشرفت من در {{ user_learning_progress.learning_path.title }}{% endblock %}
+
+{% block content %}
+    <h1>پیشرفت شما در سیر مطالعاتی: {{ user_learning_progress.learning_path.title }}</h1>
+    <p>وضعیت کلی: {{ user_learning_progress.get_status_display }}</p>
+    <p>درصد پیشرفت: {{ user_learning_progress.progress_percentage }}%</p>
+    <p>کل امتیاز کسب شده: {{ user_learning_progress.total_score }}</p>
+    <p>تاریخ شروع: {{ user_learning_progress.started_at }}</p>
+    {% if user_learning_progress.completed_at %}
+        <p>تاریخ اتمام: {{ user_learning_progress.completed_at }}</p>
+    {% endif %}
+
+    <h2>مراحل</h2>
+    <ul>
+        {% for user_stage in user_stage_progresses %}
+            <li>
+                مرحله {{ user_stage.learning_stage.stage_number }}: 
+                {% if user_stage.status != 'locked' %}
+                    <a href="{% url 'learning:learning_stage_detail' pk=user_stage.learning_stage.pk %}">{{ user_stage.learning_stage.title }}</a>
+                {% else %}
+                    {{ user_stage.learning_stage.title }} (قفل شده)
+                {% endif %}
+                - وضعیت: {{ user_stage.get_status_display }}
+                {% if user_stage.best_score %}(بهترین نمره آزمون: {{ user_stage.best_score }}){% endif %}
+            </li>
+        {% empty %}
+            <li>هیچ مرحله‌ای برای این سیر مطالعاتی ثبت نشده است.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+    <header class="hero">
+        <div class="hero-content">
+            <h1>از همین نقطه، بهترین نسخه‌ات را بساز</h1>
+            <p>مرزها را بشکن و استعدادهای پنهانت را بیدار کن. اینجا هر چالش یک فرصت است؛ وارد میدان شو و مسیر موفقیتت را رقم بزن.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'challenges' %}" class="btn btn-primary">شروع مسیر ✦</a>
+                <a href="{% url 'profile' %}" class="btn btn-secondary">مشاهده پروفایل</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="container mt-5 mb-5" id="features">
+        <div class="features">
+            <div class="glass-card feature-item">
+                <i style="font-style: normal;">🎯</i>
+                <h3 class="text-gold">چالش‌های روزانه</h3>
+                <p style="margin-top: 1rem; color: var(--gray-light);">هر روز با سوالات و مینی‌گیم‌های جدید دانش خود را محک بزنید و امتیاز بگیرید.</p>
+            </div>
+            <div class="glass-card feature-item">
+                <i style="font-style: normal;">🏆</i>
+                <h3 class="text-gold">رقابت با برترین‌ها</h3>
+                <p style="margin-top: 1rem; color: var(--gray-light);">در جدول رده‌بندی صعود کنید و جایگاه خود را در میان نخبگان تثبیت کنید.</p>
+            </div>
+            <div class="glass-card feature-item">
+                <i style="font-style: normal;">🎁</i>
+                <h3 class="text-gold">جوایز ارزنده</h3>
+                <p style="margin-top: 1rem; color: var(--gray-light);">امتیازات خود را در فروشگاه جشنواره به جوایز فیزیکی و دیجیتالی تبدیل کنید.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container how-it-works mb-5">
+        <h2 class="text-gold">مسیر پیشرفت شما</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">۱</div>
+                <h3>ثبت‌نام و ورود</h3>
+            </div>
+            <div class="step">
+                <div class="step-number">۲</div>
+                <h3>شرکت در مسابقات</h3>
+            </div>
+            <div class="step">
+                <div class="step-number">۳</div>
+                <h3>کسب جایزه</h3>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" id="profile">
+        <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <div>
+                <h2 class="profile-name">کاربر عزیز، خوش آمدید</h2>
+                <p class="text-purple" style="margin-top: 0.5rem;">رتبه فعلی شما در کل مسابقات: ۴۲</p>
+            </div>
+            <div class="profile-stats" style="margin-right: auto;">
+                <div class="stat-item">
+                    <div class="stat-value">۲۴</div>
+                    <div class="stat-label">مسابقه</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value text-gold user-points">1250</div>
+                    <div class="stat-label">امتیاز کل</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mb-5 mt-5">
+        <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">آخرین مسابقات</h2>
+        <div class="competition-grid" data-limit="3">
+            <!-- Filled by main.js -->
+        </div>
+        <div style="text-align:center; padding: 0 5%; margin-top: 1rem;">
+            <a class="btn btn-secondary" href="{% url 'challenges' %}">مشاهده همه چالش‌ها</a>
+        </div>
+    </section>
+
+    <section class="container mb-5">
+        <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">جدول امتیازات</h2>
+        <div class="leaderboard-list">
+            <!-- Filled by main.js -->
+        </div>
+    </section>
+{% endblock %}

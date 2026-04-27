@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="container" style="padding-top: 3rem;">
+    <div class="glass-card" style="padding: 2rem;">
+        <h1 class="text-gold" style="margin-bottom: 0.5rem;">پروفایل فروشنده</h1>
+        <p style="color: var(--gray-light); margin-bottom: 1.5rem;">اطلاعات فروشگاه و وضعیت تایید</p>
+
+        <div id="message-container"></div>
+
+        <div id="seller-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;"></div>
+
+        <div class="glass-card" style="padding: 1.5rem; background: rgba(255,255,255,0.03);">
+            <h3 style="margin-bottom: 1rem;">ویرایش اطلاعات فروشگاه</h3>
+            <form id="seller-edit-form">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">نام فروشگاه</label>
+                    <input type="text" id="seller_shop_name" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--gray-light);">آدرس فروشگاه</label>
+                    <textarea id="seller_shop_address" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem; min-height: 120px;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">ذخیره تغییرات</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<style>
+    .form-group input:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary-gold);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px var(--primary-gold-glow);
+    }
+
+    .error-message {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+
+    .success-message {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #81c784;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const access = localStorage.getItem('access_token');
+        const userType = localStorage.getItem('user_type');
+        if (!access || userType !== 'seller') {
+            window.location.href = '/seller/login/';
+            return;
+        }
+
+        const messageContainer = document.getElementById('message-container');
+        const sellerInfo = document.getElementById('seller-info');
+        const form = document.getElementById('seller-edit-form');
+        const shopNameInput = document.getElementById('seller_shop_name');
+        const shopAddressInput = document.getElementById('seller_shop_address');
+
+        async function loadProfile() {
+            const res = await fetch('/api/accounts/seller/profile/me/', {
+                headers: { 'Authorization': 'Bearer ' + access }
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                showMessage(data.detail || 'خطا در دریافت پروفایل', 'error');
+                return null;
+            }
+            renderProfile(data);
+            return data;
+        }
+
+        function renderProfile(p) {
+            const verifiedText = p.seller_verified ? 'تایید شده' : 'در انتظار تایید';
+            const verifiedColor = p.seller_verified ? '#4caf50' : '#ff9800';
+            sellerInfo.innerHTML = `
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">نام کامل</div>
+                    <div style="margin-top: 0.25rem;">${p.first_name} ${p.last_name}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">شماره تلفن</div>
+                    <div style="margin-top: 0.25rem;">${p.phone_number}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">وضعیت تایید</div>
+                    <div style="margin-top: 0.25rem; color: ${verifiedColor};">${verifiedText}</div>
+                </div>
+                <div class="glass-card" style="padding: 1rem; background: rgba(255,255,255,0.03);">
+                    <div style="color: var(--gray-light); font-size: 0.85rem;">شهر / استان</div>
+                    <div style="margin-top: 0.25rem;">${p.city || '-'} / ${p.province || '-'}</div>
+                </div>
+            `;
+            shopNameInput.value = p.seller_shop_name || '';
+            shopAddressInput.value = p.seller_shop_address || '';
+        }
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            messageContainer.innerHTML = '';
+
+            const payload = {
+                seller_shop_name: shopNameInput.value.trim(),
+                seller_shop_address: shopAddressInput.value.trim()
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'در حال ذخیره...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/accounts/seller/profile/me/', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + access
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const detail = data.detail || Object.values(data).flat().join(' ');
+                    showMessage(detail || 'خطا در ویرایش', 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                showMessage('تغییرات ذخیره شد.', 'success');
+                renderProfile(data);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            } catch (err) {
+                showMessage('خطای شبکه', 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showMessage(message, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.textContent = message;
+            messageContainer.appendChild(msgDiv);
+        }
+
+        loadProfile();
+    });
+</script>
+{% endblock %}

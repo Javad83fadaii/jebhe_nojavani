@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ learning_path.title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ learning_path.title }}</h1>
+    <p>سطح دشواری: {{ learning_path.get_difficulty_display }}</p>
+    <p>توضیحات: {{ learning_path.description }}</p>
+    {% if learning_path.cover_image %}
+        <img src="{{ learning_path.cover_image.url }}" alt="{{ learning_path.title }} Cover" width="200">
+    {% endif %}
+
+    {% if user.is_authenticated %}
+        {% if user_progress %}
+            <p>وضعیت شما در این سیر: {{ user_progress.get_status_display }} - {{ user_progress.progress_percentage }}%</p>
+            <a href="{% url 'learning:user_learning_progress_detail' pk=user_progress.pk %}">مشاهده جزئیات پیشرفت</a>
+        {% else %}
+            <form action="{% url 'learning:enroll_in_learning_path' pk=learning_path.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit">ثبت‌نام در این سیر مطالعاتی</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <p>برای ثبت‌نام در این سیر مطالعاتی، لطفاً <a href="{% url 'login' %}">وارد شوید</a>.</p>
+    {% endif %}
+
+    <h2>مراحل سیر مطالعاتی</h2>
+    <ul>
+        {% for stage in learning_path.stages.all|dictsort:"stage_number" %}
+            <li>
+                مرحله {{ stage.stage_number }}: 
+                {% with user_stage_progress=user_stage_progresses_map|get_item:stage.pk %}
+                    {% if user_stage_progress and user_stage_progress.status != 'locked' %}
+                        <a href="{% url 'learning:learning_stage_detail' pk=stage.pk %}">{{ stage.title }}</a>
+                        - {{ stage.get_content_type_display }}
+                        (وضعیت شما: {{ user_stage_progress.get_status_display }})
+                    {% else %}
+                        {{ stage.title }} - {{ stage.get_content_type_display }} (قفل شده)
+                    {% endif %}
+                {% endwith %}
+            </li>
+        {% empty %}
+            <li>هیچ مرحله‌ای برای این سیر مطالعاتی ثبت نشده است.</li>
+        {% endfor %}
+    </ul>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}

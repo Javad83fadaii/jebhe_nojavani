@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}آزمون مرحله {{ exam.user_stage_progress.learning_stage.title }}{% endblock %}
+
+{% block content %}
+    <h1>آزمون مرحله: {{ exam.user_stage_progress.learning_stage.title }}</h1>
+    <p>شماره تلاش: {{ exam.attempt_number }}</p>
+    <p>زمان شروع: {{ exam.started_at }}</p>
+
+    <form action="{% url 'learning:finish_exam' pk=exam.pk %}" method="post">
+        {% csrf_token %}
+        {% for question in questions %}
+            <div class="question-block">
+                <p><strong>{{ question.question_number }}. {{ question.text }}</strong></p>
+                {% if question.question_type == 'multiple_choice' %}
+                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option1 }}" {% if user_answers|get_item:question.pk == question.option1 %}checked{% endif %}> {{ question.option1 }}</label><br>
+                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option2 }}" {% if user_answers|get_item:question.pk == question.option2 %}checked{% endif %}> {{ question.option2 }}</label><br>
+                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option3 }}" {% if user_answers|get_item:question.pk == question.option3 %}checked{% endif %}> {{ question.option3 }}</label><br>
+                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option4 }}" {% if user_answers|get_item:question.pk == question.option4 %}checked{% endif %}> {{ question.option4 }}</label><br>
+                {% elif question.question_type == 'true_false' %}
+                    <label><input type="radio" name="question_{{ question.pk }}" value="True" {% if user_answers|get_item:question.pk == 'True' %}checked{% endif %}> صحیح</label><br>
+                    <label><input type="radio" name="question_{{ question.pk }}" value="False" {% if user_answers|get_item:question.pk == 'False' %}checked{% endif %}> غلط</label><br>
+                {% elif question.question_type == 'short_answer' %}
+                    <textarea name="question_{{ question.pk }}">{{ user_answers|get_item:question.pk }}</textarea><br>
+                {% endif %}
+                <button type="submit" formaction="{% url 'learning:submit_answer' exam_pk=exam.pk question_pk=question.pk %}">ذخیره پاسخ</button>
+            </div>
+            <hr>
+        {% empty %}
+            <p>هیچ سوالی برای این آزمون وجود ندارد.</p>
+        {% endfor %}
+
+        <button type="submit">اتمام آزمون و مشاهده نتیجه</button>
+    </form>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
+{% comment %}
+    Custom filter to get dictionary item by key. Need to register this in a templatetags file.
+    For now, assume it's available or replace with direct dictionary access if possible in a view.
+    e.g., {{ user_answers.question.pk }} (if question.pk is a valid attribute name)
+{% endcomment %}
+{% load learning_filters %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="auth-container" style="min-height: calc(100vh - 300px); display: flex; align-items: center; justify-content: center; padding: 3rem 5%;">
+    <div class="glass-card" style="max-width: 500px; width: 100%; padding: 2.5rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 class="text-gold" style="font-size: 2rem; margin-bottom: 0.5rem;">ورود به نقطه</h1>
+            <p style="color: var(--gray-light); font-size: 0.9rem;">به خانواده بزرگ نقطه خوش آمدید</p>
+        </div>
+        
+        <div id="message-container"></div>
+        
+        <form id="login-form">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">شماره تلفن</label>
+                <input type="tel" id="phone_number" name="phone_number" pattern="09[0-9]{9}" placeholder="09123456789" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">رمز عبور</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                <i class="fas fa-arrow-left"></i>
+                ورود
+            </button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); color: var(--gray-light);">
+            حساب کاربری ندارید؟
+            <a href="{% url 'register' %}" style="color: var(--primary-gold); text-decoration: none; font-weight: 500;">ثبت‌نام کنید</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-gold);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 15px var(--primary-gold-glow);
+    }
+    
+    .social-icon:hover {
+        background: rgba(245, 166, 35, 0.2);
+        border-color: var(--primary-gold);
+        transform: translateY(-3px);
+    }
+    
+    .error-message {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid #f44336;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #ff6b6b;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+    
+    .success-message {
+        background: rgba(76, 175, 80, 0.2);
+        border: 1px solid #4caf50;
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        color: #81c784;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('login-form');
+        const messageContainer = document.getElementById('message-container');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('logout') === 'true') {
+            showMessage('با موفقیت خارج شدید.', 'success');
+        }
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const phone_number = document.getElementById('phone_number').value.trim();
+            const password = document.getElementById('password').value;
+            
+            messageContainer.innerHTML = '';
+            
+            if (!/^09\d{9}$/.test(phone_number)) {
+                showMessage('شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.', 'error');
+                return;
+            }
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ورود...';
+            submitBtn.disabled = true;
+            
+            fetch('/api/accounts/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone_number, password })
+            }).then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    const detail = data.detail || Object.values(data).flat().join(' ');
+                    showMessage(detail || 'خطا در ورود', 'error');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('user_type', 'user');
+
+                showMessage('ورود موفق! در حال انتقال...', 'success');
+                window.location.href = urlParams.get('next') || '/';
+            }).catch(() => {
+                showMessage('خطای شبکه', 'error');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        function showMessage(message, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.innerHTML = message;
+            messageContainer.appendChild(msgDiv);
+            
+            setTimeout(() => {
+                msgDiv.remove();
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

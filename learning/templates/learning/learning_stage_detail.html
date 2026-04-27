@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }}{% endblock %}
+
+{% block content %}
+    <h1>مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }}</h1>
+    <p>سیر مطالعاتی: <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}">{{ learning_stage.learning_path.title }}</a></p>
+    <p>نوع محتوا: {{ learning_stage.get_content_type_display }}</p>
+    <p>مدت زمان تقریبی مطالعه: {{ learning_stage.estimated_study_time }} دقیقه</p>
+    <p>توضیحات: {{ learning_stage.description }}</p>
+
+    <p>توضیحات: {{ learning_stage.description }}</p>
+
+    {% if user.is_authenticated and user_stage_progress and user_stage_progress.status != 'locked' %}
+        {# Display content only if user is authenticated, has progress, and stage is not locked #}
+        {% if learning_stage.content_link_or_file %}
+            {% if learning_stage.content_type == "podcast" %}
+                <audio controls src="{{ learning_stage.content_link_or_file }}">Your browser does not support the audio element.</audio>
+            {% elif learning_stage.content_type == "video" %}
+                <video controls width="600" src="{{ learning_stage.content_link_or_file }}">Your browser does not support the video tag.</video>
+            {% elif learning_stage.content_type == "document" %}
+                <a href="{{ learning_stage.content_link_or_file }}" target="_blank">دانلود مستند</a>
+            {% else %}
+                <p>لینک محتوا: <a href="{{ learning_stage.content_link_or_file }}" target="_blank">مشاهده محتوا</a></p>
+            {% endif %}
+        {% endif %}
+
+        <h2>وضعیت شما در این مرحله: {{ user_stage_progress.get_status_display }}</h2>
+        <p>تعداد تلاش برای آزمون: {{ user_stage_progress.exam_attempts }}</p>
+        {% if user_stage_progress.best_score %}<p>بهترین نمره کسب شده: {{ user_stage_progress.best_score }}</p>{% endif %}
+
+        {% if user_stage_progress.status == 'unlocked' %}
+            <p>این مرحله برای شما باز شده است. مطالعه را شروع کنید.</p>
+            {# Viewing this page automatically calls start_study() via the view #}
+        {% elif user_stage_progress.status == 'in_study' %}
+            <form action="{% url 'learning:complete_study' pk=user_stage_progress.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit">اتمام مطالعه</button>
+            </form>
+        {% elif user_stage_progress.status == 'ready_for_exam' %}
+            <p>شما مطالعه این مرحله را به اتمام رسانده‌اید و آماده آزمون هستید.</p>
+            {% if not active_exam %}
+                <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit">شروع آزمون</button>
+                </form>
+            {% else %}
+                <p>شما در حال حاضر یک آزمون فعال برای این مرحله دارید: <a href="{% url 'learning:take_exam' pk=active_exam.pk %}">ادامه آزمون</a></p>
+            {% endif %}
+        {% elif user_stage_progress.status == 'passed' %}
+            <p>شما این مرحله را با موفقیت پشت سر گذاشته‌اید.</p>
+        {% elif user_stage_progress.status == 'failed_previously' %}
+            <p>شما در تلاش قبلی آزمون این مرحله مردود شدید. لطفاً مجدداً محتوا را مطالعه کرده و سپس برای آزمون تلاش کنید.</p>
+            <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit">شروع مجدد آزمون</button>
+            </form>
+        {% endif %} {# End of user_stage_progress.status checks #}
+
+    {% elif user.is_authenticated and user_stage_progress and user_stage_progress.status == 'locked' %}
+        <p>این مرحله برای شما قفل است و قابل مشاهده نیست.</p>
+    {% elif not user.is_authenticated %}
+        <p>برای پیگیری وضعیت خود در این مرحله، لطفاً <a href="{% url 'login' %}">وارد شوید</a>.</p>
+    {% else %}
+        <p>شما در این سیر مطالعاتی ثبت‌نام نکرده‌اید یا این مرحله برای شما فعال نیست.</p>
+    {% endif %}
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}{% endblock %}
