@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default:"نقطه" }}</title>
+    <title>{{ page_title|default:"جبهه نوجوانی" }}</title>
     
     <!-- فایل فونت‌های محلی -->
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
@@ -25,7 +25,7 @@
             /* فضای خالی برای هدر شناور */
             padding-top: 110px; 
             font-family: 'Vazirmatn', sans-serif;
-            background-color: #0b0716; /* رنگ پس زمینه تیره هماهنگ با فضا */
+            background-color: #0b0716;
             color: #fff;
         }
 
@@ -33,20 +33,21 @@
         .navbar {
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            /* اصلاح مشکل خارج شدن هدر در حالت راست‌چین */
+            left: 0;
+            right: 0;
+            margin: 0 auto; 
+            
             width: 92%;
             max-width: 1300px;
-            /* پس‌زمینه شیشه‌ای تیره */
-            background: rgba(20, 15, 35, 0.6);
+            background: rgba(20, 15, 35, 0.65);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
             z-index: 1000;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            padding: 0;
         }
 
         /* حالت چسبیده به بالا هنگام اسکرول */
@@ -58,8 +59,14 @@
             border-top: none;
             border-left: none;
             border-right: none;
-            background: rgba(15, 10, 25, 0.85);
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+            background: rgba(15, 10, 25, 0.9);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* حالت مخفی شدن هنگام اسکرول به پایین */
+        .navbar.hide-nav {
+            transform: translateY(-150%);
         }
 
         .navbar-container {
@@ -88,7 +95,7 @@
             transform: scale(1.05);
         }
 
-        /* --- Nav Container Inner (The Fix) --- */
+        /* --- Nav Container Inner --- */
         .nav-container-inner {
             display: flex;
             flex-grow: 1;
@@ -120,7 +127,7 @@
         .nav-links a.nav-item i {
             font-size: 1.1rem;
             transition: transform 0.3s ease;
-            color: #a881ff; /* رنگ آیکون‌ها بنفش روشن */
+            color: #a881ff;
         }
 
         .nav-links a.nav-item:hover {
@@ -139,8 +146,6 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            /* در راست‌چین، این کد بخش دکمه‌ها را به سمت چپ هول می‌دهد */
-            margin-right: auto; 
         }
 
         #auth-nav-links {
@@ -149,7 +154,7 @@
             align-items: center;
         }
 
-        /* استایل دکمه‌های ورود و ثبت‌نام */
+        /* استایل دکمه‌ها */
         .btn-nav {
             padding: 0.6rem 1.5rem !important;
             border-radius: 50px !important;
@@ -160,6 +165,7 @@
             gap: 8px;
             text-decoration: none;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .btn-login {
@@ -182,7 +188,7 @@
 
         .btn-register:hover {
             box-shadow: 0 6px 20px rgba(108, 63, 197, 0.6);
-            transform: translateY(-2px) !important;
+            transform: translateY(-2px);
             filter: brightness(1.1);
         }
 
@@ -190,7 +196,7 @@
             display: none;
             align-items: center;
             gap: 0.5rem;
-            background: rgba(245, 166, 35, 0.1);
+            background: rgba(245, 166, 35, 0.15);
             padding: 0.5rem 1rem;
             border-radius: 50px;
             color: #fff;
@@ -251,7 +257,11 @@
                 width: 100%;
                 border-radius: 0;
                 border: none;
-                background: rgba(15, 10, 25, 0.9);
+                background: rgba(15, 10, 25, 0.95);
+            }
+
+            .navbar.hide-nav {
+                transform: translateY(-100%);
             }
 
             .menu-toggle {
@@ -290,7 +300,6 @@
                 flex-direction: column;
                 align-items: stretch;
                 width: 100%;
-                margin-right: 0;
                 margin-top: 1.5rem;
                 padding-top: 1.5rem;
                 border-top: 1px solid rgba(255,255,255,0.1);
@@ -337,7 +346,7 @@
                     <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
                     <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
                 </svg>
-                <span>نقطه</span>
+                <span>جبهه نوجوانی</span>
             </a>
 
             <!-- دکمه منو موبایل -->
@@ -361,7 +370,7 @@
                         <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
                     </a>
                     <a href="{% url 'shop' %}" class="nav-item" data-nav="shop">
-                        <i class="fa-solid fa-store"></i> فروشگاه
+                        <i class="fa-solid fa-store"></i> جبهه بازار
                     </a>
                 </div>
                 
@@ -395,7 +404,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>درباره نقطه</h3>
+                    <h3>درباره جبهه نوجوانی</h3>
                     <p>پلتفرمی برای رشد فردی، رقابت سالم و تبدیل یادگیری به یک تجربه جذاب و هدفمند.</p>
                 </div>
                 <div class="footer-section">
@@ -412,7 +421,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                تمامی حقوق برای پلتفرم نقطه محفوظ است © ۱۴۰۵
+                تمامی حقوق برای پلتفرم جبهه نوجوانی محفوظ است © ۱۴۰۵
             </div>
         </div>
     </footer>
@@ -508,17 +517,11 @@
             navbar.classList.remove('scrolled');
         }
         
-        // مخفی شدن هدر فقط هنگام اسکرول به پایین (برای فضای بیشتر خوندن)
+        // مخفی شدن هدر فقط هنگام اسکرول به پایین
         if (scrollTop > lastScrollTop && scrollTop > 150) {
-            navbar.style.transform = "translate(-50%, -150%)"; // برای دسکتاپ
-            if(window.innerWidth <= 850) {
-                navbar.style.transform = "translateY(-100%)"; // برای موبایل
-            }
+            navbar.classList.add('hide-nav');
         } else {
-            navbar.style.transform = "translate(-50%, 0)";
-            if(window.innerWidth <= 850) {
-                navbar.style.transform = "translateY(0)";
-            }
+            navbar.classList.remove('hide-nav');
         }
         
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;

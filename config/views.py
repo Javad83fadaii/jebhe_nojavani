@@ -10,7 +10,7 @@ def home(request):
         "home.html",
         {
             "page_name": "home",
-            "page_title": "نقطه | شروع تغییر",
+            "page_title": "جبهه نوجوانی | شروع تغییر",
         },
     )
 
@@ -33,7 +33,7 @@ def challenges(request):
         "challenges.html",
         {
             "page_name": "challenges",
-            "page_title": "چالش‌ها | نقطه",
+            "page_title": "چالش‌ها | جبهه نوجوانی",
             "learning_paths": learning_paths, # Pass learning paths to the template
         },
     )
@@ -46,7 +46,7 @@ def challenge_detail(request, pk):
         "challenge_detail.html",
         {
             "page_name": "challenges",
-            "page_title": f"جزئیات چالش {challenge.title} | نقطه",
+            "page_title": f"جزئیات چالش {challenge.title} | جبهه نوجوانی",
             "challenge": challenge,
         },
     )
@@ -58,7 +58,7 @@ def shop(request):
         "shop.html",
         {
             "page_name": "shop",
-            "page_title": "فروشگاه | نقطه",
+            "page_title": "فروشگاه | جبهه نوجوانی",
         },
     )
 
@@ -69,7 +69,7 @@ def profile(request):
         "profile.html",
         {
             "page_name": "profile",
-            "page_title": "پروفایل | نقطه",
+            "page_title": "پروفایل | جبهه نوجوانی",
         },
     )
 
@@ -80,7 +80,7 @@ def login(request):
         "login.html",
         {
             "page_name": "login",
-            "page_title": "ورود | نقطه",
+            "page_title": "ورود | جبهه نوجوانی",
         },
     )
 
@@ -91,7 +91,7 @@ def register(request):
         "register.html",
         {
             "page_name": "register",
-            "page_title": "ثبت‌نام | نقطه",
+            "page_title": "ثبت‌نام | جبهه نوجوانی",
         },
     )
 
@@ -102,7 +102,7 @@ def profile_edit(request):
         "profile_edit.html",
         {
             "page_name": "profile",
-            "page_title": "ویرایش پروفایل | نقطه",
+            "page_title": "ویرایش پروفایل | جبهه نوجوانی",
         },
     )
 
@@ -113,7 +113,7 @@ def seller_register(request):
         "seller-register.html",
         {
             "page_name": "seller-register",
-            "page_title": "ثبت‌نام فروشنده | نقطه",
+            "page_title": "ثبت‌نام فروشنده | جبهه نوجوانی",
         },
     )
 
@@ -124,7 +124,7 @@ def seller_login(request):
         "seller-login.html",
         {
             "page_name": "seller-login",
-            "page_title": "ورود فروشنده | نقطه",
+            "page_title": "ورود فروشنده | جبهه نوجوانی",
         },
     )
 
@@ -135,7 +135,7 @@ def seller_profile(request):
         "seller-profile.html",
         {
             "page_name": "seller-profile",
-            "page_title": "پروفایل فروشنده | نقطه",
+            "page_title": "پروفایل فروشنده | جبهه نوجوانی",
         },
     )
 
