@@ -138,3 +138,14 @@ def seller_profile(request):
             "page_title": "پروفایل فروشنده | نقطه",
         },
     )
+
+def index_view(request):
+    """
+    این ویو صفحه اصلی (Landing Page) را نمایش می‌دهد.
+    """
+    # می‌توانید متغیرهای دیگری را هم به context اضافه کنید
+    context = {
+        'page_title': 'جبهه نوجوانی | صفحه اصلی',
+        'page_name': 'index' # برای فعال شدن لینک خانه در نوبار
+    }
+    return render(request, 'index.html', context)

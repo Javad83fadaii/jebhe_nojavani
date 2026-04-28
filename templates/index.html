@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+
+/* --- Variable Definitions --- */
+:root {
+    --primary-purple: #6C3FC5;
+    --primary-gold: #F5A623;
+    --dark-blue: #121228;
+    --light-bg: #f8f7ff;
+    --text-dark: #2c2c4b;
+    --text-light: #6a6a8a;
+    --brand-gradient: linear-gradient(120deg, var(--primary-purple) 0%, var(--primary-gold) 100%);
+    --soft-shadow: 0 12px 35px rgba(108, 63, 197, 0.08);
+    --glass-bg-overlay: rgba(255, 255, 255, 0.1); /* Semi-transparent white for glass effect */
+    --glass-border: 1px solid rgba(255, 255, 255, 0.25); /* Subtle border for glass elements */
+    --glass-blur: blur(20px); /* The blur effect */
+}
+
+/* --- General Section Styling --- */
+.section-title-new {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--text-dark);
+}
+
+.section-intro-new {
+    font-size: 1.15rem;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto 60px auto;
+    line-height: 1.8;
+}
+
+/* --- 1. Hero Section (Glassmorphism Design) --- */
+.hero-section-new {
+    /* The space background image - FIXED PATH */
+    background-image: url("{% static 'images/space-background.jpg' %}");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Creates a nice parallax effect on scroll */
+    min-height: 95vh;
+    display: flex;
+    align-items: center;
+    padding: 100px 0;
+    position: relative;
+    overflow: hidden;
+    direction: rtl;
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: center;
+    gap: 4rem;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-text-content {
+    text-align: right;
+    /* Adding a glass container for the text content */
+    background: var(--glass-bg-overlay);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur); /* For Safari */
+    padding: 40px;
+    border-radius: 25px;
+    border: var(--glass-border);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+}
+
+.hero-title-new {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1.4;
+    color: white; /* Changed to white for better contrast */
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    margin-bottom: 1.5rem;
+}
+
+.gradient-text {
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    display: inline-block;
+}
+
+.hero-subtitle-new {
+    font-size: 1.2rem;
+    color: #e0e0e0; /* Lighter color for better readability */
+    line-height: 1.9;
+    max-width: 500px;
+    margin-bottom: 2.5rem;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
+}
+
+.btn {
+    padding: 14px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-primary-new {
+    background-color: var(--primary-gold);
+    color: white;
+    box-shadow: 0 8px 20px rgba(245, 166, 35, 0.3);
+}
+
+.btn-primary-new:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(245, 166, 35, 0.4);
+}
+
+.btn-secondary-new {
+    background-color: rgba(255, 255, 255, 0.15); /* Glassy secondary button */
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-secondary-new:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: white;
+}
+
+.hero-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Optional: If you want a visual placeholder on the right */
+.visual-placeholder {
+    width: 100%;
+    max-width: 450px;
+    height: 450px;
+    background: transparent; /* Making it transparent */
+    border-radius: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 5rem; /* Example: You can put an icon here */
+    color: rgba(255, 255, 255, 0.5);
+}
+
+
+/* --- 2. Features Section (Refined) --- */
+.features-section-new {
+    padding: 100px 15px;
+    background-color: var(--light-bg);
+    position: relative;
+    overflow: hidden;
+}
+
+.features-grid-new {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    direction: rtl;
+}
+
+.feature-card-new {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 20px;
+    box-shadow: var(--soft-shadow);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card-new:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 45px rgba(108, 63, 197, 0.12);
+}
+
+.feature-icon-wrapper-new {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 25px auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-gradient);
+    color: #fff;
+    font-size: 2rem;
+    box-shadow: 0 6px 20px rgba(108, 63, 197, 0.3);
+}
+
+.feature-title-new {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 15px;
+}
+
+.feature-description-new {
+    font-size: 1rem;
+    color: var(--text-light);
+    line-height: 1.8;
+}
+
+/* --- 3. Final CTA Section --- */
+.final-cta-section-new {
+    padding: 100px 15px;
+    background: var(--brand-gradient);
+    color: white;
+    text-align: center;
+}
+
+.final-cta-title-new {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.final-cta-subtitle-new {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 40px;
+}
+
+.btn-cta-final-new {
+    background: white;
+    color: var(--primary-purple);
+    padding: 18px 45px;
+    font-size: 1.1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.btn-cta-final-new:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+
+/* --- Responsive Design --- */
+@media (max-width: 992px) {
+    .hero-section-new {
+        padding: 80px 15px;
+        min-height: auto;
+    }
+    .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+    .hero-text-content {
+        order: 1; /* Text comes first on mobile */
+        text-align: center;
+        padding: 30px;
+    }
+    .hero-visual {
+        display: none; /* Hide the visual placeholder on smaller screens */
+    }
+    .hero-buttons {
+        justify-content: center;
+    }
+    .hero-title-new {
+        font-size: 2.8rem;
+    }
+    .hero-subtitle-new {
+        font-size: 1.1rem;
+    }
+    .section-title-new {
+        font-size: 2.4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title-new {
+        font-size: 2.2rem;
+    }
+    .btn {
+        padding: 12px 28px;
+        font-size: 0.95rem;
+    }
+    .features-grid-new {
+        grid-template-columns: 1fr;
+    }
+    .final-cta-title-new {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section-new">
+    <div class="container">
+        <div class="hero-grid">
+            <div class="hero-text-content">
+                <h1 class="hero-title-new">
+                    از همین <span class="gradient-text">نقطه</span>، بهترین
+                    <br>
+                    نسخه‌ات را بساز
+                </h1>
+                <p class="hero-subtitle-new">
+                    مرزها را بشکن و استعدادهای پنهانت را بیدار کن. اینجا هر چالش یک فرصت است؛ وارد میدان شو و مسیر موفقیتت را رقم بزن.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#" class="btn btn-primary-new">شروع مسیر <i class="fas fa-arrow-left"></i></a>
+                    <a href="#" class="btn btn-secondary-new">آشنایی بیشتر</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <!-- در این بخش می‌توانید یک تصویر یا انیمیشن جذاب قرار دهید -->
+                <div class="visual-placeholder">
+                    <i class="fas fa-rocket fa-3x"></i>
+                    <span>گرافیک شما</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- =======================
+Features Section (Refined)
+============================ -->
+<section class="features-section-new text-center">
+    <div class="container">
+        <h2 class="section-title-new">چرا نقطه؟</h2>
+        <p class="section-intro-new">سکوی پرتابی برای کشف، رشد و درخشش استعدادهای تو</p>
+        <div class="features-grid-new">
+            <!-- Feature Card 1 -->
+            <div class="feature-card-new">
+                <div class="feature-icon-wrapper-new">
+                    <i class="fas fa-compass feature-icon-new"></i>
+                </div>
+                <h3 class="feature-title-new">مسیرهای رشد شخصی</h3>
+                <p class="feature-description-new">مسیرهای هدفمند و متناسب با علاقه تو برای پیشرفت گام به گام.</p>
+            </div>
+            <!-- Feature Card 2 -->
+            <div class="feature-card-new">
+                <div class="feature-icon-wrapper-new">
+                    <i class="fas fa-puzzle-piece feature-icon-new"></i>
+                </div>
+                <h3 class="feature-title-new">چالش‌های خلاقانه</h3>
+                <p class="feature-description-new">با چالش‌های جذاب و واقعی، مهارت‌های خودت را به سطح جدیدی برسان.</p>
+            </div>
+            <!-- Feature Card 3 -->
+            <div class="feature-card-new">
+                <div class="feature-icon-wrapper-new">
+                    <i class="fas fa-users feature-icon-new"></i>
+                </div>
+                <h3 class="feature-title-new">جامعه فعال و پویا</h3>
+                <p class="feature-description-new">در کنار هم‌تیمی‌ها و مربیان، یاد بگیر، رقابت کن و پیشرفت کن.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- =======================
+Final CTA Section (Refined)
+============================ -->
+<section class="final-cta-section-new text-center">
+    <div class="container">
+        <h2 class="final-cta-title-new">آماده‌ای به نقطه متصل بشی؟</h2>
+        <p class="final-cta-subtitle-new">همین الان ثبت‌نام کن و اولین قدم رو برای ساختن آینده‌ای درخشان بردار.</p>
+        <a href="#" class="btn btn-cta-final-new">ثبت‌نام و شروع ماجراجویی</a>
+    </div>
+</section>
+
+
+{% endblock %}
