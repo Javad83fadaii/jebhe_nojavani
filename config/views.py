@@ -1,5 +1,7 @@
+from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
-from learning.models import LearningPath # Import LearningPath model
+
+from learning.models import LearningPath, LearningStage
 
 
 def home(request):
@@ -14,8 +16,17 @@ def home(request):
 
 
 def challenges(request):
-    # Fetch all published learning paths
-    learning_paths = LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED).order_by("display_order")
+    # Fetch published learning paths with active stages ready for card rendering.
+    learning_paths = (
+        LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED)
+        .prefetch_related(
+            Prefetch(
+                "stages",
+                queryset=LearningStage.objects.filter(is_active=True).order_by("stage_number"),
+            )
+        )
+        .order_by("display_order")
+    )
 
     return render(
         request,
