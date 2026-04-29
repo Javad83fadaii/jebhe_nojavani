@@ -2,9 +2,13 @@ from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404
 
 from learning.models import LearningPath, LearningStage
-
+from challenges.models import Challenge, ChallengeParticipation
+from django.utils import timezone
 
 def home(request):
+    """
+    نمایش صفحه خانه برای کاربران وارد شده
+    """
     return render(
         request,
         "home.html",
@@ -16,17 +20,21 @@ def home(request):
 
 
 def challenges(request):
-    # Fetch published learning paths with active stages ready for card rendering.
-    learning_paths = (
-        LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED)
-        .prefetch_related(
-            Prefetch(
-                "stages",
-                queryset=LearningStage.objects.filter(is_active=True).order_by("stage_number"),
-            )
-        )
-        .order_by("display_order")
+    """
+    نمایش لیست چالش‌های فعال برای کاربر
+    """
+    now = timezone.now()
+    active_challenges = Challenge.objects.filter(
+        is_active=True,
+        start_date__lte=now,
+        end_date__gte=now
     )
+    
+    user_participations = []
+    if request.user.is_authenticated:
+        user_participations = ChallengeParticipation.objects.filter(
+            user=request.user
+        ).values_list('challenge_id', flat=True)
 
     return render(
         request,
@@ -34,7 +42,8 @@ def challenges(request):
         {
             "page_name": "challenges",
             "page_title": "چالش‌ها | جبهه نوجوانی",
-            "learning_paths": learning_paths, # Pass learning paths to the template
+            "active_challenges": active_challenges,
+            "user_participations": user_participations,
         },
     )
 
@@ -141,11 +150,14 @@ def seller_profile(request):
 
 def index_view(request):
     """
-    این ویو صفحه اصلی (Landing Page) را نمایش می‌دهد.
+    نمایش صفحه اصلی (Landing Page) برای کاربران مهمان
+    و انتقال به صفحه خانه برای کاربران وارد شده
     """
-    # می‌توانید متغیرهای دیگری را هم به context اضافه کنید
+    if request.user.is_authenticated:
+        return home(request)
+        
     context = {
         'page_title': 'جبهه نوجوانی | صفحه اصلی',
-        'page_name': 'index' # برای فعال شدن لینک خانه در نوبار
+        'page_name': 'index'
     }
     return render(request, 'index.html', context)

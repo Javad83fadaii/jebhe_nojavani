@@ -5,7 +5,7 @@
             <h1>از همین جبهه نوجوانی، بهترین نسخه‌ات را بساز</h1>
             <p>مرزها را بشکن و استعدادهای پنهانت را بیدار کن. اینجا هر چالش یک فرصت است؛ وارد میدان شو و مسیر موفقیتت را رقم بزن.</p>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <a href="{% url 'challenges' %}" class="btn btn-primary">شروع مسیر ✦</a>
+                <a href="{% url 'learning:learning_path_list' %}" class="btn btn-primary">شروع مسیر یادگیری ✦</a>
                 <a href="{% url 'profile' %}" class="btn btn-secondary">مشاهده پروفایل</a>
             </div>
         </div>
@@ -71,11 +71,8 @@
 
     <section class="container mb-5 mt-5">
         <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">آخرین مسابقات</h2>
-        <div class="competition-grid" data-limit="3">
-            <!-- Filled by main.js -->
-        </div>
-        <div style="text-align:center; padding: 0 5%; margin-top: 1rem;">
-            <a class="btn btn-secondary" href="{% url 'challenges' %}">مشاهده همه چالش‌ها</a>
+        <div class="glass-card" style="padding: 3rem; text-align: center;">
+            <p style="color: var(--text-muted);">بخش مسابقات به زودی فعال خواهد شد.</p>
         </div>
     </section>
 

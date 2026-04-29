@@ -1,74 +1,130 @@
 {% extends 'base.html' %}
 
-{% block title %}مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }}{% endblock %}
+{% block title %}مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }} | جبهه نوجوانی{% endblock %}
 
 {% block content %}
-    <h1>مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }}</h1>
-    <p>سیر مطالعاتی: <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}">{{ learning_stage.learning_path.title }}</a></p>
-    <p>نوع محتوا: {{ learning_stage.get_content_type_display }}</p>
-    <p>مدت زمان تقریبی مطالعه: {{ learning_stage.estimated_study_time }} دقیقه</p>
-    <p>توضیحات: {{ learning_stage.description }}</p>
+    <section class="container" style="padding-top: 3rem;">
+        <div class="glass-card" style="padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <nav style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                        <a href="{% url 'learning:learning_path_list' %}" style="color: var(--primary-purple);">سیرهای مطالعاتی</a> /
+                        <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" style="color: var(--primary-purple);">{{ learning_stage.learning_path.title }}</a> /
+                        مرحله {{ learning_stage.stage_number }}
+                    </nav>
+                    <h1 class="text-gold" style="font-size: 2.5rem; margin-bottom: 0.5rem;">{{ learning_stage.title }}</h1>
+                    <div style="display: flex; gap: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+                        <span><i class="fa-solid fa-clock"></i> زمان تقریبی: {{ learning_stage.estimated_study_time }} دقیقه</span>
+                        <span><i class="fa-solid fa-file-lines"></i> نوع: {{ learning_stage.get_content_type_display }}</span>
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated and user_stage_progress %}
+                    <div class="glass-card" style="padding: 1rem 1.5rem; background: rgba(255, 255, 255, 0.05);">
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">وضعیت شما</div>
+                        <div style="font-weight: 700; color: var(--primary-gold);">{{ user_stage_progress.get_status_display }}</div>
+                    </div>
+                {% endif %}
+            </div>
 
-    <p>توضیحات: {{ learning_stage.description }}</p>
+            <div style="background: rgba(255,255,255,0.03); border-radius: 20px; padding: 2rem; margin-bottom: 2.5rem; line-height: 1.8;">
+                <h3 style="margin-bottom: 1rem; color: var(--primary-purple);">توضیحات این مرحله:</h3>
+                {{ learning_stage.description|linebreaks }}
+            </div>
 
-    {% if user.is_authenticated and user_stage_progress and user_stage_progress.status != 'locked' %}
-        {# Display content only if user is authenticated, has progress, and stage is not locked #}
-        {% if learning_stage.content_link_or_file %}
-            {% if learning_stage.content_type == "podcast" %}
-                <audio controls src="{{ learning_stage.content_link_or_file }}">Your browser does not support the audio element.</audio>
-            {% elif learning_stage.content_type == "video" %}
-                <video controls width="600" src="{{ learning_stage.content_link_or_file }}">Your browser does not support the video tag.</video>
-            {% elif learning_stage.content_type == "document" %}
-                <a href="{{ learning_stage.content_link_or_file }}" target="_blank">دانلود مستند</a>
+            {% if user.is_authenticated and user_stage_progress and user_stage_progress.status != 'locked' %}
+                <div class="learning-content-section" style="margin-bottom: 3rem;">
+                    <h2 class="text-gold" style="margin-bottom: 1.5rem; text-align: center;">محتوای آموزشی</h2>
+                    
+                    <div class="glass-card" style="padding: 2rem; background: rgba(0,0,0,0.2); text-align: center;">
+                        {% if learning_stage.content_link_or_file %}
+                            {% if learning_stage.content_type == "podcast" %}
+                                <div style="margin: 2rem 0;">
+                                    <i class="fa-solid fa-microphone-lines" style="font-size: 3rem; color: var(--primary-purple); margin-bottom: 1rem;"></i>
+                                    <audio controls style="width: 100%; max-width: 600px;">
+                                        <source src="{{ learning_stage.content_link_or_file }}" type="audio/mpeg">
+                                        مرورگر شما از پخش صوتی پشتیبانی نمی‌کند.
+                                    </audio>
+                                </div>
+                            {% elif learning_stage.content_type == "video" %}
+                                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; background: #000;">
+                                    <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                                        <source src="{{ learning_stage.content_link_or_file }}" type="video/mp4">
+                                        مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند.
+                                    </video>
+                                </div>
+                            {% elif learning_stage.content_type == "document" %}
+                                <div style="padding: 3rem 0;">
+                                    <i class="fa-solid fa-file-pdf" style="font-size: 4rem; color: #ff4d4d; margin-bottom: 1.5rem;"></i>
+                                    <p style="margin-bottom: 1.5rem;">فایل مستند آموزشی برای این مرحله آماده است.</p>
+                                    <a href="{{ learning_stage.content_link_or_file }}" target="_blank" class="btn btn-primary-new">
+                                        <i class="fa-solid fa-download"></i> دانلود و مطالعه مستند
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div style="padding: 3rem 0;">
+                                    <i class="fa-solid fa-link" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1.5rem;"></i>
+                                    <p style="margin-bottom: 1.5rem;">برای مشاهده محتوای این مرحله روی دکمه زیر کلیک کنید.</p>
+                                    <a href="{{ learning_stage.content_link_or_file }}" target="_blank" class="btn btn-primary-new">
+                                        <i class="fa-solid fa-external-link"></i> مشاهده محتوا در پنجره جدید
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <p style="padding: 2rem; color: var(--text-muted);">محتوای دیجیتالی برای این مرحله ثبت نشده است. لطفاً توضیحات را مطالعه کنید.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                    {% if user_stage_progress.status == 'in_study' %}
+                        <form action="{% url 'learning:complete_study' pk=user_stage_progress.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem;">
+                                <i class="fa-solid fa-check-double"></i> اتمام مطالعه و آمادگی برای آزمون
+                            </button>
+                        </form>
+                    {% elif user_stage_progress.status == 'ready_for_exam' %}
+                        <div style="text-align: center; width: 100%;">
+                            <p style="margin-bottom: 1.5rem; font-size: 1.1rem;">شما آماده شرکت در آزمون این مرحله هستید!</p>
+                            {% if not active_exam %}
+                                <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem; background: var(--primary-gold); box-shadow: 0 8px 25px var(--primary-gold-glow);">
+                                        <i class="fa-solid fa-pen-to-square"></i> شروع آزمون مرحله
+                                    </button>
+                                </form>
+                            {% else %}
+                                <a href="{% url 'learning:take_exam' pk=active_exam.pk %}" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem;">
+                                    <i class="fa-solid fa-play"></i> ادامه آزمون در حال اجرا
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% elif user_stage_progress.status == 'completed' %}
+                        <div class="glass-card" style="padding: 1.5rem; background: rgba(76, 175, 80, 0.1); border-color: rgba(76, 175, 80, 0.3); text-align: center; width: 100%;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #4CAF50; margin-bottom: 1rem;"></i>
+                            <h3 style="color: #4CAF50; margin-bottom: 0.5rem;">تبریک! این مرحله با موفقیت تکمیل شد.</h3>
+                            <p>نمره شما: {{ user_stage_progress.best_score }}</p>
+                            <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 1.5rem;">
+                                بازگشت به لیست مراحل
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
             {% else %}
-                <p>لینک محتوا: <a href="{{ learning_stage.content_link_or_file }}" target="_blank">مشاهده محتوا</a></p>
+                <div class="glass-card" style="padding: 3rem; text-align: center; background: rgba(0,0,0,0.3);">
+                    <i class="fa-solid fa-lock" style="font-size: 4rem; color: #555; margin-bottom: 1.5rem;"></i>
+                    <h2 style="color: #888;">این مرحله هنوز برای شما باز نشده است</h2>
+                    <p style="margin-top: 1rem; color: var(--text-muted);">
+                        برای دسترسی به این مرحله، باید مراحل قبلی را با موفقیت پشت سر بگذارید.
+                    </p>
+                    <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 2rem;">
+                        مشاهده نقشه مسیر
+                    </a>
+                </div>
             {% endif %}
-        {% endif %}
+        </div>
+    </section>
 
-        <h2>وضعیت شما در این مرحله: {{ user_stage_progress.get_status_display }}</h2>
-        <p>تعداد تلاش برای آزمون: {{ user_stage_progress.exam_attempts }}</p>
-        {% if user_stage_progress.best_score %}<p>بهترین نمره کسب شده: {{ user_stage_progress.best_score }}</p>{% endif %}
-
-        {% if user_stage_progress.status == 'unlocked' %}
-            <p>این مرحله برای شما باز شده است. مطالعه را شروع کنید.</p>
-            {# Viewing this page automatically calls start_study() via the view #}
-        {% elif user_stage_progress.status == 'in_study' %}
-            <form action="{% url 'learning:complete_study' pk=user_stage_progress.pk %}" method="post">
-                {% csrf_token %}
-                <button type="submit">اتمام مطالعه</button>
-            </form>
-        {% elif user_stage_progress.status == 'ready_for_exam' %}
-            <p>شما مطالعه این مرحله را به اتمام رسانده‌اید و آماده آزمون هستید.</p>
-            {% if not active_exam %}
-                <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit">شروع آزمون</button>
-                </form>
-            {% else %}
-                <p>شما در حال حاضر یک آزمون فعال برای این مرحله دارید: <a href="{% url 'learning:take_exam' pk=active_exam.pk %}">ادامه آزمون</a></p>
-            {% endif %}
-        {% elif user_stage_progress.status == 'passed' %}
-            <p>شما این مرحله را با موفقیت پشت سر گذاشته‌اید.</p>
-        {% elif user_stage_progress.status == 'failed_previously' %}
-            <p>شما در تلاش قبلی آزمون این مرحله مردود شدید. لطفاً مجدداً محتوا را مطالعه کرده و سپس برای آزمون تلاش کنید.</p>
-            <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
-                {% csrf_token %}
-                <button type="submit">شروع مجدد آزمون</button>
-            </form>
-        {% endif %} {# End of user_stage_progress.status checks #}
-
-    {% elif user.is_authenticated and user_stage_progress and user_stage_progress.status == 'locked' %}
-        <p>این مرحله برای شما قفل است و قابل مشاهده نیست.</p>
-    {% elif not user.is_authenticated %}
-        <p>برای پیگیری وضعیت خود در این مرحله، لطفاً <a href="{% url 'login' %}">وارد شوید</a>.</p>
-    {% else %}
-        <p>شما در این سیر مطالعاتی ثبت‌نام نکرده‌اید یا این مرحله برای شما فعال نیست.</p>
-    {% endif %}
-
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}{% endblock %}
+    <div style="margin-bottom: 5rem;"></div>
+{% endblock %}

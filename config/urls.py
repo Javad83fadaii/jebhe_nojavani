@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/accounts/", include("accounts.urls")),
     path("api/geography/", include("geography.urls")),
     path("learning/", include("learning.urls")),
+    path("challenges-system/", include("challenges.urls")),
 ]
 
 if settings.DEBUG:

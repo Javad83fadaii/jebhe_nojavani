@@ -1,17 +1,83 @@
 {% extends 'base.html' %}
 
-{% block title %}سیرهای مطالعاتی{% endblock %}
+{% block title %}سیرهای مطالعاتی | جبهه نوجوانی{% endblock %}
 
 {% block content %}
-    <h1>سیرهای مطالعاتی موجود</h1>
-    <ul>
-        {% for path in learning_paths %}
-            <li>
-                <a href="{% url 'learning:learning_path_detail' pk=path.pk %}">{{ path.title }}</a>
-                - {{ path.get_difficulty_display }} ({{ path.total_stages }} مرحله)
-            </li>
-        {% empty %}
-            <li>هیچ سیر مطالعاتی در دسترس نیست.</li>
-        {% endfor %}
-    </ul>
+    <section class="container" style="padding-top: 3rem;">
+        <div class="glass-card challenges-hero-card" style="text-align: center;">
+            <h1 class="text-gold" style="margin-bottom: 1rem;">سیرهای مطالعاتی</h1>
+            <p style="color: var(--gray-light);">
+                مسیر دلخواهت را انتخاب کن، مرحله‌ها را ببین و با یک کلیک وارد صفحه هر مرحله شو.
+            </p>
+        </div>
+    </section>
+
+    <section class="container" style="margin-top: 3rem; margin-bottom: 5rem;">
+        <div class="glass-card">
+            <div class="learning-section-header">
+                <div>
+                    <h2 class="text-gold" style="margin-bottom: 0.75rem;">لیست مسیرهای یادگیری</h2>
+                    <p class="learning-section-subtitle">
+                        هر کارت، نمای کلی یک سیر را نشان می‌دهد و مرحله‌ها از همین صفحه قابل باز کردن هستند.
+                    </p>
+                </div>
+            </div>
+            {% if learning_paths %}
+                <div class="learning-path-grid">
+                    {% for path in learning_paths %}
+                        <article class="learning-path-card">
+                            <div class="learning-path-card__top">
+                                <span class="learning-path-badge">{{ path.get_difficulty_display }}</span>
+                                <a href="{% url 'learning:learning_path_detail' pk=path.pk %}" class="learning-path-link">
+                                    مشاهده سیر
+                                </a>
+                            </div>
+
+                            <h3 class="learning-path-title">
+                                <a href="{% url 'learning:learning_path_detail' pk=path.pk %}">{{ path.title }}</a>
+                            </h3>
+
+                            <p class="learning-path-description">
+                                {{ path.description|default:"برای این سیر هنوز توضیحی ثبت نشده است."|truncatechars:150 }}
+                            </p>
+
+                            <div class="learning-path-meta">
+                                <span>تعداد مراحل: {{ path.stages.all|length }}</span>
+                                <span>امتیاز کل: {{ path.total_points }}</span>
+                            </div>
+
+                            <div class="learning-stage-list">
+                                <div class="learning-stage-list__header">
+                                    <h4>مرحله‌ها</h4>
+                                    <span>برای ورود روی هر مورد بزن</span>
+                                </div>
+
+                                {% for stage in path.stages.all|dictsort:"stage_number" %}
+                                    <a href="{% url 'learning:learning_stage_detail' pk=stage.pk %}" class="learning-stage-item">
+                                        <span class="learning-stage-item__number">{{ stage.stage_number }}</span>
+                                        <span class="learning-stage-item__content">
+                                            <strong>{{ stage.title }}</strong>
+                                            <small>
+                                                {{ stage.get_content_type_display }}
+                                                {% if stage.estimated_study_time %}
+                                                    · {{ stage.estimated_study_time }} دقیقه
+                                                {% endif %}
+                                            </small>
+                                        </span>
+                                        <span class="learning-stage-item__arrow">مشاهده</span>
+                                    </a>
+                                {% empty %}
+                                    <div class="learning-stage-empty">
+                                        هنوز مرحله‌ای برای این سیر ثبت نشده است.
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="text-align: center; padding: 2rem;">در حال حاضر هیچ سیر مطالعاتی در دسترس نیست.</p>
+            {% endif %}
+        </div>
+    </section>
 {% endblock %}

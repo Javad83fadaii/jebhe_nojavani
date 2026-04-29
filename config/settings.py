@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'accounts',
     'geography',
     'learning.apps.LearningConfig',
+    'challenges',
 ]
 
 try:
