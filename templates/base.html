@@ -211,6 +211,107 @@
             filter: drop-shadow(0 0 4px rgba(245,166,35,0.6));
         }
 
+        .site-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 4, 12, 0.78);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 2000;
+        }
+
+        .site-modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .site-modal {
+            width: min(100%, 480px);
+            background: linear-gradient(135deg, rgba(24, 18, 42, 0.96) 0%, rgba(14, 10, 26, 0.96) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5), 0 0 30px rgba(108, 63, 197, 0.25);
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .site-modal::before {
+            content: "";
+            position: absolute;
+            inset: auto -20% 55% auto;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(245, 166, 35, 0.16) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .site-modal-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.22), rgba(245, 166, 35, 0.2));
+            color: #f5a623;
+            font-size: 1.8rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .site-modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            color: #fff;
+        }
+
+        .site-modal-text {
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.9;
+            font-size: 0.98rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .site-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .site-modal-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .site-modal-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: rotate(90deg);
+        }
+
+        .site-modal-secondary {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #fff !important;
+        }
+
         /* --- Menu Toggle (Mobile) --- */
         .menu-toggle {
             display: none;
@@ -327,13 +428,13 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body data-page="{{ page_name|default:'' }}">
+<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}">
     
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="navbar-container">
             <!-- Logo -->
-            <a href="{% url 'home' %}" class="logo">
+            <a href="{% if request.user.is_authenticated %}{% url 'home' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
                     <defs>
                         <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -360,16 +461,16 @@
             <div class="nav-container-inner" id="nav-container-inner">
                 
                 <div class="nav-links">
-                    <a href="{% url 'home' %}" class="nav-item" data-nav="home">
+                    <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
                         <i class="fa-solid fa-house"></i> خانه
                     </a>
-                    <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges">
+                    <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
                         <i class="fa-solid fa-trophy"></i> چالش‌ها
                     </a>
-                    <a href="{% url 'learning:learning_path_list' %}" class="nav-item" data-nav="learning-paths">
+                    <a href="{% url 'learning:learning_path_list' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
                         <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
                     </a>
-                    <a href="{% url 'shop' %}" class="nav-item" data-nav="shop">
+                    <a href="{% url 'shop' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
                         <i class="fa-solid fa-store"></i> جبهه بازار
                     </a>
                 </div>
@@ -427,15 +528,32 @@
     </footer>
 
     <script src="{% static 'js/main.js' %}"></script>
+    <div class="site-modal-backdrop" id="site-modal-backdrop">
+        <div class="site-modal">
+            <button type="button" class="site-modal-close" id="site-modal-close" aria-label="بستن">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="site-modal-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="site-modal-title" id="site-modal-title">این بخش بعد از ورود فعال می‌شود</h3>
+            <p class="site-modal-text" id="site-modal-text">برای استفاده از بخش‌های اصلی جبهه نوجوانی، ابتدا وارد حساب کاربری خود شوید یا ثبت‌نام کنید.</p>
+            <div class="site-modal-actions">
+                <a href="{% url 'login' %}" class="btn-nav btn-login">ورود</a>
+                <a href="{% url 'register' %}" class="btn-nav btn-register">ثبت‌نام</a>
+                <button type="button" class="btn-nav site-modal-secondary" id="site-modal-dismiss">فعلا بعدا</button>
+            </div>
+        </div>
+    </div>
     <script>
     // مدیریت نوار ناوبری بر اساس وضعیت لاگین
     function updateNavBar() {
-        const accessToken = localStorage.getItem('access_token');
-        const userType = localStorage.getItem('user_type');
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        const userType = document.body.dataset.userType || localStorage.getItem('user_type') || 'user';
         const authNav = document.getElementById('auth-nav-links');
         const pointsBadge = document.getElementById('points-badge');
         
-        if (accessToken) {
+        if (isAuthenticated) {
             const profileUrl = userType === 'seller' ? "{% url 'seller_profile' %}" : "{% url 'profile' %}";
             authNav.innerHTML = `
                 <a href="${profileUrl}" class="btn-nav btn-login" data-nav="profile">
@@ -456,8 +574,7 @@
                     localStorage.removeItem('user_type');
                     localStorage.removeItem('userSession');
                     sessionStorage.removeItem('userSession');
-                    const target = userType === 'seller' ? "{% url 'seller_login' %}" : "{% url 'login' %}";
-                    window.location.href = target + '?logout=true';
+                    window.location.href = "{% url 'logout' %}";
                 });
             }
         } else {
@@ -472,8 +589,70 @@
             if (pointsBadge) pointsBadge.style.display = 'none';
         }
     }
+
+    function openGuestModal(sectionName) {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        const modalTitle = document.getElementById('site-modal-title');
+        const modalText = document.getElementById('site-modal-text');
+
+        modalTitle.textContent = `دسترسی به ${sectionName} بعد از ورود فعال می‌شود`;
+        modalText.textContent = `برای ورود به بخش ${sectionName} لازم است ابتدا وارد حساب کاربری خود شوید. اگر تازه با سایت آشنا شده‌اید، می‌توانید از همین صفحه معرفی شروع کنید.`;
+        modalBackdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeGuestModal() {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        modalBackdrop.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function setupGuestNavGuards() {
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        if (isAuthenticated) {
+            return;
+        }
+
+        const protectedLinks = document.querySelectorAll('.nav-item[data-requires-auth="true"]');
+        protectedLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                openGuestModal(this.dataset.guestSection || 'این بخش');
+            });
+        });
+    }
     
     document.addEventListener('DOMContentLoaded', updateNavBar);
+    document.addEventListener('DOMContentLoaded', setupGuestNavGuards);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        const modalClose = document.getElementById('site-modal-close');
+        const modalDismiss = document.getElementById('site-modal-dismiss');
+        const params = new URLSearchParams(window.location.search);
+
+        if (modalClose) {
+            modalClose.addEventListener('click', closeGuestModal);
+        }
+
+        if (modalDismiss) {
+            modalDismiss.addEventListener('click', closeGuestModal);
+        }
+
+        if (modalBackdrop) {
+            modalBackdrop.addEventListener('click', function(event) {
+                if (event.target === modalBackdrop) {
+                    closeGuestModal();
+                }
+            });
+        }
+
+        if (params.get('logout') === 'true') {
+            openGuestModal('حساب کاربری');
+            document.getElementById('site-modal-title').textContent = 'خروج با موفقیت انجام شد';
+            document.getElementById('site-modal-text').textContent = 'اکنون در صفحه معرفی سایت هستید. برای ورود دوباره یا ساخت حساب جدید می‌توانید از دکمه‌های زیر استفاده کنید.';
+        }
+    });
 
     // مدیریت منوی موبایل
     const menuToggle = document.getElementById('menu-toggle');

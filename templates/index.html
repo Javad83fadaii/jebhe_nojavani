@@ -490,8 +490,8 @@ Hero Section
                     مرزها را بشکن و استعدادهای پنهانت را بیدار کن. اینجا هر چالش یک فرصت است؛ وارد میدان شو و مسیر موفقیتت را رقم بزن.
                 </p>
                 <div class="hero-buttons">
-                    <a href="#" class="btn btn-primary-new">شروع مسیر <i class="fas fa-arrow-left"></i></a>
-                    <a href="#" class="btn btn-secondary-new">آشنایی بیشتر</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary-new">شروع مسیر <i class="fas fa-arrow-left"></i></a>
+                    <a href="#features" class="btn btn-secondary-new">آشنایی بیشتر</a>
                 </div>
             </div>
             <div class="hero-visual">
@@ -507,7 +507,7 @@ Hero Section
 <!-- =======================
 Features Section
 ============================ -->
-<section class="features-section-new">
+<section class="features-section-new" id="features">
     <div class="container">
         <h2 class="section-title-new">چرا <span class="gradient-text">جبهه نوجوانی</span>؟</h2>
         <p class="section-intro-new">سکوی پرتابی برای کشف، رشد و درخشش استعدادهای تو در یک محیط کاملاً تعاملی و جذاب.</p>
@@ -624,7 +624,7 @@ Final CTA Section
         <div class="cta-glass-container glass-card">
             <h2 class="final-cta-title-new">آماده‌ای به کهکشان جبهه نوجوانی متصل بشی؟</h2>
             <p class="final-cta-subtitle-new">همین الان ثبت‌نام کن، آواتار خودت را بساز و اولین قدم را برای تبدیل شدن به یک افسانه بردار.</p>
-            <a href="#" class="btn-cta-final-new">
+            <a href="{% url 'register' %}" class="btn-cta-final-new">
                 <i class="fa-solid fa-rocket"></i> ثبت‌نام و شروع ماجراجویی
             </a>
         </div>

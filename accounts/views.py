@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.contrib.auth import login as auth_login
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -26,6 +27,7 @@ class UserRegistrationView(APIView):
         serializer.is_valid(raise_exception=True)
         # پراپرتی is_seller قابل ذخیره در دیتابیس نیست، بنابراین حذف شد
         user = serializer.save()
+        auth_login(request, user)
 
         refresh = RefreshToken.for_user(user)
         return Response(
@@ -41,6 +43,7 @@ class UserLoginView(APIView):
         serializer = UserLoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+        auth_login(request, user)
 
         refresh = RefreshToken.for_user(user)
         return Response(
@@ -94,6 +97,7 @@ class SellerLoginView(APIView):
         serializer = SellerLoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+        auth_login(request, user)
 
         refresh = RefreshToken.for_user(user)
         return Response(

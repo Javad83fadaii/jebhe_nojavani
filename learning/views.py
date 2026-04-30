@@ -1,7 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 
@@ -15,7 +16,9 @@ from learning.models import (
 )
 
 
-class LearningPathListView(ListView):
+class LearningPathListView(LoginRequiredMixin, ListView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
     model = LearningPath
     template_name = "learning/learning_path_list.html"
     context_object_name = "learning_paths"
@@ -24,7 +27,9 @@ class LearningPathListView(ListView):
     )
 
 
-class LearningPathDetailView(DetailView):
+class LearningPathDetailView(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
     model = LearningPath
     template_name = "learning/learning_path_detail.html"
     context_object_name = "learning_path"
@@ -68,7 +73,9 @@ def enroll_in_learning_path(request, pk):
     return redirect("learning:learning_path_detail", pk=pk)
 
 
-class UserLearningProgressDetailView(DetailView):
+class UserLearningProgressDetailView(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
     model = UserLearningProgress
     template_name = "learning/user_learning_progress_detail.html"
     context_object_name = "user_learning_progress"
@@ -87,7 +94,9 @@ class UserLearningProgressDetailView(DetailView):
         return context
 
 
-class LearningStageDetailView(DetailView):
+class LearningStageDetailView(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
     model = LearningStage
     template_name = "learning/learning_stage_detail.html"
     context_object_name = "learning_stage"
@@ -173,7 +182,9 @@ def start_exam(request, pk):
     return redirect("learning:learning_stage_detail", pk=user_stage_progress.learning_stage.pk)
 
 
-class TakeExamView(DetailView):
+class TakeExamView(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
     model = UserStageExam
     template_name = "learning/take_exam.html"
     context_object_name = "exam"

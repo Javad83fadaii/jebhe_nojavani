@@ -119,7 +119,7 @@
                 localStorage.setItem('user_type', 'user');
 
                 showMessage('ورود موفق! در حال انتقال...', 'success');
-                window.location.href = urlParams.get('next') || '/';
+                window.location.href = urlParams.get('next') || "{% url 'home' %}";
             }).catch(() => {
                 showMessage('خطای شبکه', 'error');
                 submitBtn.innerHTML = originalText;

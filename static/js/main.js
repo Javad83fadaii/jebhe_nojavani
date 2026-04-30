@@ -402,7 +402,10 @@ function logout() {
     localStorage.removeItem('userSession');
     sessionStorage.removeItem('userSession');
     localStorage.removeItem('userPoints');
-    window.location.href = '/login/?logout=true';
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_type');
+    window.location.href = '/logout/';
 }
 
 // به‌روزرسانی پروفایل کاربر

@@ -389,11 +389,11 @@
                 localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
                 localStorage.setItem('user_type', 'user');
 
-                showMessage('ثبت‌نام با موفقیت انجام شد. در حال انتقال به داشبورد...', 'success');
+                showMessage('ثبت‌نام با موفقیت انجام شد. در حال انتقال به صفحه اصلی...', 'success');
                 
                 // انتقال پس از موفقیت
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = "{% url 'home' %}";
                 }, 1500);
 
             } catch (err) {
