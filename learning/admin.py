@@ -88,13 +88,14 @@ class UserExamAnswerInline(admin.TabularInline):
 class LearningPathAdmin(admin.ModelAdmin):
     list_display = (
         "title",
+        "rank",
         "difficulty",
         "total_stages",
         "publish_status",
         "created_at",
         "updated_at",
     )
-    list_filter = ("difficulty", "publish_status")
+    list_filter = ("rank", "difficulty", "publish_status")
     search_fields = ("title", "description")
     inlines = [LearningStageInline]
     readonly_fields = ("total_stages", "total_points", "created_at", "updated_at")

@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+
+{% block title %}درجه‌بندی | جبهه نوجوانی{% endblock %}
+
+{% block content %}
+    <style>
+        .ranks-hero {
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.15) 0%, rgba(245, 166, 35, 0.1) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .ranks-hero h1 {
+            background: linear-gradient(135deg, #F5A623 0%, #6C3FC5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-points-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(245, 166, 35, 0.15);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid rgba(245, 166, 35, 0.3);
+            margin-top: 1rem;
+        }
+
+        .user-points-display i {
+            color: #F5A623;
+            font-size: 1.25rem;
+        }
+
+        .user-points-display span {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+        }
+
+        .ranks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .rank-card {
+            background: linear-gradient(135deg, rgba(20, 15, 35, 0.95) 0%, rgba(14, 10, 26, 0.95) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6C3FC5 0%, #F5A623 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .rank-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(108, 63, 197, 0.2);
+            border-color: rgba(108, 63, 197, 0.4);
+        }
+
+        .rank-card:hover::before {
+            opacity: 1;
+        }
+
+        .rank-card.locked {
+            opacity: 0.6;
+            filter: grayscale(0.3);
+        }
+
+        .rank-card.locked:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .rank-card.locked:hover::before {
+            opacity: 0;
+        }
+
+        .rank-card.current {
+            border-color: #F5A623;
+            box-shadow: 0 0 30px rgba(245, 166, 35, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .rank-card.current::before {
+            opacity: 1;
+            background: linear-gradient(90deg, #F5A623 0%, #F5A623 100%);
+        }
+
+        .rank-card.completed {
+            border-color: rgba(108, 63, 197, 0.5);
+        }
+
+        .rank-card.completed::before {
+            opacity: 1;
+            background: linear-gradient(90deg, #6C3FC5 0%, #6C3FC5 100%);
+        }
+
+        .rank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .rank-level {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.3) 0%, rgba(245, 166, 35, 0.2) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rank-card.current .rank-level {
+            background: linear-gradient(135deg, rgba(245, 166, 35, 0.3) 0%, rgba(245, 166, 35, 0.15) 100%);
+            border-color: rgba(245, 166, 35, 0.3);
+        }
+
+        .rank-card.completed .rank-level {
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.3) 0%, rgba(108, 63, 197, 0.15) 100%);
+            border-color: rgba(108, 63, 197, 0.3);
+        }
+
+        .rank-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .rank-status-badge.locked {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .rank-status-badge.current {
+            background: rgba(245, 166, 35, 0.15);
+            color: #F5A623;
+        }
+
+        .rank-status-badge.completed {
+            background: rgba(108, 63, 197, 0.15);
+            color: #A881FF;
+        }
+
+        .rank-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .rank-card.current .rank-name {
+            color: #F5A623;
+        }
+
+        .rank-card.completed .rank-name {
+            color: #A881FF;
+        }
+
+        .rank-points-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .progress-container {
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6C3FC5 0%, #F5A623 100%);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        .rank-card.current .progress-fill {
+            background: linear-gradient(90deg, #F5A623 0%, #F5A623 100%);
+        }
+
+        .rank-card.completed .progress-fill {
+            background: linear-gradient(90deg, #6C3FC5 0%, #6C3FC5 100%);
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .rank-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-rank {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-rank-primary {
+            background: linear-gradient(135deg, #6C3FC5 0%, #8E54E9 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(108, 63, 197, 0.3);
+        }
+
+        .btn-rank-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 63, 197, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-rank-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-rank-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-rank:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .lock-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+        .section-divider {
+            margin: 3rem 0 2rem;
+            text-align: center;
+        }
+
+        .section-divider h3 {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-divider h3::before,
+        .section-divider h3::after {
+            content: '';
+            width: 60px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2));
+        }
+
+        .section-divider h3::after {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent);
+        }
+
+        @media (max-width: 768px) {
+            .ranks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ranks-hero {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+
+    <section class="container" style="padding-top: 3rem; padding-bottom: 5rem;">
+        <div class="ranks-hero">
+            <h1>درجه‌بندی جبهه نوجوانی</h1>
+            <p style="color: rgba(255, 255, 255, 0.7); max-width: 600px; margin: 0 auto;">
+                کارت‌ها از امتیاز کمتر به بیشتر مرتب شده‌اند. هر درجه با رسیدن به حداقل امتیاز ورود خودش باز می‌شود.
+            </p>
+            <div class="user-points-display">
+                <i class="fa-solid fa-star"></i>
+                <span>{{ user_points }}</span>
+                <span>امتیاز کل شما</span>
+            </div>
+            <div class="hero-actions">
+                <a href="{% url 'learning:learning_path_list' %}" class="btn-rank btn-rank-primary" style="max-width: 260px;">
+                    <i class="fa-solid fa-road"></i> مشاهده همه سیرها
+                </a>
+            </div>
+            {% if user_current_rank %}
+                <div style="margin-top: 0.75rem; color: #F5A623; font-weight: 600;">
+                    درجه فعلی شما: {{ user_current_rank.name }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="ranks-grid">
+            {% for data in rank_data %}
+                <article class="rank-card {% if data.is_locked %}locked{% elif data.is_current %}current{% elif data.is_completed %}completed{% endif %}">
+                    {% if data.is_locked %}
+                        <div class="lock-icon">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                    {% endif %}
+
+                    <div class="rank-header">
+                        <div class="rank-level">
+                            {{ data.rank.level }}
+                        </div>
+                        <span class="rank-status-badge {% if data.is_locked %}locked{% elif data.is_current %}current{% elif data.is_completed %}completed{% endif %}">
+                            {% if data.is_locked %}
+                                <i class="fa-solid fa-lock"></i> قفل
+                            {% elif data.is_current %}
+                                <i class="fa-solid fa-bolt"></i> در حال انجام
+                            {% elif data.is_completed %}
+                                <i class="fa-solid fa-check-circle"></i> تکمیل
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    {% if data.learning_path %}
+                        {% if data.learning_path.cover_image %}
+                            <div style="margin-bottom: 1rem; border-radius: 12px; overflow: hidden; height: 150px;">
+                                <img src="{{ data.learning_path.cover_image.url }}" alt="{{ data.learning_path.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <h3 class="rank-name">{{ data.rank.name }}</h3>
+                    
+                    <p class="rank-points-info">
+                        ورود به این درجه از {{ data.required_points }} امتیاز
+                        {% if data.next_required_points %}
+                            <br>
+                            درجه بعدی از {{ data.next_required_points }} امتیاز باز می‌شود
+                        {% endif %}
+                    </p>
+
+                    {% if data.learning_path %}
+                        <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.05); font-size: 0.85rem;">
+                                <i class="fa-solid fa-list-ol"></i>
+                                {{ data.learning_path.total_stages }} مرحله
+                            </span>
+                            <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; border-radius: 8px; background: rgba(245,166,35,0.1); color: #f5a623; font-size: 0.85rem;">
+                                <i class="fa-solid fa-star"></i>
+                                {{ data.learning_path.total_points }} امتیاز
+                            </span>
+                        </div>
+
+                        {% if data.user_progress %}
+                            <div style="margin-bottom: 1rem; padding: 0.75rem; border-radius: 10px; background: rgba(108,63,197,0.1); border: 1px solid rgba(108,63,197,0.25);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-weight: 600; font-size: 0.9rem;">وضعیت پیشرفت</span>
+                                    <span style="font-size: 0.85rem; font-weight: 600;">
+                                        {{ data.user_progress.get_status_display }}
+                                    </span>
+                                </div>
+                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+                                    <div style="height: 100%; background: linear-gradient(90deg, #6C3FC5 0%, #F5A623 100%); width: {{ data.user_progress.progress_percentage }}%;"></div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                    <span>{{ data.user_progress.completed_stages_count }}/{{ data.learning_path.total_stages }} مرحله تکمیل</span>
+                                    <span>{{ data.user_progress.progress_percentage|floatformat:0 }}%</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if not data.is_locked %}
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ data.progress_percentage }}%;"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>پیشرفت</span>
+                                <span>{{ data.progress_percentage|floatformat:0 }}%</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="rank-actions">
+                        {% if data.learning_path %}
+                            {% if data.is_unlocked %}
+                                <a href="{% url 'learning:learning_path_detail' pk=data.learning_path.pk %}" class="btn-rank btn-rank-primary">
+                                    {% if data.is_completed %}
+                                        <i class="fa-solid fa-eye"></i> مشاهده
+                                    {% else %}
+                                        <i class="fa-solid fa-play"></i> شروع
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <button class="btn-rank btn-rank-secondary" disabled>
+                                    <i class="fa-solid fa-lock"></i> {{ data.points_shortage }} امتیاز کم دارید
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <button class="btn-rank btn-rank-secondary" disabled>
+                                <i class="fa-solid fa-clock"></i> به زودی
+                            </button>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

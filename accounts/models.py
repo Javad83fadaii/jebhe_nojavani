@@ -23,20 +23,20 @@ class TimestampedModel(models.Model):
 
 
 class Rank(TimestampedModel):
-    POINTS_PER_LEVEL = 1000
+    POINTS_PER_LEVEL = 100
     DEFAULT_RANKS = (
-        (1, "افسر 1"),
-        (2, "افسر 2"),
-        (3, "افسر 3"),
-        (4, "افسر 4"),
-        (5, "افسر 5"),
-        (6, "افسر 6"),
-        (7, "ارشد 1"),
-        (8, "ارشد 2"),
-        (9, "ارشد 3"),
-        (10, "ارشد 4"),
-        (11, "ارشد 5"),
-        (12, "ارشد 6"),
+        (1, "افسر 6"),
+        (2, "افسر 5"),
+        (3, "افسر 4"),
+        (4, "افسر 3"),
+        (5, "افسر 2"),
+        (6, "افسر 1"),
+        (7, "ارشد 6"),
+        (8, "ارشد 5"),
+        (9, "ارشد 4"),
+        (10, "ارشد 3"),
+        (11, "ارشد 2"),
+        (12, "ارشد 1"),
     )
 
     name = models.CharField(max_length=50, unique=True)
@@ -68,11 +68,36 @@ class Rank(TimestampedModel):
     @classmethod
     def get_rank_for_points(cls, points: int | None) -> Rank | None:
         normalized_points = max(points or 0, 0)
-        return cls.objects.filter(min_points__lte=normalized_points).order_by("-min_points", "-level").first()
+        active_rank = None
+        for rank in cls.objects.order_by("level"):
+            if rank.is_unlocked_for_points(normalized_points):
+                active_rank = rank
+            else:
+                break
+        return active_rank
+
+    def get_unlock_points(self) -> int:
+        if self.level <= 1:
+            return 0
+        return max((self.min_points or 0) - 1, 0)
+
+    def is_unlocked_for_points(self, points: int | None) -> bool:
+        normalized_points = max(points or 0, 0)
+        return normalized_points >= self.get_unlock_points()
 
     @classmethod
     def ensure_default_ranks(cls):
         total_levels = len(cls.DEFAULT_RANKS)
+        existing_ranks = {rank.level: rank for rank in cls.objects.filter(level__in=[level for level, _ in cls.DEFAULT_RANKS])}
+
+        # Rename existing rows to temporary unique values first so swapping rank names
+        # never violates the unique constraint on the name field.
+        for level, name in cls.DEFAULT_RANKS:
+            rank = existing_ranks.get(level)
+            if rank and rank.name != name:
+                rank.name = f"__temp_rank_{level}__"
+                rank.save(update_fields=["name", "updated_at"])
+
         for level, name in cls.DEFAULT_RANKS:
             min_points = (level - 1) * cls.POINTS_PER_LEVEL
             max_points = None if level == total_levels else (level * cls.POINTS_PER_LEVEL) - 1

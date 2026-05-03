@@ -6,6 +6,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 
+from accounts.models import Rank
 from learning.models import (
     LearningPath,
     LearningStage,
@@ -16,15 +17,56 @@ from learning.models import (
 )
 
 
+def _redirect_for_locked_path(request, learning_path):
+    required_points = learning_path.get_unlock_points()
+    messages.error(
+        request,
+        f"برای ورود به سیر مطالعاتی {learning_path.title} حداقل {required_points} امتیاز نیاز دارید.",
+    )
+    return redirect("learning:rank_cards")
+
+
+def _get_active_rank_for_points(points, ranks):
+    active_rank = None
+    for rank in ranks:
+        if rank.is_unlocked_for_points(points):
+            active_rank = rank
+        else:
+            break
+    return active_rank
+
+
 class LearningPathListView(LoginRequiredMixin, ListView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = LearningPath
     template_name = "learning/learning_path_list.html"
     context_object_name = "learning_paths"
-    queryset = LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED).order_by(
-        "display_order"
-    )
+    queryset = LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED).select_related(
+        "rank"
+    ).order_by("rank__min_points", "display_order", "title")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        user_points = user.total_points if user.is_authenticated else 0
+        path_cards = []
+
+        for learning_path in context["learning_paths"]:
+            can_access = learning_path.can_user_access(user)
+            path_cards.append(
+                {
+                    "path": learning_path,
+                    "can_access": can_access,
+                    "is_locked": not can_access,
+                    "required_points": learning_path.get_unlock_points(),
+                    "points_shortage": max(learning_path.get_unlock_points() - user_points, 0),
+                }
+            )
+
+        context["user_points"] = user_points
+        context["path_cards"] = path_cards
+        return context
 
 
 class LearningPathDetailView(LoginRequiredMixin, DetailView):
@@ -34,11 +76,23 @@ class LearningPathDetailView(LoginRequiredMixin, DetailView):
     template_name = "learning/learning_path_detail.html"
     context_object_name = "learning_path"
 
+    def get_queryset(self):
+        return LearningPath.objects.filter(
+            publish_status=LearningPath.PublishStatus.PUBLISHED
+        ).select_related("rank")
+
+    def dispatch(self, request, *args, **kwargs):
+        learning_path = self.get_object()
+        if not learning_path.can_user_access(request.user):
+            return _redirect_for_locked_path(request, learning_path)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         learning_path = self.get_object()
         context["user_progress"] = None
         context["user_stage_progresses_map"] = {} # Map stage_pk to user_stage_progress object
+        context["required_points"] = learning_path.get_unlock_points()
 
         if self.request.user.is_authenticated:
             user_progress = UserLearningProgress.objects.filter(
@@ -61,10 +115,17 @@ class LearningPathDetailView(LoginRequiredMixin, DetailView):
 
 @login_required
 def enroll_in_learning_path(request, pk):
-    learning_path = get_object_or_404(LearningPath, pk=pk)
+    learning_path = get_object_or_404(
+        LearningPath.objects.filter(
+            publish_status=LearningPath.PublishStatus.PUBLISHED
+        ).select_related("rank"),
+        pk=pk,
+    )
     user = request.user
 
     if request.method == "POST":
+        if not learning_path.can_user_access(user):
+            return _redirect_for_locked_path(request, learning_path)
         user_progress = user.enroll_in_path(learning_path)
         messages.success(request, f"شما با موفقیت در سیر مطالعاتی {learning_path.title} ثبت‌نام کردید.")
         return redirect("learning:user_learning_progress_detail", pk=user_progress.pk)
@@ -103,7 +164,15 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         # Ensure the stage belongs to a published learning path
-        return LearningStage.objects.filter(learning_path__publish_status=LearningPath.PublishStatus.PUBLISHED)
+        return LearningStage.objects.filter(
+            learning_path__publish_status=LearningPath.PublishStatus.PUBLISHED
+        ).select_related("learning_path", "learning_path__rank")
+
+    def dispatch(self, request, *args, **kwargs):
+        learning_stage = self.get_object()
+        if not learning_stage.learning_path.can_user_access(request.user):
+            return _redirect_for_locked_path(request, learning_stage.learning_path)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -250,3 +319,72 @@ def finish_exam(request, pk):
 
     messages.error(request, "درخواست نامعتبر.")
     return redirect("learning:take_exam", pk=exam.pk)
+
+
+class RankCardsView(LoginRequiredMixin, ListView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
+    model = Rank
+    template_name = "learning/rank_cards.html"
+    context_object_name = "ranks"
+    queryset = Rank.objects.all().order_by("min_points", "level")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        user_points = user.total_points if user.is_authenticated else 0
+        ranks = list(context["ranks"])
+        user_current_rank = _get_active_rank_for_points(user_points, ranks)
+
+        context["user_current_rank"] = user_current_rank
+        context["user_points"] = user_points
+
+        user_progresses = {}
+        if user.is_authenticated:
+            user_progresses = {
+                up.learning_path_id: up
+                for up in UserLearningProgress.objects.filter(user=user)
+            }
+
+        rank_data = []
+        for index, rank in enumerate(ranks):
+            next_rank = ranks[index + 1] if index + 1 < len(ranks) else None
+            required_points = rank.get_unlock_points()
+            next_required_points = next_rank.get_unlock_points() if next_rank else None
+            is_unlocked = rank.is_unlocked_for_points(user_points)
+            is_completed = next_required_points is not None and user_points >= next_required_points
+            is_current = is_unlocked and not is_completed
+
+            progress_percentage = 0
+            if is_completed:
+                progress_percentage = 100
+            elif is_current:
+                progress_start = required_points
+                progress_end = next_required_points if next_required_points is not None else user_points
+                progress_range = max(progress_end - progress_start, 1)
+                progress_percentage = min(max(((user_points - progress_start) / progress_range) * 100, 0), 100)
+
+            learning_path = rank.learning_paths.filter(
+                publish_status=LearningPath.PublishStatus.PUBLISHED
+            ).order_by("display_order", "title").first()
+
+            user_progress = None
+            if learning_path and learning_path.id in user_progresses:
+                user_progress = user_progresses[learning_path.id]
+
+            rank_data.append({
+                "rank": rank,
+                "is_unlocked": is_unlocked,
+                "is_locked": not is_unlocked,
+                "is_current": is_current,
+                "is_completed": is_completed,
+                "progress_percentage": progress_percentage,
+                "required_points": required_points,
+                "next_required_points": next_required_points,
+                "points_shortage": max(required_points - user_points, 0),
+                "learning_path": learning_path,
+                "user_progress": user_progress,
+            })
+
+        context["rank_data"] = rank_data
+        return context

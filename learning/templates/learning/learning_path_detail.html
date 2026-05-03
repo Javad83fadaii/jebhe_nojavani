@@ -15,6 +15,13 @@
                 <span class="learning-path-badge" style="margin-bottom: 1rem; display: inline-block;">{{ learning_path.get_difficulty_display }}</span>
                 <h1 class="text-gold" style="margin-bottom: 1rem; font-size: 2.5rem;">{{ learning_path.title }}</h1>
                 <p style="color: var(--text-muted); line-height: 1.8; margin-bottom: 2rem;">{{ learning_path.description }}</p>
+
+                {% if learning_path.rank %}
+                    <div class="glass-card" style="padding: 1rem 1.25rem; margin-bottom: 1.5rem; background: rgba(245, 166, 35, 0.08); border-color: rgba(245, 166, 35, 0.2);">
+                        <strong style="color: #F5A623;">{{ learning_path.rank.name }}</strong>
+                        <span style="color: var(--text-muted);"> | حداقل امتیاز ورود: {{ required_points }}</span>
+                    </div>
+                {% endif %}
                 
                 <div class="learning-path-meta" style="margin-bottom: 2rem;">
                     <span><i class="fa-solid fa-layer-group"></i> {{ learning_path.stages.count }} مرحله</span>

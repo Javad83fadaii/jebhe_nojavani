@@ -33,6 +33,7 @@ class LearningPath(TimestampedModel):
         PUBLISHED = "published", "منتشر شده"
         ARCHIVED = "archived", "آرشیو شده"
 
+    rank = models.ForeignKey("accounts.Rank", on_delete=models.SET_NULL, null=True, blank=True, related_name="learning_paths", verbose_name="درجه مربوطه")
     title = models.CharField(max_length=255, verbose_name="عنوان سیر مطالعاتی")
     description = models.TextField(blank=True, verbose_name="توضیحات")
     cover_image = models.ImageField(upload_to="learning_paths/covers/", null=True, blank=True, verbose_name="تصویر کاور")
@@ -43,8 +44,8 @@ class LearningPath(TimestampedModel):
         max_length=20, choices=PublishStatus.choices, default=PublishStatus.DRAFT, verbose_name="وضعیت انتشار"
     )
     display_order = models.PositiveSmallIntegerField(default=0, verbose_name="ترتیب نمایش")
-    total_stages = models.PositiveSmallIntegerField(default=0, verbose_name="تعداد کل مراحل")
-    total_points = models.PositiveIntegerField(default=0, verbose_name="کل امتیاز قابل کسب")
+    total_stages = models.PositiveSmallIntegerField(default=10, verbose_name="تعداد کل مراحل")
+    total_points = models.PositiveIntegerField(default=100, verbose_name="کل امتیاز قابل کسب")
 
     class Meta:
         ordering = ("display_order", "title")
@@ -53,6 +54,18 @@ class LearningPath(TimestampedModel):
 
     def __str__(self) -> str:
         return self.title
+
+    def get_unlock_points(self) -> int:
+        if not self.rank_id or not self.rank:
+            return 0
+        return self.rank.get_unlock_points()
+
+    def can_user_access(self, user) -> bool:
+        if not self.rank_id:
+            return True
+        if not getattr(user, "is_authenticated", False):
+            return False
+        return self.rank.is_unlocked_for_points(getattr(user, "total_points", 0))
 
 
 class LearningStage(TimestampedModel):

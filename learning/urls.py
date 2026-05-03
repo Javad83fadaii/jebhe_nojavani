@@ -4,6 +4,7 @@ from learning.views import (
     LearningPathDetailView,
     LearningPathListView,
     LearningStageDetailView,
+    RankCardsView,
     TakeExamView,
     UserLearningProgressDetailView,
     complete_study,
@@ -16,6 +17,7 @@ from learning.views import (
 app_name = "learning"
 
 urlpatterns = [
+    path("", RankCardsView.as_view(), name="rank_cards"),
     path("paths/", LearningPathListView.as_view(), name="learning_path_list"),
     path("paths/<int:pk>/", LearningPathDetailView.as_view(), name="learning_path_detail"),
     path("paths/<int:pk>/enroll/", enroll_in_learning_path, name="enroll_in_learning_path"),
