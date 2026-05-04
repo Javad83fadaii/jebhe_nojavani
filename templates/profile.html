@@ -1,32 +1,43 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block title %}پروفایل کاربری{% endblock %}
+{% block title %}پروفایل کاربری - جبهه نوجوانی{% endblock %}
 
 {% block extra_head %}
 <style>
     :root {
-        --profile-gradient: linear-gradient(135deg, rgba(108, 63, 197, 0.1), rgba(245, 166, 35, 0.1));
-        --card-glass: rgba(255, 255, 255, 0.03);
-        --card-border: rgba(255, 255, 255, 0.1);
+        --profile-purple: #6C3FC5;
+        --profile-gold: #F5A623;
+        --profile-dark: #0B0B1A;
+        --profile-card-bg: rgba(255, 255, 255, 0.03);
+        --profile-border: rgba(255, 255, 255, 0.1);
+        --profile-hover: rgba(108, 63, 197, 0.1);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: linear-gradient(135deg, #0b0716 0%, #1a0b2e 100%);
+        min-height: 100vh;
     }
 
     .profile-container {
         max-width: 1200px;
         margin: 0 auto;
         padding: 2rem 1rem;
-        animation: fadeSlideUp 0.6s ease-out;
     }
 
     /* Header Section */
     .profile-header {
-        background: var(--profile-gradient);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--card-border);
+        background: linear-gradient(135deg, rgba(108, 63, 197, 0.15) 0%, rgba(245, 166, 35, 0.1) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 24px;
-        padding: 3rem 2rem;
+        padding: 2.5rem;
         margin-bottom: 2rem;
-        text-align: center;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px rgba(108, 63, 197, 0.2);
         position: relative;
         overflow: hidden;
     }
@@ -38,108 +49,197 @@
         right: -50%;
         width: 200%;
         height: 200%;
-        background: radial-gradient(circle, rgba(245, 166, 35, 0.1) 0%, transparent 70%);
-        animation: float 8s ease-in-out infinite;
+        background: radial-gradient(circle, rgba(108, 63, 197, 0.1) 0%, transparent 70%);
+        animation: pulse 8s ease-in-out infinite;
     }
 
-    .profile-avatar {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-purple), var(--primary-gold));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 3rem;
-        color: white;
-        box-shadow: 0 10px 40px rgba(245, 166, 35, 0.3);
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .profile-header-content {
         position: relative;
         z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
     }
 
-    .profile-name {
+    .profile-title-section h1 {
         font-size: 2rem;
         font-weight: 700;
-        background: linear-gradient(135deg, var(--primary-gold), #fff);
+        background: linear-gradient(135deg, #fff 0%, var(--profile-gold) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-        position: relative;
-        z-index: 1;
+        background-clip: text;
+        margin: 0 0 0.5rem 0;
     }
 
-    .profile-username {
-        color: var(--text-secondary);
-        font-size: 1.1rem;
-        position: relative;
-        z-index: 1;
+    .profile-title-section p {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.95rem;
+        margin: 0;
     }
 
-    /* Stats Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+    .profile-actions {
+        display: flex;
+        gap: 1rem;
     }
 
-    .stat-card {
-        background: var(--card-glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        padding: 1.5rem;
-        text-align: center;
+    .btn-edit {
+        background: linear-gradient(135deg, var(--profile-purple) 0%, #8b5cf6 100%);
+        color: white;
+        border: none;
+        padding: 0.85rem 2rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
         transition: all 0.3s ease;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-5px);
-        border-color: var(--primary-gold);
-        box-shadow: 0 10px 30px rgba(245, 166, 35, 0.2);
-    }
-
-    .stat-icon {
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--primary-gold);
-        margin-bottom: 0.25rem;
-    }
-
-    .stat-label {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-    }
-
-    /* Info Section */
-    .info-section {
-        background: var(--card-glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--card-border);
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-    }
-
-    .section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--primary-gold);
-        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(108, 63, 197, 0.4);
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
 
-    .info-grid {
+    .btn-edit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(108, 63, 197, 0.6);
+    }
+
+    .btn-edit i {
+        font-size: 1.1rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--profile-card-bg);
+        border: 1px solid var(--profile-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, transparent 0%, rgba(108, 63, 197, 0.05) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover {
+        border-color: var(--profile-purple);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(108, 63, 197, 0.3);
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, rgba(108, 63, 197, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+        color: var(--profile-purple);
+    }
+
+    .stat-icon.gold {
+        background: linear-gradient(135deg, rgba(245, 166, 35, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+        color: var(--profile-gold);
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(74, 222, 128, 0.2) 100%);
+        color: #22c55e;
+    }
+
+    .stat-label {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        color: white;
+        font-size: 1.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.95rem;
+    }
+
+    .rank-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+    }
+
+    /* Info Grid */
+    .info-section {
+        background: var(--profile-card-bg);
+        border: 1px solid var(--profile-border);
+        border-radius: 20px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        margin-bottom: 2rem;
+    }
+
+    .info-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 1.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .info-section h2 i {
+        color: var(--profile-purple);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
     }
 
@@ -150,105 +250,195 @@
     }
 
     .info-label {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .info-value {
-        color: var(--white);
+        color: white;
         font-size: 1.1rem;
-        font-weight: 500;
-        padding: 0.75rem;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        display: block;
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control {
-        width: 100%;
+        font-weight: 600;
         padding: 0.75rem 1rem;
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        color: var(--white);
-        font-size: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
         transition: all 0.3s ease;
     }
 
-    .form-control:focus {
+    .info-value:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(108, 63, 197, 0.3);
+    }
+
+    /* Edit Section */
+    .edit-section {
+        background: var(--profile-card-bg);
+        border: 1px solid var(--profile-border);
+        border-radius: 20px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        display: none;
+        animation: slideDown 0.4s ease;
+    }
+
+    .edit-section.active {
+        display: block;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .edit-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 1.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .edit-section h2 i {
+        color: var(--profile-gold);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-group label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 0.9rem 1.2rem;
+        color: white;
+        font-size: 1rem;
+        font-family: 'Vazirmatn', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
         outline: none;
-        border-color: var(--primary-gold);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--profile-gold);
         box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
     }
 
-    .form-control option {
-        background: var(--dark-bg);
-        color: var(--white);
+    .form-group select option {
+        background: #1a0b2e;
+        color: white;
     }
 
-    /* Action Buttons */
-    .action-buttons {
+    .form-actions {
         display: flex;
         gap: 1rem;
-        justify-content: center;
-        margin-top: 2rem;
+        justify-content: flex-end;
     }
 
-    .btn {
-        padding: 0.875rem 2rem;
+    .btn-save {
+        background: linear-gradient(135deg, var(--profile-gold) 0%, #fbbf24 100%);
+        color: #0B0B1A;
+        border: none;
+        padding: 0.9rem 2.5rem;
         border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(245, 166, 35, 0.6);
+    }
+
+    .btn-cancel {
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.9rem 2rem;
+        border-radius: 12px;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: none;
-        font-size: 1rem;
     }
 
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary-gold), #d48a10);
-        color: var(--dark-bg);
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(245, 166, 35, 0.4);
-    }
-
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--white);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-secondary:hover {
+    .btn-cancel:hover {
         background: rgba(255, 255, 255, 0.1);
-        border-color: var(--white);
+        border-color: rgba(255, 255, 255, 0.3);
     }
 
-    .hidden {
-        display: none;
+    /* Messages */
+    .message {
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        animation: slideDown 0.4s ease;
+    }
+
+    .message.success {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+
+    .message.error {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+    }
+
+    .message i {
+        font-size: 1.2rem;
     }
 
     /* Responsive */
     @media (max-width: 768px) {
         .profile-header {
-            padding: 2rem 1rem;
+            padding: 1.5rem;
         }
 
-        .profile-name {
+        .profile-title-section h1 {
             font-size: 1.5rem;
+        }
+
+        .profile-header-content {
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .stats-grid {
@@ -259,372 +449,361 @@
             grid-template-columns: 1fr;
         }
 
-        .action-buttons {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
             flex-direction: column;
         }
 
-        .btn {
+        .btn-save,
+        .btn-cancel {
             width: 100%;
         }
-    }
-
-    @keyframes fadeSlideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes float {
-        0%, 100% { transform: translate(0, 0) rotate(0deg); }
-        50% { transform: translate(50px, -30px) rotate(180deg); }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="profile-container">
-    <!-- Profile Header -->
+    <!-- Header -->
     <div class="profile-header">
-        <div class="profile-avatar" id="profileAvatar">
-            👤
+        <div class="profile-header-content">
+            <div class="profile-title-section">
+                <h1>پروفایل کاربری</h1>
+                <p>مدیریت اطلاعات حساب کاربری و پیشرفت شما</p>
+            </div>
+            <div class="profile-actions">
+                <button class="btn-edit" id="toggle-edit">
+                    <i class="fas fa-edit"></i>
+                    ویرایش پروفایل
+                </button>
+            </div>
         </div>
-        <h1 class="profile-name" id="profileName">در حال بارگذاری...</h1>
-        <p class="profile-username" id="profileUsername">@username</p>
     </div>
+
+    <!-- Message Container -->
+    <div id="message-container"></div>
 
     <!-- Stats Grid -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">⭐</div>
-            <div class="stat-value" id="userScore">0</div>
-            <div class="stat-label">امتیاز کل</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">💰</div>
-            <div class="stat-value" id="userWallet">0</div>
-            <div class="stat-label">کیف پول</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🏆</div>
-            <div class="stat-value" id="userRank">-</div>
-            <div class="stat-label">رتبه</div>
-        </div>
+    <div class="stats-grid" id="stats-section">
+        <!-- Stats will be populated by JavaScript -->
     </div>
 
-    <!-- Profile Info Section (View Mode) -->
-    <div class="info-section" id="viewSection">
-        <div class="section-title">
-            <span>📋</span>
+    <!-- Profile Info -->
+    <div class="info-section">
+        <h2>
+            <i class="fas fa-user-circle"></i>
             اطلاعات شخصی
-        </div>
-        <div class="info-grid">
-            <div class="info-item">
-                <span class="info-label">نام</span>
-                <div class="info-value" id="viewFirstName">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">نام خانوادگی</span>
-                <div class="info-value" id="viewLastName">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">کد ملی</span>
-                <div class="info-value" id="viewNationalCode">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">تاریخ تولد</span>
-                <div class="info-value" id="viewBirthDate">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">جنسیت</span>
-                <div class="info-value" id="viewGender">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">مدرسه</span>
-                <div class="info-value" id="viewSchool">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">مسجد</span>
-                <div class="info-value" id="viewMosque">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">شهر</span>
-                <div class="info-value" id="viewCity">-</div>
-            </div>
-            <div class="info-item">
-                <span class="info-label">استان</span>
-                <div class="info-value" id="viewProvince">-</div>
-            </div>
-        </div>
-        <div class="action-buttons">
-            <button class="btn btn-primary" onclick="toggleEditMode()">✏️ ویرایش پروفایل</button>
+        </h2>
+        <div class="info-grid" id="profile-info">
+            <!-- Info will be populated by JavaScript -->
         </div>
     </div>
 
-    <!-- Profile Edit Section (Edit Mode) -->
-    <div class="info-section hidden" id="editSection">
-        <div class="section-title">
-            <span>✏️</span>
+    <!-- Edit Section -->
+    <div class="edit-section" id="edit-section">
+        <h2>
+            <i class="fas fa-pen-to-square"></i>
             ویرایش اطلاعات
-        </div>
-        <form id="profileForm">
-            <div class="info-grid">
+        </h2>
+        <form id="profile-edit-form">
+            <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">نام</label>
-                    <input type="text" class="form-control" id="firstName" name="first_name" required>
+                    <label for="first_name">نام</label>
+                    <input type="text" id="first_name" name="first_name" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">نام خانوادگی</label>
-                    <input type="text" class="form-control" id="lastName" name="last_name" required>
+                    <label for="last_name">نام خانوادگی</label>
+                    <input type="text" id="last_name" name="last_name" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">کد ملی</label>
-                    <input type="text" class="form-control" id="nationalCode" name="national_code" maxlength="10" required>
+                    <label for="national_code">کد ملی</label>
+                    <input type="text" id="national_code" name="national_code" pattern="[0-9]{10}" maxlength="10">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">تاریخ تولد (YYYY-MM-DD)</label>
-                    <input type="date" class="form-control" id="birthDate" name="birth_date">
+                    <label for="birth_date">تاریخ تولد</label>
+                    <input type="date" id="birth_date" name="birth_date">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">جنسیت</label>
-                    <select class="form-control" id="gender" name="gender">
+                    <label for="gender">جنسیت</label>
+                    <select id="gender" name="gender">
                         <option value="">انتخاب کنید</option>
-                        <option value="M">مرد</option>
-                        <option value="F">زن</option>
+                        <option value="male">مرد</option>
+                        <option value="female">زن</option>
+                        <option value="other">سایر</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">مدرسه</label>
-                    <select class="form-control" id="school" name="school">
-                        <option value="">در حال بارگذاری...</option>
+                    <label for="school">مدرسه</label>
+                    <select id="school" name="school">
+                        <option value="">انتخاب کنید</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">مسجد</label>
-                    <select class="form-control" id="mosque" name="mosque">
-                        <option value="">در حال بارگذاری...</option>
+                    <label for="mosque">مسجد</label>
+                    <select id="mosque" name="mosque">
+                        <option value="">انتخاب کنید</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">شهر</label>
-                    <input type="text" class="form-control" id="city" name="city">
+                    <label for="city">شهر</label>
+                    <input type="text" id="city" name="city">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">استان</label>
-                    <input type="text" class="form-control" id="province" name="province">
+                    <label for="province">استان</label>
+                    <input type="text" id="province" name="province">
                 </div>
             </div>
-            <div class="action-buttons">
-                <button type="submit" class="btn btn-primary">💾 ذخیره تغییرات</button>
-                <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">❌ انصراف</button>
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" id="cancel-edit">انصراف</button>
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i>
+                    ذخیره تغییرات
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    const API_BASE = '/api';
-    let currentProfile = null;
-
+document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
-    function checkAuth() {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            window.location.href = '/login/';
-            return false;
-        }
-        return token;
+    const accessToken = localStorage.getItem('access_token');
+    const userType = localStorage.getItem('user_type');
+    
+    if (!accessToken || userType !== 'user') {
+        window.location.href = '/login/';
+        return;
     }
 
-    // Load profile data
-    async function loadProfile() {
-        const token = checkAuth();
-        if (!token) return;
+    // DOM elements
+    const messageContainer = document.getElementById('message-container');
+    const statsSection = document.getElementById('stats-section');
+    const profileInfo = document.getElementById('profile-info');
+    const toggleEditBtn = document.getElementById('toggle-edit');
+    const editSection = document.getElementById('edit-section');
+    const profileEditForm = document.getElementById('profile-edit-form');
+    const cancelEditBtn = document.getElementById('cancel-edit');
+    const schoolSelect = document.getElementById('school');
+    const mosqueSelect = document.getElementById('mosque');
 
+    // Show message
+    function showMessage(text, type = 'success') {
+        const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        messageContainer.innerHTML = `
+            <div class="message ${type}">
+                <i class="fas ${icon}"></i>
+                <span>${text}</span>
+            </div>
+        `;
+        setTimeout(() => {
+            messageContainer.innerHTML = '';
+        }, 5000);
+    }
+
+    // Load select options
+    async function loadSelect(url, selectElement) {
         try {
-            const response = await fetch(`${API_BASE}/accounts/profile/me/`, {
+            const response = await fetch(url, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+            const data = await response.json();
+            const items = data.results || data;
+            
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                selectElement.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading select:', error);
+        }
+    }
+
+    // Render stats
+    function renderStats(profile) {
+        const stats = [
+            {
+                icon: 'fa-trophy',
+                label: 'امتیاز کل',
+                value: profile.total_points || 0,
+                color: 'purple'
+            },
+            {
+                icon: 'fa-wallet',
+                label: 'موجودی کیف پول',
+                value: `${profile.wallet_balance || 0} تومان`,
+                color: 'gold'
+            },
+            {
+                icon: 'fa-medal',
+                label: 'رتبه فعلی',
+                value: profile.current_rank ? `
+                    <span class="rank-badge">
+                        <span class="rank-dot" style="background-color: ${profile.current_rank.color}"></span>
+                        ${profile.current_rank.name}
+                    </span>
+                ` : '-',
+                color: 'green'
+            },
+            {
+                icon: 'fa-calendar-check',
+                label: 'تاریخ عضویت',
+                value: profile.date_joined ? new Date(profile.date_joined).toLocaleDateString('fa-IR') : '-',
+                color: 'purple'
+            }
+        ];
+
+        statsSection.innerHTML = stats.map(stat => `
+            <div class="stat-card">
+                <div class="stat-icon ${stat.color}">
+                    <i class="fas ${stat.icon}"></i>
+                </div>
+                <div class="stat-label">${stat.label}</div>
+                <div class="stat-value">${stat.value}</div>
+            </div>
+        `).join('');
+    }
+
+    // Render profile info
+    function renderProfile(profile) {
+        const genderMap = {
+            'male': 'مرد',
+            'female': 'زن',
+            'other': 'سایر'
+        };
+
+        const fields = [
+            { label: 'نام و نام خانوادگی', value: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || '-' },
+            { label: 'شماره تماس', value: profile.phone_number || '-' },
+            { label: 'کد ملی', value: profile.national_code || '-' },
+            { label: 'تاریخ تولد', value: profile.birth_date || '-' },
+            { label: 'جنسیت', value: genderMap[profile.gender] || '-' },
+            { label: 'مدرسه', value: profile.school_name || '-' },
+            { label: 'مسجد', value: profile.mosque_name || '-' },
+            { label: 'شهر', value: profile.city || '-' },
+            { label: 'استان', value: profile.province || '-' }
+        ];
+
+        profileInfo.innerHTML = fields.map(field => `
+            <div class="info-item">
+                <div class="info-label">${field.label}</div>
+                <div class="info-value">${field.value}</div>
+            </div>
+        `).join('');
+
+        renderStats(profile);
+    }
+
+    // Fill form
+    function fillForm(profile) {
+        document.getElementById('first_name').value = profile.first_name || '';
+        document.getElementById('last_name').value = profile.last_name || '';
+        document.getElementById('national_code').value = profile.national_code || '';
+        document.getElementById('birth_date').value = profile.birth_date || '';
+        document.getElementById('gender').value = profile.gender || '';
+        document.getElementById('city').value = profile.city || '';
+        document.getElementById('province').value = profile.province || '';
+        
+        if (profile.school) {
+            document.getElementById('school').value = profile.school;
+        }
+        if (profile.mosque) {
+            document.getElementById('mosque').value = profile.mosque;
+        }
+    }
+
+    // Load profile
+    async function loadProfile() {
+        try {
+            const response = await fetch('/api/accounts/profile/me/', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
                 }
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('access_token');
-                    window.location.href = '/login/';
-                    return;
-                }
-                throw new Error('خطا در دریافت اطلاعات');
+                throw new Error('Failed to load profile');
             }
 
-            currentProfile = await response.json();
-            displayProfile(currentProfile);
+            const data = await response.json();
+            renderProfile(data);
+            fillForm(data);
         } catch (error) {
+            showMessage('خطا در دریافت اطلاعات پروفایل', 'error');
             console.error('Error loading profile:', error);
-            alert('خطا در بارگذاری اطلاعات پروفایل');
         }
     }
 
-    // Display profile data
-    function displayProfile(data) {
-        // Header
-        const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'کاربر';
-        document.getElementById('profileName').textContent = fullName;
-        document.getElementById('profileUsername').textContent = `@${data.username || 'user'}`;
-        document.getElementById('profileAvatar').textContent = (data.first_name || 'ک')[0];
-
-        // Stats
-        document.getElementById('userScore').textContent = data.score || 0;
-        document.getElementById('userWallet').textContent = data.wallet || 0;
-        document.getElementById('userRank').textContent = data.rank || '-';
-
-        // Info fields
-        document.getElementById('viewFirstName').textContent = data.first_name || '-';
-        document.getElementById('viewLastName').textContent = data.last_name || '-';
-        document.getElementById('viewNationalCode').textContent = data.national_code || '-';
-        document.getElementById('viewBirthDate').textContent = data.birth_date || '-';
-        document.getElementById('viewGender').textContent = data.gender === 'M' ? 'مرد' : data.gender === 'F' ? 'زن' : '-';
-        document.getElementById('viewSchool').textContent = data.school_name || '-';
-        document.getElementById('viewMosque').textContent = data.mosque_name || '-';
-        document.getElementById('viewCity').textContent = data.city || '-';
-        document.getElementById('viewProvince').textContent = data.province || '-';
-
-        // Fill form fields
-        document.getElementById('firstName').value = data.first_name || '';
-        document.getElementById('lastName').value = data.last_name || '';
-        document.getElementById('nationalCode').value = data.national_code || '';
-        document.getElementById('birthDate').value = data.birth_date || '';
-        document.getElementById('gender').value = data.gender || '';
-        document.getElementById('city').value = data.city || '';
-        document.getElementById('province').value = data.province || '';
-    }
-
-    // Load schools
-    async function loadSchools() {
-        const token = checkAuth();
-        if (!token) return;
-
-        try {
-            const response = await fetch(`${API_BASE}/accounts/schools/`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const schools = await response.json();
-                const select = document.getElementById('school');
-                select.innerHTML = '<option value="">انتخاب کنید</option>';
-                schools.forEach(school => {
-                    const option = document.createElement('option');
-                    option.value = school.id;
-                    option.textContent = school.name;
-                    if (currentProfile && currentProfile.school === school.id) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading schools:', error);
+    // Toggle edit section
+    toggleEditBtn.addEventListener('click', function() {
+        editSection.classList.toggle('active');
+        if (editSection.classList.contains('active')) {
+            toggleEditBtn.innerHTML = '<i class="fas fa-times"></i> بستن ویرایش';
+            editSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
         }
-    }
+    });
 
-    // Load mosques
-    async function loadMosques() {
-        const token = checkAuth();
-        if (!token) return;
+    cancelEditBtn.addEventListener('click', function() {
+        editSection.classList.remove('active');
+        toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
+    });
 
-        try {
-            const response = await fetch(`${API_BASE}/accounts/mosques/`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const mosques = await response.json();
-                const select = document.getElementById('mosque');
-                select.innerHTML = '<option value="">انتخاب کنید</option>';
-                mosques.forEach(mosque => {
-                    const option = document.createElement('option');
-                    option.value = mosque.id;
-                    option.textContent = mosque.name;
-                    if (currentProfile && currentProfile.mosque === mosque.id) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading mosques:', error);
-        }
-    }
-
-    // Toggle edit mode
-    function toggleEditMode() {
-        const viewSection = document.getElementById('viewSection');
-        const editSection = document.getElementById('editSection');
-        
-        viewSection.classList.toggle('hidden');
-        editSection.classList.toggle('hidden');
-
-        if (!editSection.classList.contains('hidden')) {
-            loadSchools();
-            loadMosques();
-        }
-    }
-
-    // Handle form submission
-    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    // Submit form
+    profileEditForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
-        const token = checkAuth();
-        if (!token) return;
 
         const formData = {
-            first_name: document.getElementById('firstName').value,
-            last_name: document.getElementById('lastName').value,
-            national_code: document.getElementById('nationalCode').value,
-            birth_date: document.getElementById('birthDate').value || null,
-            gender: document.getElementById('gender').value || null,
+            first_name: document.getElementById('first_name').value,
+            last_name: document.getElementById('last_name').value,
+            national_code: document.getElementById('national_code').value,
+            birth_date: document.getElementById('birth_date').value,
+            gender: document.getElementById('gender').value,
             school: document.getElementById('school').value || null,
             mosque: document.getElementById('mosque').value || null,
-            city: document.getElementById('city').value || null,
-            province: document.getElementById('province').value || null
+            city: document.getElementById('city').value,
+            province: document.getElementById('province').value
         };
 
         try {
-            const response = await fetch(`${API_BASE}/accounts/profile/me/`, {
+            const response = await fetch('/api/accounts/profile/me/', {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
                 },
-                body: JSON.stringify(form
+                body: JSON.stringify(formData)
             });
 
             if (!response.ok) {
-                throw new Error('خطا در ذخیره اطلاعات');
+                const errorData = await response.json();
+                const errorMsg = errorData.detail || Object.values(errorData).flat().join(', ') || 'خطا در ویرایش پروفایل';
+                throw new Error(errorMsg);
             }
 
-            alert('✅ اطلاعات با موفقیت ذخیره شد');
-            await loadProfile();
-            toggleEditMode();
+            const data = await response.json();
+            showMessage('تغییرات با موفقیت ذخیره شد', 'success');
+            renderProfile(data);
+            fillForm(data);
+            editSection.classList.remove('active');
+            toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
         } catch (error) {
+            showMessage(error.message, 'error');
             console.error('Error updating profile:', error);
-            alert('❌ خطا در ذخیره اطلاعات');
         }
     });
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        loadProfile();
-    });
+    // Initialize
+    loadSelect('/api/geography/schools/', schoolSelect);
+    loadSelect('/api/geography/mosques/', mosqueSelect);
+    loadProfile();
+});
 </script>
 {% endblock %}
