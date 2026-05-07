@@ -53,16 +53,21 @@
         <div class="profile-header">
             <div class="profile-avatar">👤</div>
             <div>
-                <h2 class="profile-name">کاربر عزیز، خوش آمدید</h2>
-                <p class="text-purple" style="margin-top: 0.5rem;">رتبه فعلی شما در کل مسابقات: ۴۲</p>
+                <h2 class="profile-name">{{ user.get_full_name|default:"کاربر عزیز" }}, خوش آمدید</h2>
+                <p class="text-purple" style="margin-top: 0.5rem;">
+                    {% if user.current_rank %}
+                        رتبه فعلی شما: {{ user.current_rank.name }} | 
+                    {% endif %}
+                    رتبه در کل مسابقات: {{ user_rank }}
+                </p>
             </div>
             <div class="profile-stats" style="margin-right: auto;">
                 <div class="stat-item">
-                    <div class="stat-value">۲۴</div>
-                    <div class="stat-label">مسابقه</div>
+                    <div class="stat-value">{{ user_competitions_count }}</div>
+                    <div class="stat-label">مسیر مطالعاتی</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value text-gold user-points">1250</div>
+                    <div class="stat-value text-gold user-points">{{ user.total_points }}</div>
                     <div class="stat-label">امتیاز کل</div>
                 </div>
             </div>
@@ -79,7 +84,17 @@
     <section class="container mb-5">
         <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">جدول امتیازات</h2>
         <div class="leaderboard-list">
-            <!-- Filled by main.js -->
+            {% for u in leaderboard %}
+            <div class="leaderboard-item glass-card {% if user.id == u.id %}leaderboard-item-current{% endif %}">
+                <div class="leaderboard-rank">{{ forloop.counter }}</div>
+                <span>{{ u.get_full_name|default:u.phone_number }}</span>
+                <span class="text-gold">{{ u.total_points }} امتیاز</span>
+            </div>
+            {% empty %}
+            <div class="glass-card" style="padding: 3rem; text-align: center;">
+                <p style="color: var(--text-muted);">هنوز کاربری ثبت‌نام نکرده است.</p>
+            </div>
+            {% endfor %}
         </div>
     </section>
 {% endblock %}

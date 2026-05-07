@@ -331,14 +331,14 @@ function initSmoothScroll() {
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    initializeStorage();
-    updatePointsDisplay();
+    // initializeStorage(); // Disabled - we use Django backend now
+    // updatePointsDisplay(); // Disabled - points are rendered by Django template
     initMobileMenu();
     initActiveNav();
     initSmoothScroll();
-    loadLeaderboard();
+    // loadLeaderboard(); // Disabled - leaderboard is rendered by Django template
     loadShop();
-    loadProfile();
+    // loadProfile(); // Disabled - profile is rendered by Django template
     initQuiz();
     
     // Add Font Awesome if not present

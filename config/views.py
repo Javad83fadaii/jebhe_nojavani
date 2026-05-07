@@ -20,12 +20,49 @@ def home(request):
     if guest_redirect:
         return guest_redirect
 
+    user = request.user
+
+    # محاسبه رتبه کاربر در کل سیستم
+    user_rank = 0
+    leaderboard = None
+    if user.is_authenticated:
+        # دریافت جدول رده‌بندی (۱۰ نفر برتر)
+        leaderboard = (
+            user.__class__.objects.filter(is_active=True)
+            .order_by("-total_points", "-date_joined")
+            .select_related("current_rank")
+        )[:10]
+
+        # محاسبه رتبه کاربر
+        for idx, u in enumerate(leaderboard, 1):
+            if u.id == user.id:
+                user_rank = idx
+                break
+
+        # اگر کاربر در ۱۰ نفر برتر نبود، رتبه را محاسبه کنیم
+        if user_rank == 0:
+            user_rank = (
+                user.__class__.objects.filter(
+                    is_active=True,
+                    total_points__gt=user.total_points
+                ).count() + 1
+            )
+
+    # تعداد مسابقات/مسیرهای یادگیری که کاربر در آن شرکت کرده
+    user_competitions_count = 0
+    if user.is_authenticated:
+        user_competitions_count = user.learning_progresses.count()
+
     return render(
         request,
         "home.html",
         {
             "page_name": "home",
             "page_title": "جبهه نوجوانی | شروع تغییر",
+            "user": user,
+            "leaderboard": leaderboard,
+            "user_rank": user_rank,
+            "user_competitions_count": user_competitions_count,
         },
     )
 

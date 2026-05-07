@@ -438,6 +438,12 @@ body::after {
     border-color: rgba(255, 255, 255, 0.2);
 }
 
+.leaderboard-item-current {
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.15), rgba(108, 63, 197, 0.15));
+    border: 1px solid rgba(245, 166, 35, 0.4);
+    box-shadow: 0 0 20px rgba(245, 166, 35, 0.2);
+}
+
 .leaderboard-rank {
     width: 35px;
     height: 35px;
