@@ -60,10 +60,14 @@ class Rank(TimestampedModel):
     def save(self, *args, **kwargs):
         if self.min_points is None:
             self.min_points = (self.level - 1) * self.POINTS_PER_LEVEL
-        if self.max_points is None and self.level < len(self.DEFAULT_RANKS):
+        
+        total_default = len(self.DEFAULT_RANKS)
+        if self.max_points is None and self.level < total_default:
             self.max_points = (self.level * self.POINTS_PER_LEVEL) - 1
-        if self.level >= len(self.DEFAULT_RANKS):
+        
+        if self.level >= total_default:
             self.max_points = None
+            
         super().save(*args, **kwargs)
 
     @classmethod

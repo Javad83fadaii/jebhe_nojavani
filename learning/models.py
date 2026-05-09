@@ -97,6 +97,7 @@ class LearningStage(TimestampedModel):
     content_link_or_file = models.CharField(max_length=500, blank=True, verbose_name="لینک یا فایل محتوا")
     estimated_study_time = models.PositiveSmallIntegerField(default=0, verbose_name="مدت زمان تقریبی مطالعه (دقیقه)")
     description = models.TextField(blank=True, verbose_name="توضیحات مرحله")
+    required_points = models.PositiveIntegerField(default=0, verbose_name="امتیاز مورد نیاز برای باز شدن")
     stage_points = models.PositiveIntegerField(default=100, verbose_name="امتیاز مرحله")
     min_passing_score = models.PositiveSmallIntegerField(
         default=14, validators=[MinValueValidator(0), MaxValueValidator(20)], verbose_name="حداقل نمره قبولی آزمون"
@@ -218,10 +219,10 @@ class UserLearningProgress(TimestampedModel):
             for stage_progress in self.stage_progress.select_related("learning_stage")
         }
 
-        first_open_stage_progress = None
         completed_count = 0
+        user_points = getattr(self.user, "total_points", 0)
 
-        for stage in ordered_stages:
+        for i, stage in enumerate(ordered_stages):
             user_stage_progress = existing_progresses.get(stage.pk)
             if user_stage_progress is None:
                 user_stage_progress = UserStageProgress.objects.create(
@@ -236,14 +237,34 @@ class UserLearningProgress(TimestampedModel):
                 completed_count += 1
                 continue
 
-            if first_open_stage_progress is None:
-                first_open_stage_progress = user_stage_progress
+            # Logic to unlock stages:
+            # 1. It's the first stage of the path
+            # 2. OR the previous stage was passed
+            # 3. OR the user has enough points for this specific stage
+            
+            should_unlock = False
+            if i == 0: # First stage
+                should_unlock = True
+            else:
+                prev_stage = ordered_stages[i-1]
+                prev_progress = existing_progresses.get(prev_stage.pk)
+                if prev_progress and prev_progress.status == UserStageProgress.StageStatus.PASSED:
+                    should_unlock = True
+                elif user_points >= stage.required_points:
+                    should_unlock = True
 
-        if first_open_stage_progress and first_open_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
-            first_open_stage_progress.unlock()
+            if should_unlock and user_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
+                user_stage_progress.unlock()
 
         self.completed_stages_count = completed_count
-        self.current_stage = first_open_stage_progress.learning_stage if first_open_stage_progress else None
+        # Find the first non-passed stage to be the 'current' stage
+        self.current_stage = None
+        for stage in ordered_stages:
+            progress = existing_progresses.get(stage.pk)
+            if progress and progress.status != UserStageProgress.StageStatus.PASSED:
+                self.current_stage = stage
+                break
+        
         total_stage_count = len(ordered_stages)
         if total_stage_count:
             self.progress_percentage = (
@@ -251,13 +272,12 @@ class UserLearningProgress(TimestampedModel):
             ) * Decimal("100.00")
         else:
             self.progress_percentage = Decimal("0.00")
-        self.save(
-            update_fields=[
-                "completed_stages_count",
-                "current_stage",
-                "progress_percentage",
-                "updated_at",
-            ]
+        
+        self.__class__.objects.filter(pk=self.pk).update(
+            completed_stages_count=completed_count,
+            current_stage=self.current_stage,
+            progress_percentage=self.progress_percentage,
+            updated_at=timezone.now(),
         )
         return existing_progresses
 

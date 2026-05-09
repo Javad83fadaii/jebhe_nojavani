@@ -445,7 +445,11 @@
                             {% endif %}
                         {% else %}
                             <button class="btn-rank btn-rank-secondary" disabled>
-                                <i class="fa-solid fa-clock"></i> به زودی
+                                {% if data.is_unlocked %}
+                                    <i class="fa-solid fa-triangle-exclamation"></i> سیر این درجه تعریف نشده
+                                {% else %}
+                                    <i class="fa-solid fa-clock"></i> به زودی
+                                {% endif %}
                             </button>
                         {% endif %}
                     </div>
