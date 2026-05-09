@@ -13,7 +13,7 @@
             <p style="margin-bottom: 0.5rem;"><strong>سطح دشواری:</strong> {{ challenge.get_difficulty_display }}</p>
             <p style="margin-bottom: 0.5rem;"><strong>تعداد مراحل:</strong> {{ challenge.stages.count }}</p>
             <p style="margin-bottom: 1rem;"><strong>وضعیت انتشار:</strong> {{ challenge.get_publish_status_display }}</p>
-            <a href="{% url 'learning:learning_path_detail' pk=challenge.pk %}" class="btn btn-primary">مشاهده سیر مطالعاتی</a>
+            <a href="{% url 'learning:learning_path_stages' pk=challenge.pk %}" class="btn btn-primary">مشاهده سیر مطالعاتی</a>
         </div>
     </main>
 {% endblock %}

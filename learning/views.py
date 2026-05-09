@@ -2,8 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
-from django.utils import timezone
+from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, View
 
 from accounts.models import Rank
@@ -36,44 +35,11 @@ def _get_active_rank_for_points(points, ranks):
     return active_rank
 
 
-class LearningPathListView(LoginRequiredMixin, ListView):
+class LearningPathStagesView(LoginRequiredMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = LearningPath
-    template_name = "learning/learning_path_list.html"
-    context_object_name = "learning_paths"
-    queryset = LearningPath.objects.filter(publish_status=LearningPath.PublishStatus.PUBLISHED).select_related(
-        "rank"
-    ).order_by("rank__min_points", "display_order", "title")
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        user_points = user.total_points if user.is_authenticated else 0
-        path_cards = []
-
-        for learning_path in context["learning_paths"]:
-            can_access = learning_path.can_user_access(user)
-            path_cards.append(
-                {
-                    "path": learning_path,
-                    "can_access": can_access,
-                    "is_locked": not can_access,
-                    "required_points": learning_path.get_unlock_points(),
-                    "points_shortage": max(learning_path.get_unlock_points() - user_points, 0),
-                }
-            )
-
-        context["user_points"] = user_points
-        context["path_cards"] = path_cards
-        return context
-
-
-class LearningPathDetailView(LoginRequiredMixin, DetailView):
-    login_url = reverse_lazy("index")
-    redirect_field_name = None
-    model = LearningPath
-    template_name = "learning/learning_path_detail.html"
+    template_name = "learning/learning_path_stages.html"
     context_object_name = "learning_path"
 
     def get_queryset(self):
@@ -90,8 +56,10 @@ class LearningPathDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         learning_path = self.get_object()
+        learning_path.sync_totals()
+        context["stages"] = learning_path.get_active_stages()
         context["user_progress"] = None
-        context["user_stage_progresses_map"] = {} # Map stage_pk to user_stage_progress object
+        context["user_stage_progresses_map"] = {}
         context["required_points"] = learning_path.get_unlock_points()
 
         if self.request.user.is_authenticated:
@@ -101,11 +69,11 @@ class LearningPathDetailView(LoginRequiredMixin, DetailView):
             context["user_progress"] = user_progress
 
             if user_progress:
+                user_progress.sync_stage_progresses()
                 user_stage_progresses = UserStageProgress.objects.filter(
                     user_learning_progress=user_progress
-                ).select_related('learning_stage') # Eager load related stage
-                
-                # Create a map for quick lookup
+                ).select_related("learning_stage")
+
                 context["user_stage_progresses_map"] = {
                     usp.learning_stage.pk: usp for usp in user_stage_progresses
                 }
@@ -131,7 +99,7 @@ def enroll_in_learning_path(request, pk):
         return redirect("learning:user_learning_progress_detail", pk=user_progress.pk)
 
     messages.error(request, "درخواست نامعتبر.")
-    return redirect("learning:learning_path_detail", pk=pk)
+    return redirect("learning:learning_path_stages", pk=pk)
 
 
 class UserLearningProgressDetailView(LoginRequiredMixin, DetailView):
@@ -165,7 +133,8 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         # Ensure the stage belongs to a published learning path
         return LearningStage.objects.filter(
-            learning_path__publish_status=LearningPath.PublishStatus.PUBLISHED
+            learning_path__publish_status=LearningPath.PublishStatus.PUBLISHED,
+            is_active=True,
         ).select_related("learning_path", "learning_path__rank")
 
     def dispatch(self, request, *args, **kwargs):
@@ -180,6 +149,12 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
 
         if user.is_authenticated:
+            user_progress = UserLearningProgress.objects.filter(
+                user=user,
+                learning_path=learning_stage.learning_path,
+            ).first()
+            if user_progress:
+                user_progress.sync_stage_progresses()
             user_stage_progress = UserStageProgress.objects.filter(
                 user=user,
                 learning_stage=learning_stage,

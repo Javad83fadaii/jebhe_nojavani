@@ -37,6 +37,7 @@ class Rank(TimestampedModel):
         (10, "ارشد 3"),
         (11, "ارشد 2"),
         (12, "ارشد 1"),
+        (13, "مدال جبهه"),
     )
 
     name = models.CharField(max_length=50, unique=True)
@@ -68,18 +69,15 @@ class Rank(TimestampedModel):
     @classmethod
     def get_rank_for_points(cls, points: int | None) -> Rank | None:
         normalized_points = max(points or 0, 0)
-        active_rank = None
-        for rank in cls.objects.order_by("level"):
-            if rank.is_unlocked_for_points(normalized_points):
-                active_rank = rank
-            else:
-                break
-        return active_rank
+        return (
+            cls.objects.filter(min_points__lte=normalized_points)
+            .filter(models.Q(max_points__isnull=True) | models.Q(max_points__gte=normalized_points))
+            .order_by("level")
+            .last()
+        )
 
     def get_unlock_points(self) -> int:
-        if self.level <= 1:
-            return 0
-        return max((self.min_points or 0) - 1, 0)
+        return max(self.min_points or 0, 0)
 
     def is_unlocked_for_points(self, points: int | None) -> bool:
         normalized_points = max(points or 0, 0)
@@ -296,6 +294,8 @@ class User(AbstractBaseUser, PermissionsMixin):
                 "status": UserLearningProgress.ProgressStatus.IN_PROGRESS,
             },
         )
+        user_progress.learning_path.sync_totals()
+        user_progress.sync_stage_progresses()
         return user_progress
 
     def get_learning_paths(self):

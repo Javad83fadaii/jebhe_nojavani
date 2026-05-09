@@ -29,6 +29,8 @@ html, body {
     --rank-officer-glow: rgba(0, 229, 255, 0.3);
     --rank-senior: #ffd700;
     --rank-senior-glow: rgba(255, 215, 0, 0.3);
+    --rank-medal: #ff7b54;
+    --rank-medal-glow: rgba(255, 123, 84, 0.3);
 
     --dark-bg: #0b0716;
     --text-main: #ffffff;
@@ -347,6 +349,18 @@ body {
     box-shadow: 0 0 15px var(--rank-senior-glow);
 }
 
+.type-medal {
+    border-bottom: 3px solid var(--rank-medal);
+}
+.type-medal:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px var(--rank-medal-glow);
+}
+.type-medal .rank-icon {
+    color: var(--rank-medal);
+    border-color: var(--rank-medal);
+    box-shadow: 0 0 15px var(--rank-medal-glow);
+}
+
 .rank-icon {
     width: 60px;
     height: 60px;
@@ -546,72 +560,30 @@ Ranks & Levels Section (1000 points per rank)
 <section class="ranks-section">
     <div class="container">
         <h2 class="section-title-new">سلسله مراتب و <span class="gradient-text">درجه‌بندی‌ها</span></h2>
-        <p class="section-intro-new">با کسب تجربه و انجام چالش‌ها، امتیاز جمع کن و از سطح افسر تا بالاترین درجات ارشد ارتقا پیدا کن.</p>
+        <p class="section-intro-new">با کسب تجربه و انجام چالش‌ها، امتیاز جمع کن و از افسر ۶ تا ارشد ۱ و در نهایت مدال جبهه ارتقا پیدا کن.</p>
         
         <div class="ranks-grid">
-            <!-- رده افسران (۶ تا ۱) -->
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-solid fa-chevron-up"></i></div>
-                <h3 class="rank-title">افسر ۶</h3>
-                <span class="rank-points">۰ - ۱,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-solid fa-angles-up"></i></div>
-                <h3 class="rank-title">افسر ۵</h3>
-                <span class="rank-points">۱,۰۰۰ - ۲,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-solid fa-layer-group"></i></div>
-                <h3 class="rank-title">افسر ۴</h3>
-                <span class="rank-points">۲,۰۰۰ - ۳,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-regular fa-star"></i></div>
-                <h3 class="rank-title">افسر ۳</h3>
-                <span class="rank-points">۳,۰۰۰ - ۴,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-solid fa-star-half-stroke"></i></div>
-                <h3 class="rank-title">افسر ۲</h3>
-                <span class="rank-points">۴,۰۰۰ - ۵,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-officer">
-                <div class="rank-icon"><i class="fa-solid fa-star"></i></div>
-                <h3 class="rank-title">افسر ۱</h3>
-                <span class="rank-points">۵,۰۰۰ - ۶,۰۰۰ امتیاز</span>
-            </div>
-
-            <!-- رده ارشدها (۶ تا ۱) -->
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                <h3 class="rank-title">ارشد ۶</h3>
-                <span class="rank-points">۶,۰۰۰ - ۷,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-shield-cat"></i></div>
-                <h3 class="rank-title">ارشد ۵</h3>
-                <span class="rank-points">۷,۰۰۰ - ۸,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-medal"></i></div>
-                <h3 class="rank-title">ارشد ۴</h3>
-                <span class="rank-points">۸,۰۰۰ - ۹,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-award"></i></div>
-                <h3 class="rank-title">ارشد ۳</h3>
-                <span class="rank-points">۹,۰۰۰ - ۱۰,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-gem"></i></div>
-                <h3 class="rank-title">ارشد ۲</h3>
-                <span class="rank-points">۱۰,۰۰۰ - ۱۱,۰۰۰ امتیاز</span>
-            </div>
-            <div class="rank-card glass-card type-senior">
-                <div class="rank-icon"><i class="fa-solid fa-crown"></i></div>
-                <h3 class="rank-title">ارشد ۱</h3>
-                <span class="rank-points">۱۱,۰۰۰ - ۱۲,۰۰۰ امتیاز</span>
-            </div>
+            {% for rank in ranks %}
+                <div class="rank-card glass-card {% if 'افسر' in rank.name %}type-officer{% elif 'ارشد' in rank.name %}type-senior{% else %}type-medal{% endif %}">
+                    <div class="rank-icon">
+                        {% if 'افسر' in rank.name %}
+                            <i class="fa-solid fa-shield"></i>
+                        {% elif 'ارشد' in rank.name %}
+                            <i class="fa-solid fa-award"></i>
+                        {% else %}
+                            <i class="fa-solid fa-medal"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="rank-title">{{ rank.name }}</h3>
+                    <span class="rank-points">
+                        {% if rank.max_points is None %}
+                            از {{ rank.min_points }} امتیاز به بالا
+                        {% else %}
+                            {{ rank.min_points }} تا {{ rank.max_points }} امتیاز
+                        {% endif %}
+                    </span>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </section>

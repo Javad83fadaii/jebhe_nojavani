@@ -2,6 +2,7 @@ from django.contrib.auth import logout as auth_logout
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 
+from accounts.models import Rank
 from learning.models import LearningPath, LearningStage
 from challenges.models import Challenge, ChallengeParticipation
 from django.utils import timezone
@@ -242,7 +243,8 @@ def index_view(request):
         
     context = {
         'page_title': 'جبهه نوجوانی | صفحه اصلی',
-        'page_name': 'index'
+        'page_name': 'index',
+        'ranks': Rank.objects.order_by('level'),
     }
     return render(request, 'index.html', context)
 

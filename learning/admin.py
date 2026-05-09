@@ -96,7 +96,9 @@ class LearningPathAdmin(admin.ModelAdmin):
         "updated_at",
     )
     list_filter = ("rank", "difficulty", "publish_status")
+    list_select_related = ("rank",)
     search_fields = ("title", "description")
+    autocomplete_fields = ("rank",)
     inlines = [LearningStageInline]
     readonly_fields = ("total_stages", "total_points", "created_at", "updated_at")
 

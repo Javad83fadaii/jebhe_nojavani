@@ -60,6 +60,19 @@ class LearningPath(TimestampedModel):
             return 0
         return self.rank.get_unlock_points()
 
+    def get_active_stages(self):
+        return self.stages.filter(is_active=True).order_by("stage_number")
+
+    def sync_totals(self, *, save: bool = True):
+        active_stages = self.get_active_stages()
+        self.total_stages = active_stages.count()
+        self.total_points = active_stages.aggregate(
+            summed_points=models.Sum("stage_points")
+        )["summed_points"] or 0
+        if save:
+            self.save(update_fields=["total_stages", "total_points", "updated_at"])
+        return self.total_stages, self.total_points
+
     def can_user_access(self, user) -> bool:
         if not self.rank_id:
             return True
@@ -182,10 +195,9 @@ class UserLearningProgress(TimestampedModel):
         return f"{self.user.get_full_name()} - {self.learning_path.title} ({self.get_status_display()})"
 
     def get_current_stage(self) -> LearningStage | None:
-        if self.current_stage:
+        if self.current_stage and self.current_stage.is_active:
             return self.current_stage
-        # If no current stage is set, try to find the first one
-        first_stage = self.learning_path.stages.order_by("stage_number").first()
+        first_stage = self.learning_path.get_active_stages().first()
         if first_stage:
             self.current_stage = first_stage
             self.save(update_fields=["current_stage", "updated_at"])
@@ -193,10 +205,61 @@ class UserLearningProgress(TimestampedModel):
 
     def get_next_stage(self) -> LearningStage | None:
         if not self.current_stage:
-            return self.learning_path.stages.order_by("stage_number").first()
+            return self.learning_path.get_active_stages().first()
 
-        next_stage_number = self.current_stage.stage_number + 1
-        return self.learning_path.stages.filter(stage_number=next_stage_number).first()
+        return self.learning_path.get_active_stages().filter(
+            stage_number__gt=self.current_stage.stage_number
+        ).first()
+
+    def sync_stage_progresses(self):
+        ordered_stages = list(self.learning_path.get_active_stages())
+        existing_progresses = {
+            stage_progress.learning_stage_id: stage_progress
+            for stage_progress in self.stage_progress.select_related("learning_stage")
+        }
+
+        first_open_stage_progress = None
+        completed_count = 0
+
+        for stage in ordered_stages:
+            user_stage_progress = existing_progresses.get(stage.pk)
+            if user_stage_progress is None:
+                user_stage_progress = UserStageProgress.objects.create(
+                    user=self.user,
+                    learning_stage=stage,
+                    user_learning_progress=self,
+                    status=UserStageProgress.StageStatus.LOCKED,
+                )
+                existing_progresses[stage.pk] = user_stage_progress
+
+            if user_stage_progress.status == UserStageProgress.StageStatus.PASSED:
+                completed_count += 1
+                continue
+
+            if first_open_stage_progress is None:
+                first_open_stage_progress = user_stage_progress
+
+        if first_open_stage_progress and first_open_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
+            first_open_stage_progress.unlock()
+
+        self.completed_stages_count = completed_count
+        self.current_stage = first_open_stage_progress.learning_stage if first_open_stage_progress else None
+        total_stage_count = len(ordered_stages)
+        if total_stage_count:
+            self.progress_percentage = (
+                Decimal(completed_count) / Decimal(total_stage_count)
+            ) * Decimal("100.00")
+        else:
+            self.progress_percentage = Decimal("0.00")
+        self.save(
+            update_fields=[
+                "completed_stages_count",
+                "current_stage",
+                "progress_percentage",
+                "updated_at",
+            ]
+        )
+        return existing_progresses
 
     def calculate_progress(self):
         if not self.learning_path.total_stages:
@@ -288,21 +351,51 @@ class UserStageProgress(TimestampedModel):
         index = (self.exam_attempts % len(question_sets))
         return question_sets[index]
 
+    def start_exam(self, question_set: StageQuestionSet):
+        if not self.can_take_exam():
+            raise ValidationError("شما قادر به شرکت در آزمون این مرحله نیستید.")
+
+        self.exam_attempts += 1
+        self.last_question_set_used = question_set
+        self.save(update_fields=["exam_attempts", "last_question_set_used", "updated_at"])
+
+        return UserStageExam.objects.create(
+            user=self.user,
+            user_stage_progress=self,
+            question_set=question_set,
+            attempt_number=self.exam_attempts,
+            status=UserStageExam.ExamStatus.IN_PROGRESS,
+        )
+
     def pass_stage(self, score: int):
+        from accounts.models import Rank
+
         if score >= self.learning_stage.min_passing_score:
-            self.status = self.StageStatus.PASSED
-            self.passed_at = timezone.now()
-            self.score_earned = self.learning_stage.stage_points
+            with transaction.atomic():
+                self.status = self.StageStatus.PASSED
+                self.passed_at = timezone.now()
+                self.score_earned = self.learning_stage.stage_points
 
-            self.user_learning_progress.completed_stages_count = F("completed_stages_count") + 1
-            self.user_learning_progress.total_score = F("total_score") + self.learning_stage.stage_points
-            self.user_learning_progress.save(update_fields=["completed_stages_count", "total_score", "updated_at"])
+                self.user_learning_progress.__class__.objects.filter(
+                    pk=self.user_learning_progress_id
+                ).update(
+                    completed_stages_count=F("completed_stages_count") + 1,
+                    total_score=F("total_score") + self.learning_stage.stage_points,
+                    updated_at=timezone.now(),
+                )
 
-            self.user.total_points = F("total_points") + self.learning_stage.stage_points
-            self.user.save(update_fields=["total_points", "updated_at"])
-            self.user.calculate_rank() # Recalculate rank
+                self.user.__class__.objects.filter(pk=self.user_id).update(
+                    total_points=F("total_points") + self.learning_stage.stage_points,
+                    updated_at=timezone.now(),
+                )
+                self.user.refresh_from_db(fields=["total_points"])
 
-            self.save(update_fields=["status", "passed_at", "score_earned", "updated_at"]) # To reflect current_stage update if any
+                self.user.__class__.objects.filter(pk=self.user_id).update(
+                    current_rank=Rank.get_rank_for_points(self.user.total_points),
+                    updated_at=timezone.now(),
+                )
+
+                self.save(update_fields=["status", "passed_at", "score_earned", "updated_at"])
         else:
             self.status = self.StageStatus.FAILED_PREVIOUSLY
             self.save(update_fields=["status", "updated_at"])

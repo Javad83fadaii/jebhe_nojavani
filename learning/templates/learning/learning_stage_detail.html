@@ -8,8 +8,8 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <nav style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
-                        <a href="{% url 'learning:learning_path_list' %}" style="color: var(--primary-purple);">سیرهای مطالعاتی</a> /
-                        <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" style="color: var(--primary-purple);">{{ learning_stage.learning_path.title }}</a> /
+                        <a href="{% url 'learning:rank_cards' %}" style="color: var(--primary-purple);">کارت‌های درجه</a> /
+                        <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" style="color: var(--primary-purple);">{{ learning_stage.learning_path.title }}</a> /
                         مرحله {{ learning_stage.stage_number }}
                     </nav>
                     <h1 class="text-gold" style="font-size: 2.5rem; margin-bottom: 0.5rem;">{{ learning_stage.title }}</h1>
@@ -105,7 +105,7 @@
                             <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #4CAF50; margin-bottom: 1rem;"></i>
                             <h3 style="color: #4CAF50; margin-bottom: 0.5rem;">تبریک! این مرحله با موفقیت تکمیل شد.</h3>
                             <p>نمره شما: {{ user_stage_progress.best_score }}</p>
-                            <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 1.5rem;">
+                            <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 1.5rem;">
                                 بازگشت به لیست مراحل
                             </a>
                         </div>
@@ -118,7 +118,7 @@
                     <p style="margin-top: 1rem; color: var(--text-muted);">
                         برای دسترسی به این مرحله، باید مراحل قبلی را با موفقیت پشت سر بگذارید.
                     </p>
-                    <a href="{% url 'learning:learning_path_detail' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 2rem;">
+                    <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 2rem;">
                         مشاهده نقشه مسیر
                     </a>
                 </div>

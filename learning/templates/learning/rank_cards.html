@@ -336,11 +336,6 @@
                 <span>{{ user_points }}</span>
                 <span>امتیاز کل شما</span>
             </div>
-            <div class="hero-actions">
-                <a href="{% url 'learning:learning_path_list' %}" class="btn-rank btn-rank-primary" style="max-width: 260px;">
-                    <i class="fa-solid fa-road"></i> مشاهده همه سیرها
-                </a>
-            </div>
             {% if user_current_rank %}
                 <div style="margin-top: 0.75rem; color: #F5A623; font-weight: 600;">
                     درجه فعلی شما: {{ user_current_rank.name }}
@@ -436,11 +431,11 @@
                     <div class="rank-actions">
                         {% if data.learning_path %}
                             {% if data.is_unlocked %}
-                                <a href="{% url 'learning:learning_path_detail' pk=data.learning_path.pk %}" class="btn-rank btn-rank-primary">
+                                <a href="{% url 'learning:learning_path_stages' pk=data.learning_path.pk %}" class="btn-rank btn-rank-primary">
                                     {% if data.is_completed %}
-                                        <i class="fa-solid fa-eye"></i> مشاهده
+                                        <i class="fa-solid fa-eye"></i> مشاهده مراحل
                                     {% else %}
-                                        <i class="fa-solid fa-play"></i> شروع
+                                        <i class="fa-solid fa-play"></i> ورود به مراحل
                                     {% endif %}
                                 </a>
                             {% else %}
