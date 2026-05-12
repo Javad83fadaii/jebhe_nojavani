@@ -1,0 +1,711 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title|default:"جبهه نوجوانی" }}</title>
+    
+    <!-- فایل فونت‌های محلی -->
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- استایل‌های هدر مدرن، شیشه‌ای و اصلاح شده -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* فضای خالی برای هدر شناور */
+            padding-top: 110px; 
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #0b0716;
+            color: #fff;
+        }
+
+        /* --- Navbar Base (Premium Dark Glassmorphism) --- */
+        .navbar {
+            position: fixed;
+            top: 20px;
+            /* اصلاح مشکل خارج شدن هدر در حالت راست‌چین */
+            left: 0;
+            right: 0;
+            margin: 0 auto; 
+            
+            width: 92%;
+            max-width: 1300px;
+            background: rgba(20, 15, 35, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* حالت چسبیده به بالا هنگام اسکرول */
+        .navbar.scrolled {
+            top: 0;
+            width: 100%;
+            max-width: 100%;
+            border-radius: 0;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            background: rgba(15, 10, 25, 0.9);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* حالت مخفی شدن هنگام اسکرول به پایین */
+        .navbar.hide-nav {
+            transform: translateY(-150%);
+        }
+
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.5rem;
+            width: 100%;
+        }
+
+        /* --- Logo --- */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 800;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 2rem;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        /* --- Nav Container Inner --- */
+        .nav-container-inner {
+            display: flex;
+            flex-grow: 1;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* --- Nav Links --- */
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links a.nav-item {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-links a.nav-item i {
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+            color: #a881ff;
+        }
+
+        .nav-links a.nav-item:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .nav-links a.nav-item:hover i {
+            transform: scale(1.1) rotate(-5deg);
+            color: #F5A623;
+        }
+
+        /* --- Auth & Badge Container --- */
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #auth-nav-links {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        /* استایل دکمه‌ها */
+        .btn-nav {
+            padding: 0.6rem 1.5rem !important;
+            border-radius: 50px !important;
+            font-weight: 600 !important;
+            font-size: 0.95rem !important;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-login {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff !important;
+        }
+        
+        .btn-login:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, #6C3FC5 0%, #8E54E9 100%) !important;
+            color: #fff !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(108, 63, 197, 0.4);
+        }
+
+        .btn-register:hover {
+            box-shadow: 0 6px 20px rgba(108, 63, 197, 0.6);
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .points-badge {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(245, 166, 35, 0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 700;
+            border: 1px solid rgba(245, 166, 35, 0.3);
+            white-space: nowrap;
+        }
+
+        .points-badge i {
+            color: #F5A623;
+            font-size: 1.1rem;
+            filter: drop-shadow(0 0 4px rgba(245,166,35,0.6));
+        }
+
+        .site-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(6, 4, 12, 0.78);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 2000;
+        }
+
+        .site-modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .site-modal {
+            width: min(100%, 480px);
+            background: linear-gradient(135deg, rgba(24, 18, 42, 0.96) 0%, rgba(14, 10, 26, 0.96) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5), 0 0 30px rgba(108, 63, 197, 0.25);
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .site-modal::before {
+            content: "";
+            position: absolute;
+            inset: auto -20% 55% auto;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(245, 166, 35, 0.16) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .site-modal-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, rgba(108, 63, 197, 0.22), rgba(245, 166, 35, 0.2));
+            color: #f5a623;
+            font-size: 1.8rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .site-modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            color: #fff;
+        }
+
+        .site-modal-text {
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.9;
+            font-size: 0.98rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .site-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .site-modal-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .site-modal-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: rotate(90deg);
+        }
+
+        .site-modal-secondary {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #fff !important;
+        }
+
+        /* --- Menu Toggle (Mobile) --- */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            z-index: 1001;
+            padding: 5px;
+        }
+
+        .menu-toggle span {
+            width: 25px;
+            height: 2px;
+            background: #fff;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .menu-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 1024px) {
+            .navbar-container {
+                padding: 0.8rem 1rem;
+            }
+            .logo { margin-left: 1rem; }
+            .nav-links a.nav-item { padding: 0.5rem; font-size: 0.9rem; }
+            .btn-nav { padding: 0.5rem 1rem !important; }
+        }
+
+        @media (max-width: 850px) {
+            body { padding-top: 80px; }
+            
+            .navbar {
+                top: 0;
+                width: 100%;
+                border-radius: 0;
+                border: none;
+                background: rgba(15, 10, 25, 0.95);
+            }
+
+            .navbar.hide-nav {
+                transform: translateY(-100%);
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .nav-container-inner {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 280px;
+                height: 100vh;
+                background: rgba(20, 15, 35, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                justify-content: flex-start;
+                padding: 5rem 1.5rem 2rem;
+                transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+                box-shadow: -5px 0 25px rgba(0, 0, 0, 0.6);
+                overflow-y: auto;
+                z-index: 1000;
+            }
+
+            .nav-container-inner.active {
+                right: 0;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+                gap: 0.5rem;
+            }
+
+            .nav-actions {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid rgba(255,255,255,0.1);
+            }
+
+            #auth-nav-links {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .nav-links a.nav-item, .btn-nav {
+                width: 100%;
+                justify-content: flex-start;
+                padding: 1rem;
+                font-size: 1.05rem;
+            }
+
+            .points-badge {
+                width: 100%;
+                justify-content: center;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}">
+    
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar-container">
+            <!-- Logo -->
+            <a href="{% if request.user.is_authenticated %}{% url 'home' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F5A623" />
+                            <stop offset="100%" stop-color="#6C3FC5" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="15" r="5" fill="#F5A623" />
+                    <path d="M50 28 L85 45 L50 62 L15 45 Z" fill="url(#logoGrad)" />
+                    <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+                <span>جبهه نوجوانی</span>
+            </a>
+
+            <!-- دکمه منو موبایل -->
+            <div class="menu-toggle" id="menu-toggle" aria-label="منوی موبایل">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <!-- نگهدارنده لینک‌ها و دکمه‌ها -->
+            <div class="nav-container-inner" id="nav-container-inner">
+                
+                <div class="nav-links">
+                    <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
+                        <i class="fa-solid fa-house"></i> خانه
+                    </a>
+                    <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
+                        <i class="fa-solid fa-trophy"></i> چالش‌ها
+                    </a>
+                    <a href="{% url 'learning:rank_cards' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
+                        <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
+                    </a>
+                    <a href="{% url 'shop' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
+                        <i class="fa-solid fa-store"></i> جبهه بازار
+                    </a>
+                </div>
+                
+                <div class="nav-actions">
+                    <div id="auth-nav-links">
+                        <!-- توسط جاوااسکریپت پر می‌شود -->
+                    </div>
+                    
+                    <div class="points-badge" id="points-badge">
+                        <i class="fa-solid fa-star"></i>
+                        <span class="user-points">{{ user_total_points|default:0 }}</span>
+                        <span>امتیاز</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>درباره جبهه نوجوانی</h3>
+                    <p>پلتفرمی برای رشد فردی، رقابت سالم و تبدیل یادگیری به یک تجربه جذاب و هدفمند.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>دسترسی سریع</h3>
+                    <a href="{% url 'challenges' %}">چالش‌ها</a>
+                    <a href="{% url 'shop' %}">فروشگاه</a>
+                    <a href="{% url 'profile' %}">پروفایل</a>
+                    <a href="{% url 'home' %}#features">ویژگی‌ها</a>
+                </div>
+                <div class="footer-section">
+                    <h3>ارتباط با ما</h3>
+                    <p>ایمیل: info@noghteh.com</p>
+                    <p>تلفن: ۰۲۱-۱۲۳۴۵۶۷۸</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                تمامی حقوق برای پلتفرم جبهه نوجوانی محفوظ است © ۱۴۰۵
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <div class="site-modal-backdrop" id="site-modal-backdrop">
+        <div class="site-modal">
+            <button type="button" class="site-modal-close" id="site-modal-close" aria-label="بستن">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="site-modal-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="site-modal-title" id="site-modal-title">این بخش بعد از ورود فعال می‌شود</h3>
+            <p class="site-modal-text" id="site-modal-text">برای استفاده از بخش‌های اصلی جبهه نوجوانی، ابتدا وارد حساب کاربری خود شوید یا ثبت‌نام کنید.</p>
+            <div class="site-modal-actions">
+                <a href="{% url 'login' %}" class="btn-nav btn-login">ورود</a>
+                <a href="{% url 'register' %}" class="btn-nav btn-register">ثبت‌نام</a>
+                <button type="button" class="btn-nav site-modal-secondary" id="site-modal-dismiss">فعلا بعدا</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // مدیریت نوار ناوبری بر اساس وضعیت لاگین
+    function updateNavBar() {
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        const userType = document.body.dataset.userType || localStorage.getItem('user_type') || 'user';
+        const authNav = document.getElementById('auth-nav-links');
+        const pointsBadge = document.getElementById('points-badge');
+        
+        if (isAuthenticated) {
+            const profileUrl = userType === 'seller' ? "{% url 'seller_profile' %}" : "{% url 'profile' %}";
+            authNav.innerHTML = `
+                <a href="${profileUrl}" class="btn-nav btn-login" data-nav="profile">
+                    <i class="fa-solid fa-user-astronaut"></i> پروفایل
+                </a>
+                <a href="#" id="logout-btn" class="btn-nav" style="background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.4); color: #ff4757 !important;" data-nav="logout">
+                    <i class="fa-solid fa-power-off"></i> خروج
+                </a>
+            `;
+            if (pointsBadge) pointsBadge.style.display = 'flex';
+            
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user_type');
+                    localStorage.removeItem('userSession');
+                    sessionStorage.removeItem('userSession');
+                    window.location.href = "{% url 'logout' %}";
+                });
+            }
+        } else {
+            authNav.innerHTML = `
+                <a href="{% url 'login' %}" class="btn-nav btn-login" data-nav="login">
+                    ورود
+                </a>
+                <a href="{% url 'register' %}" class="btn-nav btn-register" data-nav="register">
+                    ثبت‌نام
+                </a>
+            `;
+            if (pointsBadge) pointsBadge.style.display = 'none';
+        }
+    }
+
+    function openGuestModal(sectionName) {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        const modalTitle = document.getElementById('site-modal-title');
+        const modalText = document.getElementById('site-modal-text');
+
+        modalTitle.textContent = `دسترسی به ${sectionName} بعد از ورود فعال می‌شود`;
+        modalText.textContent = `برای ورود به بخش ${sectionName} لازم است ابتدا وارد حساب کاربری خود شوید. اگر تازه با سایت آشنا شده‌اید، می‌توانید از همین صفحه معرفی شروع کنید.`;
+        modalBackdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeGuestModal() {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        modalBackdrop.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    function setupGuestNavGuards() {
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        if (isAuthenticated) {
+            return;
+        }
+
+        const protectedLinks = document.querySelectorAll('.nav-item[data-requires-auth="true"]');
+        protectedLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                openGuestModal(this.dataset.guestSection || 'این بخش');
+            });
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', updateNavBar);
+    document.addEventListener('DOMContentLoaded', setupGuestNavGuards);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalBackdrop = document.getElementById('site-modal-backdrop');
+        const modalClose = document.getElementById('site-modal-close');
+        const modalDismiss = document.getElementById('site-modal-dismiss');
+        const params = new URLSearchParams(window.location.search);
+
+        if (modalClose) {
+            modalClose.addEventListener('click', closeGuestModal);
+        }
+
+        if (modalDismiss) {
+            modalDismiss.addEventListener('click', closeGuestModal);
+        }
+
+        if (modalBackdrop) {
+            modalBackdrop.addEventListener('click', function(event) {
+                if (event.target === modalBackdrop) {
+                    closeGuestModal();
+                }
+            });
+        }
+
+        if (params.get('logout') === 'true') {
+            openGuestModal('حساب کاربری');
+            document.getElementById('site-modal-title').textContent = 'خروج با موفقیت انجام شد';
+            document.getElementById('site-modal-text').textContent = 'اکنون در صفحه معرفی سایت هستید. برای ورود دوباره یا ساخت حساب جدید می‌توانید از دکمه‌های زیر استفاده کنید.';
+        }
+    });
+
+    // مدیریت منوی موبایل
+    const menuToggle = document.getElementById('menu-toggle');
+    const navContainerInner = document.getElementById('nav-container-inner');
+    
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+            navContainerInner.classList.toggle('active');
+        });
+
+        // بستن منو با کلیک روی لینک‌ها
+        const links = navContainerInner.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                navContainerInner.classList.remove('active');
+            });
+        });
+
+        // بستن منو با کلیک خارج از آن
+        document.addEventListener('click', function(e) {
+            if (!navContainerInner.contains(e.target) && !menuToggle.contains(e.target) && !document.getElementById('navbar').contains(e.target)) {
+                menuToggle.classList.remove('active');
+                navContainerInner.classList.remove('active');
+            }
+        });
+    }
+
+    // مدیریت هدر متحرک هنگام اسکرول
+    let lastScrollTop = 0;
+    const navbar = document.getElementById('navbar');
+    
+    window.addEventListener('scroll', function() {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // تغییر استایل به حالت چسبیده
+        if (scrollTop > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+        
+        // مخفی شدن هدر فقط هنگام اسکرول به پایین
+        if (scrollTop > lastScrollTop && scrollTop > 150) {
+            navbar.classList.add('hide-nav');
+        } else {
+            navbar.classList.remove('hide-nav');
+        }
+        
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,130 +1,951 @@
 {% extends 'base.html' %}
 
-{% block title %}مرحله {{ learning_stage.stage_number }}: {{ learning_stage.title }} | جبهه نوجوانی{% endblock %}
+{% block title %}
+مرحله {{ learning_stage.stage_number }} | {{ learning_stage.title }}
+{% endblock %}
 
 {% block content %}
-    <section class="container" style="padding-top: 3rem;">
-        <div class="glass-card" style="padding: 2.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <nav style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
-                        <a href="{% url 'learning:rank_cards' %}" style="color: var(--primary-purple);">کارت‌های درجه</a> /
-                        <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" style="color: var(--primary-purple);">{{ learning_stage.learning_path.title }}</a> /
+
+<style>
+
+:root{
+    --bg:#060816;
+    --card:#0f1729;
+    --card2:#121c31;
+
+    --primary:#8E54E9;
+    --primary2:#6C3FC5;
+
+    --gold:#F5A623;
+
+    --text:#ffffff;
+    --muted:rgba(255,255,255,.65);
+
+    --border:rgba(255,255,255,.08);
+}
+
+/* ================= BASE ================= */
+
+body{
+    background:
+        radial-gradient(circle at top right,
+        rgba(142,84,233,.18),
+        transparent 30%),
+
+        radial-gradient(circle at bottom left,
+        rgba(245,166,35,.12),
+        transparent 30%),
+
+        var(--bg);
+
+    overflow-x:hidden;
+}
+
+/* ================= PARTICLES ================= */
+
+.bg-grid{
+    position:fixed;
+    inset:0;
+
+    background-image:
+        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+
+    background-size:40px 40px;
+
+    mask-image:linear-gradient(to bottom, rgba(0,0,0,.6), transparent);
+
+    z-index:0;
+    pointer-events:none;
+}
+
+/* ================= MAIN WRAPPER ================= */
+
+.learning-stage-page{
+    position:relative;
+    z-index:2;
+
+    max-width:1450px;
+    margin:auto;
+
+    padding:70px 22px 120px;
+}
+
+/* ================= TOP NAV ================= */
+
+.top-nav{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+
+    margin-bottom:35px;
+
+    padding:16px 24px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid var(--border);
+
+    backdrop-filter:blur(16px);
+}
+
+.top-nav a{
+    color:var(--primary);
+    text-decoration:none;
+    font-weight:700;
+    transition:.3s;
+}
+
+.top-nav a:hover{
+    color:var(--gold);
+}
+
+.top-nav span{
+    color:rgba(255,255,255,.4);
+}
+
+/* ================= HERO ================= */
+
+.hero-card{
+    position:relative;
+    overflow:hidden;
+
+    border-radius:42px;
+
+    padding:70px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(17,24,39,.98),
+        rgba(9,12,20,.98));
+
+    border:1px solid rgba(142,84,233,.12);
+
+    box-shadow:
+        0 50px 100px rgba(0,0,0,.65),
+        inset 0 1px 0 rgba(255,255,255,.04);
+
+    margin-bottom:45px;
+}
+
+.hero-card::before{
+    content:"";
+
+    position:absolute;
+
+    width:700px;
+    height:700px;
+
+    border-radius:50%;
+
+    background:
+        radial-gradient(circle,
+        rgba(142,84,233,.22),
+        transparent 70%);
+
+    top:-280px;
+    right:-180px;
+
+    animation:floatGlow 10s ease-in-out infinite;
+}
+
+.hero-card::after{
+    content:"";
+
+    position:absolute;
+
+    width:500px;
+    height:500px;
+
+    border-radius:50%;
+
+    background:
+        radial-gradient(circle,
+        rgba(245,166,35,.14),
+        transparent 70%);
+
+    bottom:-220px;
+    left:-140px;
+
+    animation:floatGlow 12s ease-in-out infinite reverse;
+}
+
+@keyframes floatGlow{
+    0%,100%{
+        transform:translate(0,0) scale(1);
+    }
+    50%{
+        transform:translate(30px,-30px) scale(1.08);
+    }
+}
+
+.hero-content{
+    position:relative;
+    z-index:2;
+}
+
+/* ================= HERO TOP ================= */
+
+.hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:40px;
+    flex-wrap:wrap;
+}
+
+.hero-info{
+    flex:1;
+    min-width:320px;
+}
+
+.stage-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+
+    padding:14px 24px;
+
+    border-radius:999px;
+
+    margin-bottom:28px;
+
+    background:
+        linear-gradient(135deg,
+        rgba(142,84,233,.18),
+        rgba(142,84,233,.07));
+
+    border:1px solid rgba(142,84,233,.22);
+
+    color:#d9c7ff;
+
+    font-weight:800;
+}
+
+.hero-title{
+    font-size:clamp(2.8rem,5vw,5rem);
+
+    line-height:1.1;
+
+    margin-bottom:28px;
+
+    font-weight:900;
+
+    color:white;
+}
+
+.hero-title span{
+    background:
+        linear-gradient(120deg,
+        #8E54E9,
+        #F5A623);
+
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.hero-desc{
+    max-width:850px;
+
+    color:var(--muted);
+
+    line-height:2.2;
+
+    font-size:1.05rem;
+
+    margin-bottom:35px;
+}
+
+/* ================= STATS ================= */
+
+.hero-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+}
+
+.stat-box{
+    min-width:180px;
+
+    padding:22px;
+
+    border-radius:24px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(255,255,255,.05),
+        rgba(255,255,255,.02));
+
+    border:1px solid rgba(255,255,255,.06);
+
+    backdrop-filter:blur(10px);
+}
+
+.stat-label{
+    color:rgba(255,255,255,.5);
+
+    font-size:.9rem;
+
+    margin-bottom:10px;
+}
+
+.stat-value{
+    color:white;
+
+    font-size:1.2rem;
+
+    font-weight:900;
+}
+
+.stat-value i{
+    color:var(--gold);
+
+    margin-left:8px;
+}
+
+/* ================= STATUS CARD ================= */
+
+.status-panel{
+    width:320px;
+
+    padding:30px;
+
+    border-radius:30px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(255,255,255,.06),
+        rgba(255,255,255,.02));
+
+    border:1px solid rgba(255,255,255,.08);
+
+    backdrop-filter:blur(16px);
+}
+
+.status-title{
+    color:rgba(255,255,255,.5);
+
+    margin-bottom:15px;
+}
+
+.status-value{
+    font-size:1.8rem;
+
+    font-weight:900;
+
+    color:var(--gold);
+
+    margin-bottom:25px;
+}
+
+.progress-line{
+    width:100%;
+    height:12px;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.08);
+
+    overflow:hidden;
+}
+
+.progress-fill{
+    width:75%;
+    height:100%;
+
+    background:
+        linear-gradient(90deg,
+        #8E54E9,
+        #F5A623);
+
+    border-radius:999px;
+}
+
+/* ================= CONTENT GRID ================= */
+
+.content-grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:28px;
+
+    margin-bottom:40px;
+}
+
+.glass-card{
+    position:relative;
+
+    padding:38px;
+
+    border-radius:35px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(17,24,39,.95),
+        rgba(10,14,24,.96));
+
+    border:1px solid rgba(255,255,255,.06);
+
+    overflow:hidden;
+}
+
+.glass-card::before{
+    content:"";
+
+    position:absolute;
+    inset:0;
+
+    background:
+        linear-gradient(120deg,
+        transparent,
+        rgba(255,255,255,.03),
+        transparent);
+
+    transform:translateX(-100%);
+    transition:1.2s;
+}
+
+.glass-card:hover::before{
+    transform:translateX(100%);
+}
+
+.card-title{
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    font-size:1.45rem;
+
+    font-weight:900;
+
+    color:white;
+
+    margin-bottom:28px;
+}
+
+.card-title i{
+    color:var(--primary);
+}
+
+/* ================= VIDEO ================= */
+
+.video-frame{
+    position:relative;
+
+    width:100%;
+    padding-bottom:56.25%;
+
+    border-radius:26px;
+
+    overflow:hidden;
+
+    background:black;
+}
+
+.video-frame video,
+.video-frame iframe{
+    position:absolute;
+    inset:0;
+
+    width:100%;
+    height:100%;
+}
+
+/* ================= DOCUMENT ================= */
+
+.doc-box{
+    text-align:center;
+
+    padding:50px 30px;
+}
+
+.doc-icon{
+    font-size:5rem;
+
+    margin-bottom:24px;
+
+    color:#ff4d4d;
+}
+
+.doc-text{
+    color:var(--muted);
+
+    line-height:2;
+
+    margin-bottom:28px;
+}
+
+/* ================= AUDIO ================= */
+
+.audio-box{
+    text-align:center;
+}
+
+.audio-icon{
+    font-size:5rem;
+
+    margin-bottom:25px;
+
+    color:var(--primary);
+}
+
+.audio-player{
+    width:100%;
+}
+
+/* ================= ACTION ================= */
+
+.action-panel{
+    margin-top:40px;
+
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:18px;
+}
+
+.action-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+
+    padding:18px 38px;
+
+    border:none;
+    cursor:pointer;
+
+    border-radius:22px;
+
+    text-decoration:none;
+
+    color:white;
+
+    font-weight:900;
+
+    transition:.35s ease;
+}
+
+.btn-primary{
+    background:
+        linear-gradient(135deg,
+        #8E54E9,
+        #6C3FC5);
+
+    box-shadow:
+        0 20px 40px rgba(142,84,233,.35);
+}
+
+.btn-primary:hover{
+    transform:translateY(-6px);
+
+    box-shadow:
+        0 30px 55px rgba(142,84,233,.45);
+}
+
+.btn-gold{
+    background:
+        linear-gradient(135deg,
+        #F5A623,
+        #ffcb5c);
+
+    color:#111;
+
+    box-shadow:
+        0 20px 40px rgba(245,166,35,.35);
+}
+
+.btn-gold:hover{
+    transform:translateY(-6px);
+
+    box-shadow:
+        0 30px 55px rgba(245,166,35,.45);
+}
+
+.btn-dark{
+    background:
+        linear-gradient(135deg,
+        #29334a,
+        #1a2337);
+}
+
+/* ================= SUCCESS ================= */
+
+.success-card{
+    text-align:center;
+
+    padding:55px 35px;
+
+    border-radius:35px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(16,185,129,.12),
+        rgba(16,185,129,.05));
+
+    border:1px solid rgba(16,185,129,.2);
+}
+
+.success-card i{
+    font-size:5rem;
+
+    color:#34d399;
+
+    margin-bottom:22px;
+}
+
+.success-card h2{
+    color:#34d399;
+
+    margin-bottom:16px;
+}
+
+/* ================= LOCKED ================= */
+
+.locked-card{
+    text-align:center;
+
+    padding:70px 35px;
+
+    border-radius:38px;
+
+    background:
+        linear-gradient(145deg,
+        rgba(17,24,39,.96),
+        rgba(10,14,24,.98));
+
+    border:1px solid rgba(255,255,255,.06);
+}
+
+.locked-card i{
+    font-size:6rem;
+
+    color:#555;
+
+    margin-bottom:24px;
+}
+
+.locked-card h2{
+    color:#999;
+
+    margin-bottom:18px;
+}
+
+.locked-card p{
+    color:rgba(255,255,255,.55);
+
+    line-height:2;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:1100px){
+
+    .content-grid{
+        grid-template-columns:1fr;
+    }
+
+}
+
+@media(max-width:850px){
+
+    .hero-card{
+        padding:40px 28px;
+    }
+
+    .glass-card{
+        padding:28px 22px;
+    }
+
+    .status-panel{
+        width:100%;
+    }
+
+}
+
+@media(max-width:768px){
+
+    .learning-stage-page{
+        padding:40px 15px 100px;
+    }
+
+    .hero-title{
+        font-size:2.5rem;
+    }
+
+    .hero-stats{
+        flex-direction:column;
+    }
+
+    .stat-box{
+        width:100%;
+    }
+
+    .action-btn{
+        width:100%;
+    }
+
+}
+
+</style>
+
+<div class="bg-grid"></div>
+
+<div class="learning-stage-page">
+
+    <!-- NAV -->
+
+    <div class="top-nav">
+
+        <a href="#">
+            مسیر یادگیری
+        </a>
+
+        <span>/</span>
+
+        <a href="#">
+            {{ learning_stage.learning_path.title }}
+        </a>
+
+        <span>/</span>
+
+        <span>
+            مرحله {{ learning_stage.stage_number }}
+        </span>
+
+    </div>
+
+    <!-- HERO -->
+
+    <section class="hero-card">
+
+        <div class="hero-content">
+
+            <div class="hero-top">
+
+                <div class="hero-info">
+
+                    <div class="stage-chip">
+                        <i class="fa-solid fa-layer-group"></i>
                         مرحله {{ learning_stage.stage_number }}
-                    </nav>
-                    <h1 class="text-gold" style="font-size: 2.5rem; margin-bottom: 0.5rem;">{{ learning_stage.title }}</h1>
-                    <div style="display: flex; gap: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
-                        <span><i class="fa-solid fa-clock"></i> زمان تقریبی: {{ learning_stage.estimated_study_time }} دقیقه</span>
-                        <span><i class="fa-solid fa-file-lines"></i> نوع: {{ learning_stage.get_content_type_display }}</span>
                     </div>
+
+                    <h1 class="hero-title">
+                        {{ learning_stage.title }}
+                    </h1>
+
+                    <div class="hero-desc">
+                        {{ learning_stage.description }}
+                    </div>
+
+                    <div class="hero-stats">
+
+                        <div class="stat-box">
+
+                            <div class="stat-label">
+                                نوع محتوا
+                            </div>
+
+                            <div class="stat-value">
+                                <i class="fa-solid fa-file-lines"></i>
+                                {{ learning_stage.get_content_type_display }}
+                            </div>
+
+                        </div>
+
+                        <div class="stat-box">
+
+                            <div class="stat-label">
+                                زمان مطالعه
+                            </div>
+
+                            <div class="stat-value">
+                                <i class="fa-solid fa-clock"></i>
+                                {{ learning_stage.estimated_study_time }} دقیقه
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
-                
-                {% if user.is_authenticated and user_stage_progress %}
-                    <div class="glass-card" style="padding: 1rem 1.5rem; background: rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">وضعیت شما</div>
-                        <div style="font-weight: 700; color: var(--primary-gold);">{{ user_stage_progress.get_status_display }}</div>
+
+                {% if user_stage_progress %}
+
+                <div class="status-panel">
+
+                    <div class="status-title">
+                        وضعیت فعلی شما
                     </div>
+
+                    <div class="status-value">
+                        {{ user_stage_progress.get_status_display }}
+                    </div>
+
+                    <div class="progress-line">
+                        <div class="progress-fill"></div>
+                    </div>
+
+                </div>
+
                 {% endif %}
+
             </div>
 
-            <div style="background: rgba(255,255,255,0.03); border-radius: 20px; padding: 2rem; margin-bottom: 2.5rem; line-height: 1.8;">
-                <h3 style="margin-bottom: 1rem; color: var(--primary-purple);">توضیحات این مرحله:</h3>
-                {{ learning_stage.description|linebreaks }}
-            </div>
-
-            {% if user.is_authenticated and user_stage_progress and user_stage_progress.status != 'locked' %}
-                <div class="learning-content-section" style="margin-bottom: 3rem;">
-                    <h2 class="text-gold" style="margin-bottom: 1.5rem; text-align: center;">محتوای آموزشی</h2>
-                    
-                    <div class="glass-card" style="padding: 2rem; background: rgba(0,0,0,0.2); text-align: center;">
-                        {% if learning_stage.content_link_or_file %}
-                            {% if learning_stage.content_type == "podcast" %}
-                                <div style="margin: 2rem 0;">
-                                    <i class="fa-solid fa-microphone-lines" style="font-size: 3rem; color: var(--primary-purple); margin-bottom: 1rem;"></i>
-                                    <audio controls style="width: 100%; max-width: 600px;">
-                                        <source src="{{ learning_stage.content_link_or_file }}" type="audio/mpeg">
-                                        مرورگر شما از پخش صوتی پشتیبانی نمی‌کند.
-                                    </audio>
-                                </div>
-                            {% elif learning_stage.content_type == "video" %}
-                                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; background: #000;">
-                                    <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                                        <source src="{{ learning_stage.content_link_or_file }}" type="video/mp4">
-                                        مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند.
-                                    </video>
-                                </div>
-                            {% elif learning_stage.content_type == "document" %}
-                                <div style="padding: 3rem 0;">
-                                    <i class="fa-solid fa-file-pdf" style="font-size: 4rem; color: #ff4d4d; margin-bottom: 1.5rem;"></i>
-                                    <p style="margin-bottom: 1.5rem;">فایل مستند آموزشی برای این مرحله آماده است.</p>
-                                    <a href="{{ learning_stage.content_link_or_file }}" target="_blank" class="btn btn-primary-new">
-                                        <i class="fa-solid fa-download"></i> دانلود و مطالعه مستند
-                                    </a>
-                                </div>
-                            {% else %}
-                                <div style="padding: 3rem 0;">
-                                    <i class="fa-solid fa-link" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1.5rem;"></i>
-                                    <p style="margin-bottom: 1.5rem;">برای مشاهده محتوای این مرحله روی دکمه زیر کلیک کنید.</p>
-                                    <a href="{{ learning_stage.content_link_or_file }}" target="_blank" class="btn btn-primary-new">
-                                        <i class="fa-solid fa-external-link"></i> مشاهده محتوا در پنجره جدید
-                                    </a>
-                                </div>
-                            {% endif %}
-                        {% else %}
-                            <p style="padding: 2rem; color: var(--text-muted);">محتوای دیجیتالی برای این مرحله ثبت نشده است. لطفاً توضیحات را مطالعه کنید.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-                    {% if user_stage_progress.status == 'in_study' %}
-                        <form action="{% url 'learning:complete_study' pk=user_stage_progress.pk %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem;">
-                                <i class="fa-solid fa-check-double"></i> اتمام مطالعه و آمادگی برای آزمون
-                            </button>
-                        </form>
-                    {% elif user_stage_progress.status == 'ready_for_exam' %}
-                        <div style="text-align: center; width: 100%;">
-                            <p style="margin-bottom: 1.5rem; font-size: 1.1rem;">شما آماده شرکت در آزمون این مرحله هستید!</p>
-                            {% if not active_exam %}
-                                <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem; background: var(--primary-gold); box-shadow: 0 8px 25px var(--primary-gold-glow);">
-                                        <i class="fa-solid fa-pen-to-square"></i> شروع آزمون مرحله
-                                    </button>
-                                </form>
-                            {% else %}
-                                <a href="{% url 'learning:take_exam' pk=active_exam.pk %}" class="btn btn-primary-new" style="padding: 1rem 3rem; font-size: 1.2rem;">
-                                    <i class="fa-solid fa-play"></i> ادامه آزمون در حال اجرا
-                                </a>
-                            {% endif %}
-                        </div>
-                    {% elif user_stage_progress.status == 'completed' %}
-                        <div class="glass-card" style="padding: 1.5rem; background: rgba(76, 175, 80, 0.1); border-color: rgba(76, 175, 80, 0.3); text-align: center; width: 100%;">
-                            <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: #4CAF50; margin-bottom: 1rem;"></i>
-                            <h3 style="color: #4CAF50; margin-bottom: 0.5rem;">تبریک! این مرحله با موفقیت تکمیل شد.</h3>
-                            <p>نمره شما: {{ user_stage_progress.best_score }}</p>
-                            <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 1.5rem;">
-                                بازگشت به لیست مراحل
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-            {% else %}
-                <div class="glass-card" style="padding: 3rem; text-align: center; background: rgba(0,0,0,0.3);">
-                    <i class="fa-solid fa-lock" style="font-size: 4rem; color: #555; margin-bottom: 1.5rem;"></i>
-                    <h2 style="color: #888;">این مرحله هنوز برای شما باز نشده است</h2>
-                    <p style="margin-top: 1rem; color: var(--text-muted);">
-                        برای دسترسی به این مرحله، باید مراحل قبلی را با موفقیت پشت سر بگذارید.
-                    </p>
-                    <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}" class="btn btn-secondary-new" style="margin-top: 2rem;">
-                        مشاهده نقشه مسیر
-                    </a>
-                </div>
-            {% endif %}
         </div>
+
     </section>
 
-    <div style="margin-bottom: 5rem;"></div>
+    {% if user_stage_progress and user_stage_progress.status != 'locked' %}
+
+    <!-- CONTENT -->
+
+    <div class="content-grid">
+
+        <div class="glass-card">
+
+            <div class="card-title">
+                <i class="fa-solid fa-play-circle"></i>
+                محتوای آموزشی
+            </div>
+
+            {% if learning_stage.content_type == "video" %}
+
+            <div class="video-frame">
+
+                <video controls>
+                    <source src="{{ learning_stage.content_link_or_file }}">
+                </video>
+
+            </div>
+
+            {% elif learning_stage.content_type == "podcast" %}
+
+            <div class="audio-box">
+
+                <div class="audio-icon">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </div>
+
+                <audio controls class="audio-player">
+                    <source src="{{ learning_stage.content_link_or_file }}">
+                </audio>
+
+            </div>
+
+            {% else %}
+
+            <div class="doc-box">
+
+                <div class="doc-icon">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+
+                <div class="doc-text">
+                    برای مشاهده فایل آموزشی روی دکمه زیر کلیک کنید.
+                </div>
+
+                <a href="{{ learning_stage.content_link_or_file }}"
+                   target="_blank"
+                   class="action-btn btn-primary">
+
+                    دانلود فایل
+
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        <!-- SIDE CARD -->
+
+        <div class="glass-card">
+
+            <div class="card-title">
+                <i class="fa-solid fa-bolt"></i>
+                عملیات مرحله
+            </div>
+
+            <p style="color:var(--muted); line-height:2;">
+                پس از مطالعه کامل محتوای این مرحله می‌توانید وضعیت خود را ثبت کرده و وارد آزمون شوید.
+            </p>
+
+            <div class="action-panel">
+
+                {% if user_stage_progress.status == 'in_study' %}
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <button class="action-btn btn-primary">
+
+                        <i class="fa-solid fa-check"></i>
+                        اتمام مطالعه
+
+                    </button>
+
+                </form>
+
+                {% elif user_stage_progress.status == 'ready_for_exam' %}
+
+                <a href="#"
+                   class="action-btn btn-gold">
+
+                    <i class="fa-solid fa-pen"></i>
+                    شروع آزمون
+
+                </a>
+
+                {% elif user_stage_progress.status == 'completed' %}
+
+                <div class="success-card">
+
+                    <i class="fa-solid fa-circle-check"></i>
+
+                    <h2>
+                        مرحله تکمیل شد
+                    </h2>
+
+                    <p>
+                        امتیاز شما:
+                        {{ user_stage_progress.best_score }}
+                    </p>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <!-- LOCKED -->
+
+    <div class="locked-card">
+
+        <i class="fa-solid fa-lock"></i>
+
+        <h2>
+            این مرحله قفل است
+        </h2>
+
+        <p>
+            برای باز شدن این مرحله باید مراحل قبلی را کامل کنید.
+        </p>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
 {% endblock %}
