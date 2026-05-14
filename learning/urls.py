@@ -3,6 +3,7 @@ from django.urls import path
 from learning.views import (
     LearningPathStagesView,
     LearningStageDetailView,
+    LearningStageQuestionsView,
     RankCardsView,
     TakeExamView,
     UserLearningProgressDetailView,
@@ -25,6 +26,11 @@ urlpatterns = [
         name="user_learning_progress_detail",
     ),
     path("stages/<int:pk>/", LearningStageDetailView.as_view(), name="learning_stage_detail"),
+    path(
+        "stages/<int:pk>/questions/",
+        LearningStageQuestionsView.as_view(),
+        name="learning_stage_questions",
+    ),
     path("stages/<int:pk>/complete-study/", complete_study, name="complete_study"),
     path("progress/<int:pk>/start-exam/", start_exam, name="start_exam"),
     path("exams/<int:pk>/", TakeExamView.as_view(), name="take_exam"),

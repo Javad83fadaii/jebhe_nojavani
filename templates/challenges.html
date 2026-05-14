@@ -1,86 +1,146 @@
 {% extends "base.html" %}
 {% block content %}
-    <section class="container" style="padding-top: 3rem;">
-        <div class="glass-card challenges-hero-card" style="text-align: center;">
-            <h1 class="text-gold" style="margin-bottom: 1rem;">مسابقات و چالش‌های فعال</h1>
-            <p style="color: var(--gray-light);">
-                چالش‌های زیر را انجام بده، مدرک بفرست و سکه جایزه بگیر!
-            </p>
-        </div>
-    </section>
+    <div class="challenge-page" data-csrf="{{ csrf_token }}">
+        <section class="container challenge-page__hero-wrap">
+            <div class="glass-card challenge-hero">
+                <div class="challenge-hero__content">
+                    <span class="challenge-hero__badge">
+                        <i class="fa-solid fa-trophy"></i>
+                        رقابت‌های فعال
+                    </span>
+                    <h1 class="text-gold">چالش‌های فعال جبهه نوجوانی</h1>
+                    <p>
+                        چالش مناسب خودت را انتخاب کن، در زمان مشخص آن را کامل کن و با ارسال مدرک، سکه جایزه بگیر.
+                    </p>
+                </div>
+                <div class="challenge-hero__stats">
+                    <div class="challenge-stat-card">
+                        <span>تعداد چالش فعال</span>
+                        <strong>{{ active_challenges|length }}</strong>
+                    </div>
+                    <div class="challenge-stat-card">
+                        <span>حالت مسابقه</span>
+                        <strong>زمان‌دار و جایزه‌دار</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <section class="container" style="margin-top: 3rem; margin-bottom: 5rem;">
-        {% if active_challenges %}
-            <div class="learning-path-grid">
-                {% for challenge in active_challenges %}
-                    <article class="learning-path-card glass-card">
-                        <div class="learning-path-card__top">
-                            <span class="learning-path-badge">{{ challenge.coin_reward }} سکه</span>
-                            <div class="countdown-timer text-gold" data-endtime="{{ challenge.end_date|date:'Y-m-d H:i:s' }}">
-                                در حال بارگذاری زمان...
+        <section class="container challenge-page__content">
+            {% if active_challenges %}
+                <div class="challenge-grid">
+                    {% for challenge in active_challenges %}
+                        <article class="challenge-card glass-card">
+                            <div class="challenge-card__header">
+                                <span class="learning-path-badge">
+                                    <i class="fa-solid fa-coins"></i>
+                                    {{ challenge.coin_reward }} سکه
+                                </span>
+                                <div class="challenge-countdown countdown-timer" data-endtime="{{ challenge.end_date|date:'Y-m-d H:i:s' }}">
+                                    <span class="challenge-countdown__label">زمان باقی‌مانده</span>
+                                    <strong class="challenge-countdown__value">در حال بارگذاری...</strong>
+                                </div>
                             </div>
-                        </div>
 
-                        {% if challenge.image %}
-                            <img src="{{ challenge.image.url }}" alt="{{ challenge.title }}" style="width: 100%; border-radius: 15px; margin: 1rem 0;">
-                        {% endif %}
-
-                        <h3 class="learning-path-title">{{ challenge.title }}</h3>
-                        <p class="learning-path-description">{{ challenge.description|truncatechars:150 }}</p>
-
-                        <div class="challenge-footer" style="margin-top: 2rem;">
-                            {% if user.is_authenticated %}
-                                {% if challenge.id in user_participations %}
-                                    <button class="btn btn-secondary-new" disabled style="width: 100%; justify-content: center; opacity: 0.7;">
-                                        <i class="fa-solid fa-check"></i> قبلاً شرکت کرده‌اید
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-primary-new join-challenge-btn" data-id="{{ challenge.id }}" style="width: 100%; justify-content: center;">
-                                        <i class="fa-solid fa-bolt"></i> شرکت در چالش
-                                    </button>
-                                {% endif %}
+                            {% if challenge.image %}
+                                <div class="challenge-card__media">
+                                    <img src="{{ challenge.image.url }}" alt="{{ challenge.title }}">
+                                </div>
                             {% else %}
-                                <a href="{% url 'login' %}" class="btn btn-primary-new" style="width: 100%; justify-content: center;">
-                                    برای شرکت وارد شوید
-                                </a>
+                                <div class="challenge-card__media challenge-card__media--placeholder">
+                                    <i class="fa-solid fa-bullseye"></i>
+                                </div>
                             {% endif %}
-                        </div>
-                    </article>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="glass-card" style="padding: 4rem; text-align: center;">
-                <i class="fa-solid fa-hourglass-half" style="font-size: 4rem; color: var(--primary-gold); margin-bottom: 1.5rem; opacity: 0.5;"></i>
-                <h2 class="text-gold">در حال حاضر چالشی فعال نیست</h2>
-                <p style="color: var(--text-muted); margin-top: 1rem;">به زودی چالش‌های جدید اضافه خواهد شد.</p>
-            </div>
-        {% endif %}
-    </section>
 
-    <!-- Modal برای تکمیل چالش -->
-    <div id="complete-challenge-modal" class="glass-card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; padding: 2rem; width: 90%; max-width: 500px;">
-        <h3 class="text-gold" style="margin-bottom: 1rem;">تکمیل چالش</h3>
-        <p style="margin-bottom: 1.5rem;">لطفاً مدرک تکمیل چالش (عکس یا فایل) را آپلود کنید:</p>
-        <form id="complete-challenge-form">
-            <input type="file" id="challenge-evidence" class="glass-card" style="width: 100%; padding: 0.5rem; margin-bottom: 1.5rem;" required>
-            <div style="display: flex; gap: 1rem;">
-                <button type="submit" class="btn btn-primary-new" style="flex: 1; justify-content: center;">ارسال و دریافت سکه</button>
-                <button type="button" id="close-modal" class="btn btn-secondary-new">انصراف</button>
+                            <div class="challenge-card__body">
+                                <h3 class="learning-path-title">{{ challenge.title }}</h3>
+                                <p class="learning-path-description">{{ challenge.description|truncatechars:180 }}</p>
+
+                                <div class="challenge-meta-row">
+                                    <div class="challenge-meta-chip">
+                                        <i class="fa-solid fa-calendar-check"></i>
+                                        شروع: {{ challenge.start_date|date:"Y/m/d" }}
+                                    </div>
+                                    <div class="challenge-meta-chip">
+                                        <i class="fa-solid fa-flag-checkered"></i>
+                                        پایان: {{ challenge.end_date|date:"Y/m/d" }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="challenge-actions">
+                                {% if user.is_authenticated %}
+                                    {% if challenge.id in user_participations %}
+                                        <button class="btn btn-secondary challenge-action-btn" disabled>
+                                            <i class="fa-solid fa-check"></i>
+                                            قبلاً در این چالش شرکت کرده‌اید
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-primary join-challenge-btn challenge-action-btn" data-id="{{ challenge.id }}">
+                                            <i class="fa-solid fa-bolt"></i>
+                                            شرکت در چالش
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'login' %}" class="btn btn-primary challenge-action-btn">
+                                        <i class="fa-solid fa-right-to-bracket"></i>
+                                        برای شرکت وارد شوید
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card challenge-empty-state">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <h2 class="text-gold">در حال حاضر چالشی فعال نیست</h2>
+                    <p>به‌زودی چالش‌های جدید به این بخش اضافه می‌شود.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <div id="modal-overlay" class="challenge-modal-overlay"></div>
+    <div id="complete-challenge-modal" class="challenge-modal">
+        <div class="challenge-modal__icon">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <h3 class="text-gold">ارسال مدرک چالش</h3>
+        <p>برای ثبت نهایی چالش، تصویر یا فایل مدرک خود را آپلود کنید.</p>
+        <form id="complete-challenge-form" class="challenge-modal__form">
+            <label for="challenge-evidence" class="challenge-file-label">
+                <i class="fa-solid fa-paperclip"></i>
+                انتخاب فایل مدرک
+            </label>
+            <input type="file" id="challenge-evidence" class="challenge-file-input" required>
+            <div class="challenge-modal__actions">
+                <button type="submit" class="btn btn-primary challenge-action-btn">ارسال و دریافت سکه</button>
+                <button type="button" id="close-modal" class="btn btn-secondary challenge-action-btn">انصراف</button>
             </div>
         </form>
     </div>
-    <div id="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000;"></div>
-
+{% endblock %}
+{% block extra_js %}
     <script>
-        // تایمر شمارش معکوس
+        function formatTimeUnit(value) {
+            return String(value).padStart(2, '0');
+        }
+
         function updateTimers() {
             document.querySelectorAll('.countdown-timer').forEach(timer => {
                 const endTime = new Date(timer.dataset.endtime).getTime();
                 const now = new Date().getTime();
                 const distance = endTime - now;
+                const valueElement = timer.querySelector('.challenge-countdown__value');
+
+                if (!valueElement) {
+                    return;
+                }
 
                 if (distance < 0) {
-                    timer.innerHTML = "پایان یافته";
+                    valueElement.textContent = 'پایان یافته';
+                    timer.classList.add('challenge-countdown--expired');
                     return;
                 }
 
@@ -89,70 +149,113 @@
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-                timer.innerHTML = `${days} روز و ${hours}:${minutes}:${seconds}`;
+                valueElement.textContent = `${days} روز | ${formatTimeUnit(hours)}:${formatTimeUnit(minutes)}:${formatTimeUnit(seconds)}`;
             });
         }
-        setInterval(updateTimers, 1000);
-        updateTimers();
 
-        // لاجیک شرکت در چالش
-        let currentParticipationId = null;
-        document.querySelectorAll('.join-challenge-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const challengeId = btn.dataset.id;
-                try {
-                    const response = await fetch('/challenges-system/api/participations/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        },
-                        body: JSON.stringify({ challenge: challengeId })
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        currentParticipationId = data.id;
-                        document.getElementById('complete-challenge-modal').style.display = 'block';
-                        document.getElementById('modal-overlay').style.display = 'block';
-                    } else {
-                        alert(data.non_field_errors || 'خطا در شرکت در چالش');
+        document.addEventListener('DOMContentLoaded', function () {
+            const page = document.querySelector('.challenge-page');
+            const csrfToken = page ? page.dataset.csrf : '';
+            const modal = document.getElementById('complete-challenge-modal');
+            const overlay = document.getElementById('modal-overlay');
+            const closeModalBtn = document.getElementById('close-modal');
+            const challengeForm = document.getElementById('complete-challenge-form');
+            const evidenceInput = document.getElementById('challenge-evidence');
+            let currentParticipationId = null;
+
+            function openModal() {
+                modal.classList.add('is-open');
+                overlay.classList.add('is-open');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal(shouldReload = false) {
+                modal.classList.remove('is-open');
+                overlay.classList.remove('is-open');
+                document.body.style.overflow = '';
+                if (challengeForm) {
+                    challengeForm.reset();
+                }
+                if (shouldReload) {
+                    window.location.reload();
+                }
+            }
+
+            updateTimers();
+            setInterval(updateTimers, 1000);
+
+            document.querySelectorAll('.join-challenge-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const challengeId = btn.dataset.id;
+                    btn.disabled = true;
+
+                    try {
+                        const response = await fetch('/challenges-system/api/participations/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ challenge: challengeId })
+                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            currentParticipationId = data.id;
+                            openModal();
+                        } else {
+                            alert(data.non_field_errors || data.detail || 'خطا در شرکت در چالش');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('در برقراری ارتباط با سرور مشکلی پیش آمد.');
+                    } finally {
+                        btn.disabled = false;
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            });
-        });
-
-        // بستن مدال
-        document.getElementById('close-modal').addEventListener('click', () => {
-            document.getElementById('complete-challenge-modal').style.display = 'none';
-            document.getElementById('modal-overlay').style.display = 'none';
-            location.reload(); // برای بروزرسانی وضعیت دکمه‌ها
-        });
-
-        // تکمیل چالش
-        document.getElementById('complete-challenge-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('evidence', document.getElementById('challenge-evidence').files[0]);
-
-            try {
-                const response = await fetch(`/challenges-system/api/participations/${currentParticipationId}/complete/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: formData
                 });
-                const data = await response.json();
-                if (response.ok) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message || 'خطا در ثبت مدرک');
-                }
-            } catch (error) {
-                console.error('Error:', error);
+            });
+
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => closeModal(true));
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', () => closeModal(true));
+            }
+
+            if (challengeForm) {
+                challengeForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    if (!evidenceInput.files.length || !currentParticipationId) {
+                        alert('ابتدا فایل مدرک را انتخاب کنید.');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('evidence', evidenceInput.files[0]);
+
+                    try {
+                        const response = await fetch(`/challenges-system/api/participations/${currentParticipationId}/complete/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            alert(data.message);
+                            closeModal(true);
+                        } else {
+                            alert(data.message || 'خطا در ثبت مدرک');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('در ثبت مدرک مشکلی پیش آمد.');
+                    }
+                });
             }
         });
     </script>

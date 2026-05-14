@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}
+سوالات مرحله {{ learning_stage.stage_number }} | {{ learning_stage.title }}
+{% endblock %}
+
+{% block content %}
+<style>
+.stage-questions-page {
+    width: min(1240px, 94%);
+    margin: 0 auto;
+    padding: 2rem 0 5rem;
+}
+
+.stage-questions-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 2.5rem;
+    border-radius: 32px;
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.96), rgba(10, 14, 24, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    margin-bottom: 2rem;
+}
+
+.stage-questions-hero::before {
+    content: "";
+    position: absolute;
+    inset: auto -10% 40% auto;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(108, 63, 197, 0.28), transparent 70%);
+    pointer-events: none;
+}
+
+.stage-questions-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.stage-questions-breadcrumb a {
+    color: #a881ff;
+    text-decoration: none;
+}
+
+.stage-questions-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 1rem;
+    border-radius: 999px;
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid rgba(245, 166, 35, 0.2);
+    color: #ffd48c;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.stage-questions-title {
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    margin-bottom: 0.85rem;
+    color: #fff;
+}
+
+.stage-questions-description {
+    max-width: 760px;
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 2;
+    margin-bottom: 1.6rem;
+}
+
+.stage-questions-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.stage-questions-meta-card {
+    padding: 1rem 1.1rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.stage-questions-meta-card span {
+    display: block;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.88rem;
+    margin-bottom: 0.45rem;
+}
+
+.stage-questions-meta-card strong {
+    color: #fff;
+    font-size: 1.08rem;
+}
+
+.stage-questions-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin: 0 0 2rem;
+}
+
+.stage-questions-toolbar a {
+    text-decoration: none;
+}
+
+.stage-questions-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    padding: 0.95rem 1.35rem;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 800;
+    transition: 0.3s ease;
+}
+
+.stage-questions-btn--primary {
+    background: linear-gradient(135deg, #6c3fc5, #8e54e9);
+    color: #fff;
+}
+
+.stage-questions-btn--secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.stage-questions-btn:hover {
+    transform: translateY(-4px);
+}
+
+.question-set-list {
+    display: grid;
+    gap: 1.4rem;
+}
+
+.question-set-card {
+    padding: 1.7rem;
+    border-radius: 26px;
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.94), rgba(10, 14, 24, 0.96));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.question-set-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.question-set-title {
+    color: #fff;
+    font-size: 1.35rem;
+    margin: 0;
+}
+
+.question-set-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(108, 63, 197, 0.16);
+    border: 1px solid rgba(108, 63, 197, 0.25);
+    color: #d8c7ff;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.question-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.question-card {
+    padding: 1.15rem 1.2rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.question-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+}
+
+.question-card-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 0.9rem;
+    border-radius: 14px;
+    background: rgba(245, 166, 35, 0.14);
+    color: #ffd48c;
+    font-weight: 900;
+}
+
+.question-card-type {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.92rem;
+}
+
+.question-card-text {
+    color: #fff;
+    line-height: 2;
+    margin-bottom: 1rem;
+}
+
+.question-options {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.question-option {
+    padding: 0.8rem 0.9rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.question-note,
+.empty-questions {
+    padding: 1.3rem 1.4rem;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 2;
+}
+
+@media (max-width: 768px) {
+    .stage-questions-page {
+        width: 92%;
+        padding-top: 1.2rem;
+    }
+
+    .stage-questions-hero,
+    .question-set-card {
+        padding: 1.4rem;
+        border-radius: 24px;
+    }
+
+    .stage-questions-toolbar {
+        flex-direction: column;
+    }
+
+    .stage-questions-toolbar a,
+    .stage-questions-btn {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="stage-questions-page">
+    <section class="stage-questions-hero">
+        <div class="stage-questions-breadcrumb">
+            <a href="{% url 'learning:rank_cards' %}">کارت‌های درجه</a>
+            <span>/</span>
+            <a href="{% url 'learning:learning_path_stages' pk=learning_stage.learning_path.pk %}">{{ learning_stage.learning_path.title }}</a>
+            <span>/</span>
+            <a href="{% url 'learning:learning_stage_detail' pk=learning_stage.pk %}">جزئیات مرحله</a>
+            <span>/</span>
+            <span>سوالات</span>
+        </div>
+
+        <div class="stage-questions-badge">
+            <i class="fa-solid fa-circle-question"></i>
+            مرحله {{ learning_stage.stage_number }}
+        </div>
+
+        <h1 class="stage-questions-title">سوالات {{ learning_stage.title }}</h1>
+        <p class="stage-questions-description">
+            در این بخش می‌توانید مجموعه سوالات فعال این مرحله را مرور کنید و برای شرکت در آزمون آمادگی بیشتری داشته باشید.
+        </p>
+
+        <div class="stage-questions-meta">
+            <div class="stage-questions-meta-card">
+                <span>تعداد مجموعه سوال</span>
+                <strong>{{ question_sets|length }} مجموعه</strong>
+            </div>
+            <div class="stage-questions-meta-card">
+                <span>تعداد کل سوالات</span>
+                <strong>{{ question_count }} سوال</strong>
+            </div>
+            <div class="stage-questions-meta-card">
+                <span>وضعیت شما</span>
+                <strong>
+                    {% if user_stage_progress %}
+                        {{ user_stage_progress.get_status_display }}
+                    {% else %}
+                        هنوز وارد این مسیر نشده‌اید
+                    {% endif %}
+                </strong>
+            </div>
+        </div>
+    </section>
+
+    <div class="stage-questions-toolbar">
+        <a href="{% url 'learning:learning_stage_detail' pk=learning_stage.pk %}" class="stage-questions-btn stage-questions-btn--secondary">
+            <i class="fa-solid fa-arrow-right"></i>
+            بازگشت به مرحله
+        </a>
+        {% if user_stage_progress and user_stage_progress.status == 'ready_for_exam' %}
+            <form action="{% url 'learning:start_exam' pk=user_stage_progress.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="stage-questions-btn stage-questions-btn--primary">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    شروع آزمون این مرحله
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if question_sets %}
+        <section class="question-set-list">
+            {% for question_set in question_sets %}
+                <article class="question-set-card">
+                    <div class="question-set-header">
+                        <h2 class="question-set-title">{{ question_set.title }}</h2>
+                        <div class="question-set-badge">
+                            <i class="fa-solid fa-layer-group"></i>
+                            مجموعه {{ question_set.set_number }}
+                        </div>
+                    </div>
+
+                    {% if question_set.questions.all %}
+                        <div class="question-list">
+                            {% for question in question_set.questions.all %}
+                                <div class="question-card">
+                                    <div class="question-card-head">
+                                        <div class="question-card-number">سوال {{ question.question_number }}</div>
+                                        <div class="question-card-type">{{ question.get_question_type_display }} | {{ question.get_difficulty_display }}</div>
+                                    </div>
+
+                                    <div class="question-card-text">{{ question.text }}</div>
+
+                                    {% if question.question_type == 'multiple_choice' %}
+                                        <div class="question-options">
+                                            {% if question.option1 %}<div class="question-option">1. {{ question.option1 }}</div>{% endif %}
+                                            {% if question.option2 %}<div class="question-option">2. {{ question.option2 }}</div>{% endif %}
+                                            {% if question.option3 %}<div class="question-option">3. {{ question.option3 }}</div>{% endif %}
+                                            {% if question.option4 %}<div class="question-option">4. {{ question.option4 }}</div>{% endif %}
+                                        </div>
+                                    {% elif question.question_type == 'true_false' %}
+                                        <div class="question-note">این سوال از نوع صحیح/غلط است.</div>
+                                    {% else %}
+                                        <div class="question-note">این سوال به صورت پاسخ کوتاه طراحی شده است.</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-questions">هنوز سوالی برای این مجموعه ثبت نشده است.</div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <div class="empty-questions">برای این مرحله هنوز مجموعه سوال فعالی ثبت نشده است.</div>
+    {% endif %}
+</div>
+{% endblock %}

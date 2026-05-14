@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, View
@@ -9,6 +10,7 @@ from accounts.models import Rank
 from learning.models import (
     LearningPath,
     LearningStage,
+    StageQuestionSet,
     UserExamAnswer,
     UserLearningProgress,
     UserStageExam,
@@ -171,6 +173,61 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
                     status=UserStageExam.ExamStatus.IN_PROGRESS
                 ).first()
 
+        return context
+
+
+class LearningStageQuestionsView(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy("index")
+    redirect_field_name = None
+    model = LearningStage
+    template_name = "learning/learning_stage_questions.html"
+    context_object_name = "learning_stage"
+
+    def get_queryset(self):
+        return (
+            LearningStage.objects.filter(
+                learning_path__publish_status=LearningPath.PublishStatus.PUBLISHED,
+                is_active=True,
+            )
+            .select_related("learning_path", "learning_path__rank")
+            .prefetch_related(
+                Prefetch(
+                    "question_sets",
+                    queryset=StageQuestionSet.objects.filter(is_active=True)
+                    .prefetch_related("questions")
+                    .order_by("set_number"),
+                )
+            )
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        learning_stage = self.get_object()
+        if not learning_stage.learning_path.can_user_access(request.user):
+            return _redirect_for_locked_path(request, learning_stage.learning_path)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        learning_stage = self.get_object()
+        user_progress = UserLearningProgress.objects.filter(
+            user=self.request.user,
+            learning_path=learning_stage.learning_path,
+        ).first()
+        user_stage_progress = None
+
+        if user_progress:
+            user_progress.sync_stage_progresses()
+            user_stage_progress = UserStageProgress.objects.filter(
+                user=self.request.user,
+                learning_stage=learning_stage,
+            ).first()
+
+        question_sets = list(learning_stage.question_sets.all())
+        context["user_stage_progress"] = user_stage_progress
+        context["question_sets"] = question_sets
+        context["question_count"] = sum(
+            question_set.questions.count() for question_set in question_sets
+        )
         return context
 
 
