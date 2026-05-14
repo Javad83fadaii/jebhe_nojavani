@@ -463,14 +463,15 @@ class UserStageExam(TimestampedModel):
         is_correct = (user_answer == question.correct_answer)
         score_earned = question.question_points if is_correct else 0
 
-        # Create UserExamAnswer
-        UserExamAnswer.objects.create(
+        UserExamAnswer.objects.update_or_create(
             exam=self,
             question=question,
-            user_answer=user_answer,
-            is_correct=is_correct,
-            score_earned=score_earned,
-            answered_at=timezone.now(),
+            defaults={
+                "user_answer": user_answer,
+                "is_correct": is_correct,
+                "score_earned": score_earned,
+                "answered_at": timezone.now(),
+            },
         )
         return is_correct, score_earned
 
@@ -509,6 +510,7 @@ class UserStageExam(TimestampedModel):
             self.user_stage_progress.save(update_fields=["status", "updated_at"])
 
         self.save(update_fields=["completed_at", "time_spent", "status", "updated_at"])
+        self.answers.all().delete()
 
 
 class UserExamAnswer(TimestampedModel):

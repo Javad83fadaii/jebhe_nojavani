@@ -1,32 +1,98 @@
 {% extends 'base.html' %}
+{% load learning_filters %}
 
 {% block title %}پیشرفت من در {{ user_learning_progress.learning_path.title }}{% endblock %}
 
 {% block content %}
-    <h1>پیشرفت شما در سیر مطالعاتی: {{ user_learning_progress.learning_path.title }}</h1>
-    <p>وضعیت کلی: {{ user_learning_progress.get_status_display }}</p>
-    <p>درصد پیشرفت: {{ user_learning_progress.progress_percentage }}%</p>
-    <p>کل امتیاز کسب شده: {{ user_learning_progress.total_score }}</p>
-    <p>تاریخ شروع: {{ user_learning_progress.started_at }}</p>
-    {% if user_learning_progress.completed_at %}
-        <p>تاریخ اتمام: {{ user_learning_progress.completed_at }}</p>
-    {% endif %}
+    <div class="container progress-page">
+        <section class="glass-card progress-hero">
+            <div class="progress-hero__content">
+                <h1 class="text-gold progress-hero__title">پیشرفت شما در سیر مطالعاتی</h1>
+                <p class="progress-hero__subtitle">{{ user_learning_progress.learning_path.title }}</p>
+            </div>
 
-    <h2>مراحل</h2>
-    <ul>
-        {% for user_stage in user_stage_progresses %}
-            <li>
-                مرحله {{ user_stage.learning_stage.stage_number }}: 
-                {% if user_stage.status != 'locked' %}
-                    <a href="{% url 'learning:learning_stage_detail' pk=user_stage.learning_stage.pk %}">{{ user_stage.learning_stage.title }}</a>
-                {% else %}
-                    {{ user_stage.learning_stage.title }} (قفل شده)
+            <div class="progress-hero__meta">
+                <div class="progress-meta-chip">
+                    <span class="progress-meta-chip__label">وضعیت کلی</span>
+                    <strong class="progress-meta-chip__value">{{ user_learning_progress.get_status_display }}</strong>
+                </div>
+                <div class="progress-meta-chip">
+                    <span class="progress-meta-chip__label">تاریخ شروع</span>
+                    <strong class="progress-meta-chip__value">{{ user_learning_progress.started_at|jalali_datetime }}</strong>
+                </div>
+                {% if user_learning_progress.completed_at %}
+                    <div class="progress-meta-chip">
+                        <span class="progress-meta-chip__label">تاریخ اتمام</span>
+                        <strong class="progress-meta-chip__value">{{ user_learning_progress.completed_at|jalali_datetime }}</strong>
+                    </div>
                 {% endif %}
-                - وضعیت: {{ user_stage.get_status_display }}
-                {% if user_stage.best_score %}(بهترین نمره آزمون: {{ user_stage.best_score }}){% endif %}
-            </li>
-        {% empty %}
-            <li>هیچ مرحله‌ای برای این سیر مطالعاتی ثبت نشده است.</li>
-        {% endfor %}
-    </ul>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-bar__top">
+                    <span class="progress-bar__label">درصد پیشرفت</span>
+                    <strong class="progress-bar__value">{{ user_learning_progress.progress_percentage }}%</strong>
+                </div>
+                <div class="progress-bar__track">
+                    <div class="progress-bar__fill" style="width: {{ user_learning_progress.progress_percentage }}%"></div>
+                </div>
+            </div>
+
+            <div class="progress-stats">
+                <div class="progress-stat">
+                    <span class="progress-stat__label">کل امتیاز کسب شده</span>
+                    <strong class="progress-stat__value">{{ user_learning_progress.total_score }}</strong>
+                </div>
+                <div class="progress-stat">
+                    <span class="progress-stat__label">تعداد مراحل</span>
+                    <strong class="progress-stat__value">{{ user_stage_progresses|length }}</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="progress-stages">
+            <div class="progress-section-title">
+                <h2 class="text-gold">مراحل</h2>
+            </div>
+
+            <div class="progress-stage-list">
+                {% for user_stage in user_stage_progresses %}
+                    <article class="glass-card progress-stage-item">
+                        <div class="progress-stage-item__header">
+                            <div class="progress-stage-item__number">{{ user_stage.learning_stage.stage_number }}</div>
+                            <div class="progress-stage-item__info">
+                                <h3 class="progress-stage-item__title">
+                                    {% if user_stage.status != 'locked' %}
+                                        <a href="{% url 'learning:learning_stage_detail' pk=user_stage.learning_stage.pk %}" class="progress-stage-item__link">{{ user_stage.learning_stage.title }}</a>
+                                    {% else %}
+                                        {{ user_stage.learning_stage.title }}
+                                    {% endif %}
+                                </h3>
+                                <div class="progress-stage-item__meta">
+                                    <span class="progress-status-chip status-{{ user_stage.status }}">{{ user_stage.get_status_display }}</span>
+                                    {% if user_stage.best_score %}
+                                        <span class="progress-score-chip">بهترین نمره: {{ user_stage.best_score }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="progress-stage-item__actions">
+                            {% if user_stage.status != 'locked' %}
+                                <a class="btn btn-secondary progress-stage-btn" href="{% url 'learning:learning_stage_detail' pk=user_stage.learning_stage.pk %}">
+                                    مشاهده مرحله
+                                </a>
+                            {% else %}
+                                <span class="progress-locked-note">این مرحله قفل است</span>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="glass-card progress-empty">
+                        <h3 class="text-gold">هیچ مرحله‌ای برای این سیر مطالعاتی ثبت نشده است.</h3>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
 {% endblock %}

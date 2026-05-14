@@ -318,7 +318,10 @@ def submit_answer(request, exam_pk, question_pk):
     question = get_object_or_404(exam.question_set.questions, pk=question_pk)
 
     if request.method == "POST":
-        user_answer_text = request.POST.get("answer")
+        user_answer_text = request.POST.get(f"question_{question_pk}")
+        if user_answer_text is None:
+            user_answer_text = request.POST.get("answer")
+        user_answer_text = (user_answer_text or "").strip()
         if not user_answer_text:
             messages.error(request, "لطفاً یک پاسخ وارد کنید.")
             return redirect("learning:take_exam", pk=exam.pk)

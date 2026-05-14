@@ -1,49 +1,118 @@
 {% extends 'base.html' %}
+{% load learning_filters %}
 
 {% block title %}آزمون مرحله {{ exam.user_stage_progress.learning_stage.title }}{% endblock %}
 
 {% block content %}
-    <h1>آزمون مرحله: {{ exam.user_stage_progress.learning_stage.title }}</h1>
-    <p>شماره تلاش: {{ exam.attempt_number }}</p>
-    <p>زمان شروع: {{ exam.started_at }}</p>
-
-    <form action="{% url 'learning:finish_exam' pk=exam.pk %}" method="post">
-        {% csrf_token %}
-        {% for question in questions %}
-            <div class="question-block">
-                <p><strong>{{ question.question_number }}. {{ question.text }}</strong></p>
-                {% if question.question_type == 'multiple_choice' %}
-                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option1 }}" {% if user_answers|get_item:question.pk == question.option1 %}checked{% endif %}> {{ question.option1 }}</label><br>
-                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option2 }}" {% if user_answers|get_item:question.pk == question.option2 %}checked{% endif %}> {{ question.option2 }}</label><br>
-                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option3 }}" {% if user_answers|get_item:question.pk == question.option3 %}checked{% endif %}> {{ question.option3 }}</label><br>
-                    <label><input type="radio" name="question_{{ question.pk }}" value="{{ question.option4 }}" {% if user_answers|get_item:question.pk == question.option4 %}checked{% endif %}> {{ question.option4 }}</label><br>
-                {% elif question.question_type == 'true_false' %}
-                    <label><input type="radio" name="question_{{ question.pk }}" value="True" {% if user_answers|get_item:question.pk == 'True' %}checked{% endif %}> صحیح</label><br>
-                    <label><input type="radio" name="question_{{ question.pk }}" value="False" {% if user_answers|get_item:question.pk == 'False' %}checked{% endif %}> غلط</label><br>
-                {% elif question.question_type == 'short_answer' %}
-                    <textarea name="question_{{ question.pk }}">{{ user_answers|get_item:question.pk }}</textarea><br>
-                {% endif %}
-                <button type="submit" formaction="{% url 'learning:submit_answer' exam_pk=exam.pk question_pk=question.pk %}">ذخیره پاسخ</button>
+    <div class="container exam-page">
+        <section class="glass-card exam-hero">
+            <div class="exam-hero__content">
+                <h1 class="text-gold exam-hero__title">آزمون مرحله: {{ exam.user_stage_progress.learning_stage.title }}</h1>
+                <p class="exam-hero__subtitle">به سوالات پاسخ بده و هر سوال را جداگانه ذخیره کن، در پایان آزمون را تمام کن.</p>
             </div>
-            <hr>
-        {% empty %}
-            <p>هیچ سوالی برای این آزمون وجود ندارد.</p>
-        {% endfor %}
 
-        <button type="submit">اتمام آزمون و مشاهده نتیجه</button>
-    </form>
+            <div class="exam-hero__meta">
+                <div class="exam-meta-chip">
+                    <span class="exam-meta-chip__label">شماره تلاش</span>
+                    <strong class="exam-meta-chip__value">{{ exam.attempt_number }}</strong>
+                </div>
+                <div class="exam-meta-chip">
+                    <span class="exam-meta-chip__label">زمان شروع</span>
+                    <strong class="exam-meta-chip__value">{{ exam.started_at|jalali_datetime }}</strong>
+                </div>
+            </div>
+        </section>
 
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% if messages %}
+            <ul class="messages exam-messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <section class="exam-questions">
+            {% for question in questions %}
+                <article class="glass-card exam-question">
+                    <header class="exam-question__header">
+                        <div class="exam-question__number">{{ question.question_number }}</div>
+                        <h2 class="exam-question__text">{{ question.text }}</h2>
+                    </header>
+
+                    <form action="{% url 'learning:submit_answer' exam_pk=exam.pk question_pk=question.pk %}" method="post" class="exam-answer-form">
+                        {% csrf_token %}
+
+                        {% if question.question_type == 'multiple_choice' %}
+                            <div class="exam-options">
+                                {% if question.option1 %}
+                                    <label class="exam-option">
+                                        <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="{{ question.option1 }}" {% if user_answers|get_item:question.pk == question.option1 %}checked{% endif %}>
+                                        <span class="exam-option__text">{{ question.option1 }}</span>
+                                    </label>
+                                {% endif %}
+                                {% if question.option2 %}
+                                    <label class="exam-option">
+                                        <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="{{ question.option2 }}" {% if user_answers|get_item:question.pk == question.option2 %}checked{% endif %}>
+                                        <span class="exam-option__text">{{ question.option2 }}</span>
+                                    </label>
+                                {% endif %}
+                                {% if question.option3 %}
+                                    <label class="exam-option">
+                                        <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="{{ question.option3 }}" {% if user_answers|get_item:question.pk == question.option3 %}checked{% endif %}>
+                                        <span class="exam-option__text">{{ question.option3 }}</span>
+                                    </label>
+                                {% endif %}
+                                {% if question.option4 %}
+                                    <label class="exam-option">
+                                        <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="{{ question.option4 }}" {% if user_answers|get_item:question.pk == question.option4 %}checked{% endif %}>
+                                        <span class="exam-option__text">{{ question.option4 }}</span>
+                                    </label>
+                                {% endif %}
+                            </div>
+                        {% elif question.question_type == 'true_false' %}
+                            <div class="exam-options">
+                                <label class="exam-option">
+                                    <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="True" {% if user_answers|get_item:question.pk == 'True' %}checked{% endif %}>
+                                    <span class="exam-option__text">صحیح</span>
+                                </label>
+                                <label class="exam-option">
+                                    <input class="exam-option__input" type="radio" name="question_{{ question.pk }}" value="False" {% if user_answers|get_item:question.pk == 'False' %}checked{% endif %}>
+                                    <span class="exam-option__text">غلط</span>
+                                </label>
+                            </div>
+                        {% elif question.question_type == 'short_answer' %}
+                            <textarea class="exam-textarea" name="question_{{ question.pk }}" rows="4" placeholder="پاسخ خود را بنویسید...">{{ user_answers|get_item:question.pk }}</textarea>
+                        {% endif %}
+
+                        <div class="exam-question__actions">
+                            <button type="submit" class="btn btn-secondary exam-save-btn">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                ذخیره پاسخ
+                            </button>
+                            {% if user_answers|get_item:question.pk %}
+                                <span class="exam-saved-indicator">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    ذخیره شده
+                                </span>
+                            {% endif %}
+                        </div>
+                    </form>
+                </article>
+            {% empty %}
+                <div class="glass-card exam-empty">
+                    <h2 class="text-gold">هیچ سوالی برای این آزمون وجود ندارد.</h2>
+                </div>
             {% endfor %}
-        </ul>
-    {% endif %}
+        </section>
+
+        <section class="exam-finish">
+            <form action="{% url 'learning:finish_exam' pk=exam.pk %}" method="post" class="exam-finish__form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary exam-finish-btn">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    اتمام آزمون و مشاهده نتیجه
+                </button>
+            </form>
+        </section>
+    </div>
 {% endblock %}
-{% comment %}
-    Custom filter to get dictionary item by key. Need to register this in a templatetags file.
-    For now, assume it's available or replace with direct dictionary access if possible in a view.
-    e.g., {{ user_answers.question.pk }} (if question.pk is a valid attribute name)
-{% endcomment %}
-{% load learning_filters %}

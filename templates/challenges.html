@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load learning_filters %}
 {% block content %}
     <div class="challenge-page" data-csrf="{{ csrf_token }}">
         <section class="container challenge-page__hero-wrap">
@@ -59,11 +60,11 @@
                                 <div class="challenge-meta-row">
                                     <div class="challenge-meta-chip">
                                         <i class="fa-solid fa-calendar-check"></i>
-                                        شروع: {{ challenge.start_date|date:"Y/m/d" }}
+                                        شروع: {{ challenge.start_date|jalali_date }}
                                     </div>
                                     <div class="challenge-meta-chip">
                                         <i class="fa-solid fa-flag-checkered"></i>
-                                        پایان: {{ challenge.end_date|date:"Y/m/d" }}
+                                        پایان: {{ challenge.end_date|jalali_date }}
                                     </div>
                                 </div>
                             </div>
