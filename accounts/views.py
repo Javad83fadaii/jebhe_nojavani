@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.models import User
+from accounts.models import Seller, User
 from accounts.serializers import (
     SellerLoginSerializer,
     SellerProfileSerializer,
@@ -108,24 +108,24 @@ class SellerLoginView(APIView):
 
 class SellerProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    # اصلاح شد: فیلتر بر اساس وجود پروفایل فروشنده
-    queryset = User.objects.filter(seller_profile__isnull=False)
+    queryset = Seller.objects.select_related("user")
     serializer_class = SellerProfileSerializer
 
     def get_queryset(self):
-        # اصلاح شد: فیلتر بر اساس وجود پروفایل فروشنده
-        return super().get_queryset().filter(pk=self.request.user.pk, seller_profile__isnull=False)
+        return super().get_queryset().filter(user=self.request.user)
 
     @action(detail=False, methods=["get", "patch"], url_path="me")
     def me(self, request):
         if not request.user.is_seller:
             return Response({"detail": "پروفایل فروشنده یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
 
+        seller_profile = request.user.seller_profile
+
         if request.method.lower() == "get":
-            serializer = self.get_serializer(request.user)
+            serializer = self.get_serializer(seller_profile)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        serializer = self.get_serializer(seller_profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

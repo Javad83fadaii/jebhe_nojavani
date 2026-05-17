@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="auth-container">
     <div class="glass-card">
@@ -38,7 +42,8 @@
                 </div>
                 <div class="form-group">
                     <label for="birth_date">تاریخ تولد</label>
-                    <input type="date" id="birth_date" name="birth_date" class="form-control">
+                    <input type="hidden" id="birth_date" name="birth_date">
+                    <input type="text" id="birth_date_display" class="form-control" placeholder="انتخاب تاریخ (شمسی)" readonly>
                 </div>
             </div>
 
@@ -54,7 +59,9 @@
                 </div>
                 <div class="form-group">
                     <label for="province">استان</label>
-                    <input type="text" id="province" name="province" class="form-control" placeholder="مثال: تهران">
+                    <select id="province" name="province" class="form-control">
+                        <option value="">انتخاب کنید...</option>
+                    </select>
                 </div>
             </div>
 
@@ -62,12 +69,14 @@
             <div class="grid-2">
                 <div class="form-group">
                     <label for="city">شهر</label>
-                    <input type="text" id="city" name="city" class="form-control" placeholder="مثال: تهران">
+                    <select id="city" name="city" class="form-control" disabled>
+                        <option value="">ابتدا استان را انتخاب کنید...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="school">مدرسه</label>
                     <select id="school" name="school" class="form-control">
-                        <option value="">ابتدا استان و شهر را مشخص کنید (اختیاری)</option>
+                        <option value="">ابتدا شهر را انتخاب کنید (اختیاری)</option>
                     </select>
                 </div>
             </div>
@@ -278,57 +287,235 @@
         }
     }
 </style>
+{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('register-form');
         const messageContainer = document.getElementById('message-container');
+
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
         const schoolSelect = document.getElementById('school');
         const mosqueSelect = document.getElementById('mosque');
 
-        // تابع کمکی برای دریافت اطلاعات مساجد و مدارس از API
-        async function loadSelect(url, selectEl) {
-            try {
-                const res = await fetch(url);
-                if (!res.ok) return;
-                const data = await res.json();
-                const results = data.results || data;
-                results.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    opt.textContent = item.name;
-                    selectEl.appendChild(opt);
-                });
-            } catch (error) {
-                console.error('خطا در بارگذاری اطلاعات:', error);
+        const birthDateHidden = document.getElementById('birth_date');
+        const birthDateDisplay = document.getElementById('birth_date_display');
+
+        function normalizeDigits(value) {
+            const map = {
+                '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+            };
+            return String(value || '').trim().replace(/[۰-۹٠-٩]/g, (d) => map[d] || d);
+        }
+
+        function resetSelect(selectEl, placeholderText, disabled) {
+            selectEl.innerHTML = '';
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = placeholderText;
+            selectEl.appendChild(opt);
+            if (typeof disabled === 'boolean') {
+                selectEl.disabled = disabled;
             }
         }
 
-        // بارگذاری داده‌های پایه در صورت نیاز
-        loadSelect('/api/geography/schools/', schoolSelect);
-        loadSelect('/api/geography/mosques/', mosqueSelect);
+        async function fetchJson(url, options) {
+            const res = await fetch(url, options);
+            const text = await res.text();
+            let data = null;
+            if (text) {
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    data = null;
+                }
+            }
+            return { ok: res.ok, status: res.status, data, text };
+        }
 
-        // مدیریت رویداد سابمیت فرم
+        function extractErrorMessage(payload) {
+            if (!payload || typeof payload !== 'object') return 'خطا در ثبت‌نام';
+            if (payload.detail) return payload.detail;
+            const parts = [];
+            Object.entries(payload).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach(v => parts.push(String(v)));
+                } else if (value && typeof value === 'object') {
+                    Object.values(value).flat().forEach(v => parts.push(String(v)));
+                } else if (value) {
+                    parts.push(String(value));
+                }
+            });
+            return parts.join(' | ') || 'خطا در ثبت‌نام';
+        }
+
+        function extractTextErrorMessage(text) {
+            const normalized = String(text || '').trim();
+            if (!normalized) return 'خطا در ثبت‌نام';
+            const lower = normalized.toLowerCase();
+            if (lower.startsWith('<!doctype') || lower.startsWith('<html') || lower.includes('<body')) {
+                return 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.';
+            }
+            if (normalized.length > 200) return 'خطا در ثبت‌نام';
+            return normalized;
+        }
+
+        function showMessage(message, type) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
+            msgDiv.textContent = message;
+            messageContainer.appendChild(msgDiv);
+            msgDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.persianDatepicker) {
+            window.jQuery(birthDateDisplay).persianDatepicker({
+                initialValue: false,
+                observer: true,
+                autoClose: true,
+                format: 'YYYY/MM/DD',
+                onSelect: function(unix) {
+                    try {
+                        const gregorian = new persianDate(unix).toCalendar('gregorian').format('YYYY-MM-DD');
+                        birthDateHidden.value = gregorian;
+                    } catch (e) {
+                        birthDateHidden.value = '';
+                    }
+                }
+            });
+        }
+
+        async function loadProvinces() {
+            resetSelect(provinceSelect, 'انتخاب کنید...', false);
+            resetSelect(citySelect, 'ابتدا استان را انتخاب کنید...', true);
+            resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+            resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+
+            try {
+                const res = await fetchJson('/api/geography/provinces/');
+                if (!res.ok || !Array.isArray(res.data)) return;
+                res.data.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    provinceSelect.appendChild(opt);
+                });
+            } catch (e) {
+            }
+        }
+
+        async function loadCities(province) {
+            resetSelect(citySelect, 'در حال بارگذاری شهرها...', true);
+            resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+            resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+
+            try {
+                const res = await fetchJson(`/api/geography/cities/?province=${encodeURIComponent(province)}`);
+                resetSelect(citySelect, 'انتخاب کنید...', false);
+                if (!res.ok || !Array.isArray(res.data)) return;
+                res.data.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    citySelect.appendChild(opt);
+                });
+            } catch (e) {
+                resetSelect(citySelect, 'خطا در دریافت شهرها', true);
+            }
+        }
+
+        function fillItems(selectEl, items, placeholderText) {
+            resetSelect(selectEl, placeholderText, false);
+            (items || []).forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.name;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        async function loadSchoolsAndMosques(province, city) {
+            fillItems(schoolSelect, [], 'در حال بارگذاری... (اختیاری)');
+            fillItems(mosqueSelect, [], 'در حال بارگذاری... (اختیاری)');
+            try {
+                const qs = `province=${encodeURIComponent(province)}&city=${encodeURIComponent(city)}`;
+                const [schoolsRes, mosquesRes] = await Promise.all([
+                    fetchJson(`/api/geography/schools/?${qs}`),
+                    fetchJson(`/api/geography/mosques/?${qs}`),
+                ]);
+
+                const schools = (schoolsRes.data && (schoolsRes.data.results || schoolsRes.data)) || [];
+                const mosques = (mosquesRes.data && (mosquesRes.data.results || mosquesRes.data)) || [];
+
+                fillItems(schoolSelect, Array.isArray(schools) ? schools : [], 'انتخاب مدرسه (اختیاری)');
+                fillItems(mosqueSelect, Array.isArray(mosques) ? mosques : [], 'انتخاب مسجد پایگاه (اختیاری)');
+            } catch (e) {
+                fillItems(schoolSelect, [], 'خطا در دریافت مدارس (اختیاری)');
+                fillItems(mosqueSelect, [], 'خطا در دریافت مساجد (اختیاری)');
+            }
+        }
+
+        provinceSelect.addEventListener('change', function() {
+            const province = (provinceSelect.value || '').trim();
+            if (!province) {
+                resetSelect(citySelect, 'ابتدا استان را انتخاب کنید...', true);
+                resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                return;
+            }
+            loadCities(province);
+        });
+
+        citySelect.addEventListener('change', function() {
+            const province = (provinceSelect.value || '').trim();
+            const city = (citySelect.value || '').trim();
+            if (!province || !city) {
+                resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                return;
+            }
+            loadSchoolsAndMosques(province, city);
+        });
+
+        loadProvinces();
+
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             messageContainer.innerHTML = '';
 
-            const phone_number = document.getElementById('phone_number').value.trim();
+            const phone_number = normalizeDigits(document.getElementById('phone_number').value);
             const first_name = document.getElementById('first_name').value.trim();
             const last_name = document.getElementById('last_name').value.trim();
-            const national_code = document.getElementById('national_code').value.trim();
-            const birth_date = document.getElementById('birth_date').value;
-            const gender = document.getElementById('gender').value;
+            const national_code = normalizeDigits(document.getElementById('national_code').value);
+            const birth_date = (birthDateHidden.value || '').trim();
+            const gender = document.getElementById('gender').value || null;
             const school = schoolSelect.value || null;
             const mosque = mosqueSelect.value || null;
-            const city = document.getElementById('city').value.trim();
-            const province = document.getElementById('province').value.trim();
+            const city = (citySelect.value || '').trim();
+            const province = (provinceSelect.value || '').trim();
             const password = document.getElementById('password').value;
             const passwordConfirm = document.getElementById('password_confirm').value;
 
-            // اعتبارسنجی سمت کاربر (Client-side Validation)
             if (!/^09\d{9}$/.test(phone_number)) {
                 showMessage('شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.', 'error');
+                return;
+            }
+
+            if (!first_name) {
+                showMessage('نام الزامی است.', 'error');
+                return;
+            }
+
+            if (!last_name) {
+                showMessage('نام خانوادگی الزامی است.', 'error');
                 return;
             }
 
@@ -367,52 +554,35 @@
             submitBtn.disabled = true;
 
             try {
-                const res = await fetch('/api/accounts/register/', {
+                const res = await fetchJson('/api/accounts/register/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                const data = await res.json();
-                
+
                 if (!res.ok) {
-                    // مدیریت خطاهای دریافتی از سرور
-                    const detail = data.detail || (typeof data === 'object' ? Object.values(data).flat().join(' | ') : 'خطا در ثبت‌نام');
-                    showMessage(detail, 'error');
+                    const message = res.data ? extractErrorMessage(res.data) : extractTextErrorMessage(res.text);
+                    showMessage(message, 'error');
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                     return;
                 }
 
-                // ذخیره توکن‌ها
+                const data = res.data || {};
                 localStorage.setItem('access_token', data.access || data.access_token);
                 localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
                 localStorage.setItem('user_type', 'user');
 
                 showMessage('ثبت‌نام با موفقیت انجام شد. در حال انتقال به صفحه اصلی...', 'success');
-                
-                // انتقال پس از موفقیت
                 setTimeout(() => {
                     window.location.href = "{% url 'home' %}";
                 }, 1500);
-
             } catch (err) {
                 showMessage('خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }
         });
-
-        // تابع نمایش پیام‌ها
-        function showMessage(message, type) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = type === 'error' ? 'error-message' : 'success-message';
-            msgDiv.textContent = message;
-            messageContainer.appendChild(msgDiv);
-            
-            // اسکرول به پیام
-            msgDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
     });
 </script>
 {% endblock %}

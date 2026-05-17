@@ -171,6 +171,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
     )
     profile_image = models.ImageField(upload_to="profiles/", null=True, blank=True)
+    bio = models.TextField(blank=True, default="")
+    study_goal = models.CharField(max_length=160, blank=True, default="")
 
     total_points = models.PositiveIntegerField(default=0)
     challenge_coins = models.PositiveIntegerField(default=0)

@@ -2,18 +2,33 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from geography.models import Mosque, School
+from geography.models import City, Mosque, Province, School
 
 
 class AccountsAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         location_value = {"type": "Point", "coordinates": [51.3890, 35.6892]}
+        self.province = Province.objects.create(name="تهران")
+        self.city = City.objects.create(province=self.province, name="تهران")
+        self.other_province = Province.objects.create(name="قم")
+        self.other_city = City.objects.create(province=self.other_province, name="قم")
         self.school = School.objects.create(
             name="مدرسه نمونه",
             address="آدرس مدرسه",
             city="تهران",
             province="تهران",
+            province_ref=self.province,
+            city_ref=self.city,
+            location=location_value,
+        )
+        self.other_school = School.objects.create(
+            name="مدرسه قم",
+            address="آدرس مدرسه قم",
+            city="قم",
+            province="قم",
+            province_ref=self.other_province,
+            city_ref=self.other_city,
             location=location_value,
         )
         self.mosque = Mosque.objects.create(
@@ -21,6 +36,8 @@ class AccountsAPITestCase(TestCase):
             address="آدرس مسجد",
             city="تهران",
             province="تهران",
+            province_ref=self.province,
+            city_ref=self.city,
             location=location_value,
         )
 
@@ -35,8 +52,6 @@ class AccountsAPITestCase(TestCase):
             "gender": "male",
             "school": self.school.pk,
             "mosque": self.mosque.pk,
-            "city": "تهران",
-            "province": "تهران",
         }
         res = self.client.post("/api/accounts/register/", register_payload, format="json")
         self.assertEqual(res.status_code, 201)
@@ -53,12 +68,16 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.data["phone_number"], "09123456789")
         self.assertEqual(res.data["school"]["id"], self.school.pk)
         self.assertEqual(res.data["mosque"]["id"], self.mosque.pk)
+        self.assertEqual(res.data["city"], "تهران")
+        self.assertEqual(res.data["province"], "تهران")
 
-        patch_payload = {"city": "قم", "province": "قم"}
+        patch_payload = {"school": self.other_school.pk, "mosque": None}
         res = self.client.patch("/api/accounts/profile/me/", patch_payload, format="json", HTTP_AUTHORIZATION=f"Bearer {access}")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["city"], "قم")
         self.assertEqual(res.data["province"], "قم")
+        self.assertEqual(res.data["school"]["id"], self.other_school.pk)
+        self.assertIsNone(res.data["mosque"])
 
     def test_seller_registration_requires_admin_verification(self):
         seller_register_payload = {
@@ -79,8 +98,8 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 403)
 
         seller = User.objects.get(phone_number="09111111111")
-        seller.seller_verified = True
-        seller.save(update_fields=["seller_verified"])
+        seller.seller_profile.verified = True
+        seller.seller_profile.save(update_fields=["verified", "updated_at"])
 
         res = self.client.post("/api/accounts/seller/login/", seller_login_payload, format="json")
         self.assertEqual(res.status_code, 200)
@@ -98,3 +117,26 @@ class AccountsAPITestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["seller_shop_name"], "فروشگاه جدید")
+
+    def test_user_registration_rejects_mismatched_mosque_and_school(self):
+        other_mosque = Mosque.objects.create(
+            name="مسجد قم",
+            address="آدرس مسجد قم",
+            city="قم",
+            province="قم",
+            province_ref=self.other_province,
+            city_ref=self.other_city,
+            location={"type": "Point", "coordinates": [50.8764, 34.6416]},
+        )
+
+        register_payload = {
+            "phone_number": "09300000000",
+            "first_name": "رضا",
+            "last_name": "احمدی",
+            "password": "StrongPass123!",
+            "school": self.school.pk,
+            "mosque": other_mosque.pk,
+        }
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("mosque", res.data)
