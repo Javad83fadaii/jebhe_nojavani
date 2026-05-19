@@ -1,4 +1,5 @@
 from django.test import TestCase
+from datetime import date
 from rest_framework.test import APIClient
 
 from accounts.models import User
@@ -140,3 +141,63 @@ class AccountsAPITestCase(TestCase):
         res = self.client.post("/api/accounts/register/", register_payload, format="json")
         self.assertEqual(res.status_code, 400)
         self.assertIn("mosque", res.data)
+
+    def test_user_registration_accepts_birth_date_with_slashes(self):
+        register_payload = {
+            "phone_number": "09125555555",
+            "first_name": "مهدی",
+            "last_name": "کریمی",
+            "password": "StrongPass123!",
+            "birth_date": "2000/01/15",
+        }
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(phone_number="09125555555")
+        self.assertEqual(user.birth_date, date(2000, 1, 15))
+
+    def test_user_registration_accepts_birth_date_with_persian_digits(self):
+        register_payload = {
+            "phone_number": "09126666666",
+            "first_name": "امیر",
+            "last_name": "کاظمی",
+            "password": "StrongPass123!",
+            "birth_date": "۲۰۰۰/۰۱/۱۵",
+        }
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(phone_number="09126666666")
+        self.assertEqual(user.birth_date, date(2000, 1, 15))
+
+    def test_user_registration_accepts_jalali_birth_date(self):
+        register_payload = {
+            "phone_number": "09127777777",
+            "first_name": "سینا",
+            "last_name": "عباسی",
+            "password": "StrongPass123!",
+            "birth_date": "۱۴۰۳/۰۲/۲۷",
+        }
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(phone_number="09127777777")
+        self.assertEqual(user.birth_date, date(2024, 5, 16))
+
+    def test_user_profile_update_accepts_jalali_birth_date(self):
+        user = User.objects.create_user(
+            phone_number="09128888888",
+            password="StrongPass123!",
+            first_name="محمد",
+            last_name="جعفری",
+        )
+        self.client.force_authenticate(user=user)
+
+        res = self.client.patch(
+            "/api/accounts/profile/me/",
+            {"birth_date": "۱۴۰۳/۰۲/۲۷"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        user.refresh_from_db()
+        self.assertEqual(user.birth_date, date(2024, 5, 16))

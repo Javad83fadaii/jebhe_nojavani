@@ -97,6 +97,7 @@ class LearningStage(TimestampedModel):
     content_link_or_file = models.CharField(max_length=500, blank=True, verbose_name="لینک یا فایل محتوا")
     estimated_study_time = models.PositiveSmallIntegerField(default=0, verbose_name="مدت زمان تقریبی مطالعه (دقیقه)")
     description = models.TextField(blank=True, verbose_name="توضیحات مرحله")
+    detail_summary = models.TextField(blank=True, verbose_name="متن باکس توضیحات مرحله")
     required_points = models.PositiveIntegerField(default=0, verbose_name="امتیاز مورد نیاز برای باز شدن")
     stage_points = models.PositiveIntegerField(default=100, verbose_name="امتیاز مرحله")
     min_passing_score = models.PositiveSmallIntegerField(
@@ -112,6 +113,18 @@ class LearningStage(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.learning_path.title} - مرحله {self.stage_number}: {self.title}"
+
+    def get_detail_summary(self) -> str:
+        if self.detail_summary:
+            return self.detail_summary
+
+        if self.description:
+            return self.description
+
+        return (
+            f"در این مرحله با موضوع «{self.title}» آشنا می‌شوید. "
+            "پس از مطالعه محتوا، وضعیت مرحله را تکمیل کنید و برای آزمون آن آماده شوید."
+        )
 
 
 class StageQuestionSet(TimestampedModel):

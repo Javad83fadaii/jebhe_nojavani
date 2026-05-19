@@ -19,7 +19,7 @@
             <!-- شماره تلفن -->
             <div class="form-group full-width">
                 <label for="phone_number">شماره تلفن (نام کاربری)</label>
-                <input type="tel" id="phone_number" name="phone_number" class="form-control" pattern="09[0-9]{9}" placeholder="مثال: 09123456789" dir="ltr" required>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" pattern="09[0-9]{9}" placeholder="مثال: 09123456789" dir="ltr" maxlength="11" inputmode="numeric" required>
             </div>
 
             <!-- نام و نام خانوادگی -->
@@ -43,7 +43,11 @@
                 <div class="form-group">
                     <label for="birth_date">تاریخ تولد</label>
                     <input type="hidden" id="birth_date" name="birth_date">
-                    <input type="text" id="birth_date_display" class="form-control" placeholder="انتخاب تاریخ (شمسی)" readonly>
+                    <div class="date-input-group">
+                        <input type="text" id="birth_date_display" class="form-control date-input" placeholder="انتخاب تاریخ (شمسی)" readonly>
+                        <button type="button" id="clear_birth_date" class="date-clear-btn" aria-label="پاک کردن تاریخ تولد">حذف</button>
+                    </div>
+                    <small class="date-help-text">روی فیلد کلیک کنید و تاریخ را از تقویم شمسی انتخاب کنید.</small>
                 </div>
             </div>
 
@@ -188,6 +192,41 @@
         color: rgba(255, 255, 255, 0.3);
     }
 
+    .date-input-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .date-input {
+        cursor: pointer;
+    }
+
+    .date-clear-btn {
+        min-width: 72px;
+        padding: 0.9rem 0.75rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--gray-light, #d1d1d1);
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .date-clear-btn:hover {
+        border-color: var(--primary-gold, #ffd700);
+        color: var(--primary-gold, #ffd700);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .date-help-text {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--gray-light, #a0a0a0);
+        font-size: 0.8rem;
+    }
+
     .form-control:focus {
         outline: none;
         border-color: var(--primary-gold, #ffd700);
@@ -302,9 +341,11 @@
         const citySelect = document.getElementById('city');
         const schoolSelect = document.getElementById('school');
         const mosqueSelect = document.getElementById('mosque');
+        const phoneInput = document.getElementById('phone_number');
 
         const birthDateHidden = document.getElementById('birth_date');
         const birthDateDisplay = document.getElementById('birth_date_display');
+        const clearBirthDateBtn = document.getElementById('clear_birth_date');
 
         function normalizeDigits(value) {
             const map = {
@@ -314,6 +355,38 @@
                 '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
             };
             return String(value || '').trim().replace(/[۰-۹٠-٩]/g, (d) => map[d] || d);
+        }
+
+        function normalizeBirthDateValue(rawValue) {
+            const normalized = normalizeDigits(rawValue).replace(/\./g, '/').trim();
+            if (!normalized) return '';
+
+            if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+                return normalized;
+            }
+
+            if (/^\d{4}\/\d{2}\/\d{2}$/.test(normalized)) {
+                const parts = normalized.split('/').map(Number);
+                try {
+                    return new persianDate([parts[0], parts[1], parts[2]])
+                        .toCalendar('gregorian')
+                        .format('YYYY-MM-DD');
+                } catch (e) {
+                    return normalized;
+                }
+            }
+
+            return '';
+        }
+
+        function syncBirthDateHidden() {
+            birthDateHidden.value = normalizeBirthDateValue(birthDateDisplay.value || '');
+            return birthDateHidden.value;
+        }
+
+        function clearBirthDate() {
+            birthDateDisplay.value = '';
+            birthDateHidden.value = '';
         }
 
         function resetSelect(selectEl, placeholderText, disabled) {
@@ -382,16 +455,40 @@
                 observer: true,
                 autoClose: true,
                 format: 'YYYY/MM/DD',
-                onSelect: function(unix) {
-                    try {
-                        const gregorian = new persianDate(unix).toCalendar('gregorian').format('YYYY-MM-DD');
-                        birthDateHidden.value = gregorian;
-                    } catch (e) {
-                        birthDateHidden.value = '';
+                toolbox: {
+                    enabled: true,
+                    calendarSwitch: {
+                        enabled: false
+                    },
+                    todayButton: {
+                        enabled: false
+                    },
+                    submitButton: {
+                        enabled: true,
+                        text: {
+                            fa: 'تایید'
+                        }
                     }
+                },
+                navigator: {
+                    enabled: true,
+                    scroll: {
+                        enabled: false
+                    }
+                },
+                onSelect: function() {
+                    syncBirthDateHidden();
                 }
             });
         }
+
+        birthDateDisplay.addEventListener('change', syncBirthDateHidden);
+        birthDateDisplay.addEventListener('blur', syncBirthDateHidden);
+        clearBirthDateBtn.addEventListener('click', clearBirthDate);
+        phoneInput.addEventListener('input', function() {
+            const normalized = normalizeDigits(phoneInput.value).replace(/\D/g, '').slice(0, 11);
+            phoneInput.value = normalized;
+        });
 
         async function loadProvinces() {
             resetSelect(provinceSelect, 'انتخاب کنید...', false);
@@ -495,7 +592,7 @@
             const first_name = document.getElementById('first_name').value.trim();
             const last_name = document.getElementById('last_name').value.trim();
             const national_code = normalizeDigits(document.getElementById('national_code').value);
-            const birth_date = (birthDateHidden.value || '').trim();
+            const birth_date = syncBirthDateHidden().trim();
             const gender = document.getElementById('gender').value || null;
             const school = schoolSelect.value || null;
             const mosque = mosqueSelect.value || null;
@@ -521,6 +618,11 @@
 
             if (national_code && !/^\d{10}$/.test(national_code)) {
                 showMessage('کد ملی باید یک عدد ۱۰ رقمی معتبر باشد.', 'error');
+                return;
+            }
+
+            if (birthDateDisplay.value.trim() && !birth_date) {
+                showMessage('تاریخ تولد انتخاب شده معتبر نیست. لطفاً دوباره از تقویم انتخاب کنید.', 'error');
                 return;
             }
 

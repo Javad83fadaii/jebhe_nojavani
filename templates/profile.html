@@ -4,6 +4,7 @@
 {% block title %}پروفایل کاربری - جبهه نوجوانی{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
 <style>
     :root {
         --profile-purple: #6C3FC5;
@@ -344,6 +345,41 @@
         transition: all 0.3s ease;
     }
 
+    .date-input-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .date-input {
+        cursor: pointer;
+    }
+
+    .date-clear-btn {
+        min-width: 72px;
+        padding: 0.9rem 0.75rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        font-family: 'Vazirmatn', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .date-clear-btn:hover {
+        border-color: var(--profile-gold);
+        color: var(--profile-gold);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .date-help-text {
+        display: block;
+        margin-top: 0.5rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.8rem;
+    }
+
     .form-group input:focus,
     .form-group select:focus {
         outline: none;
@@ -524,7 +560,12 @@
                 </div>
                 <div class="form-group">
                     <label for="birth_date">تاریخ تولد</label>
-                    <input type="date" id="birth_date" name="birth_date">
+                    <input type="hidden" id="birth_date" name="birth_date">
+                    <div class="date-input-group">
+                        <input type="text" id="birth_date_display" class="form-control date-input" placeholder="انتخاب تاریخ (شمسی)" readonly>
+                        <button type="button" id="clear_birth_date" class="date-clear-btn" aria-label="پاک کردن تاریخ تولد">حذف</button>
+                    </div>
+                    <small class="date-help-text">روی فیلد کلیک کنید و تاریخ را از تقویم شمسی انتخاب کنید.</small>
                 </div>
                 <div class="form-group">
                     <label for="gender">جنسیت</label>
@@ -567,6 +608,9 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
@@ -588,6 +632,96 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelEditBtn = document.getElementById('cancel-edit');
     const schoolSelect = document.getElementById('school');
     const mosqueSelect = document.getElementById('mosque');
+    const birthDateHidden = document.getElementById('birth_date');
+    const birthDateDisplay = document.getElementById('birth_date_display');
+    const clearBirthDateBtn = document.getElementById('clear_birth_date');
+
+    function normalizeDigits(value) {
+        const map = {
+            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+        };
+        return String(value || '').trim().replace(/[۰-۹٠-٩]/g, (digit) => map[digit] || digit);
+    }
+
+    function normalizeBirthDateValue(rawValue) {
+        const normalized = normalizeDigits(rawValue).replace(/\./g, '/').trim();
+        if (!normalized) {
+            return '';
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+            return normalized;
+        }
+
+        if (/^\d{4}\/\d{2}\/\d{2}$/.test(normalized)) {
+            const parts = normalized.split('/').map(Number);
+            try {
+                return new persianDate([parts[0], parts[1], parts[2]])
+                    .toCalendar('gregorian')
+                    .format('YYYY-MM-DD');
+            } catch (error) {
+                return '';
+            }
+        }
+
+        return '';
+    }
+
+    function formatBirthDateForInput(value) {
+        const normalized = normalizeBirthDateValue(value);
+        if (!normalized) {
+            return '';
+        }
+
+        try {
+            const [year, month, day] = normalized.split('-').map(Number);
+            return new persianDate(new Date(year, month - 1, day))
+                .toCalendar('persian')
+                .format('YYYY/MM/DD');
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function syncBirthDateHidden() {
+        birthDateHidden.value = normalizeBirthDateValue(birthDateDisplay.value || '');
+        return birthDateHidden.value;
+    }
+
+    function clearBirthDate() {
+        birthDateDisplay.value = '';
+        birthDateHidden.value = '';
+    }
+
+    function formatPersianDate(value, options = {}) {
+        if (!value) {
+            return '-';
+        }
+
+        try {
+            let dateValue;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                const [year, month, day] = value.split('-').map(Number);
+                dateValue = new Date(year, month - 1, day);
+            } else {
+                dateValue = new Date(value);
+            }
+
+            if (Number.isNaN(dateValue.getTime())) {
+                return value;
+            }
+
+            return new Intl.DateTimeFormat(
+                'fa-IR-u-ca-persian',
+                { year: 'numeric', month: 'long', day: 'numeric', ...options }
+            ).format(dateValue);
+        } catch (error) {
+            return value;
+        }
+    }
 
     // Show message
     function showMessage(text, type = 'success') {
@@ -654,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 icon: 'fa-calendar-check',
                 label: 'تاریخ عضویت',
-                value: profile.date_joined ? new Date(profile.date_joined).toLocaleDateString('fa-IR') : '-',
+                value: formatPersianDate(profile.date_joined),
                 color: 'purple'
             }
         ];
@@ -682,10 +816,10 @@ document.addEventListener('DOMContentLoaded', function() {
             { label: 'نام و نام خانوادگی', value: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || '-' },
             { label: 'شماره تماس', value: profile.phone_number || '-' },
             { label: 'کد ملی', value: profile.national_code || '-' },
-            { label: 'تاریخ تولد', value: profile.birth_date || '-' },
+            { label: 'تاریخ تولد', value: formatPersianDate(profile.birth_date) },
             { label: 'جنسیت', value: genderMap[profile.gender] || '-' },
-            { label: 'مدرسه', value: profile.school_name || '-' },
-            { label: 'مسجد', value: profile.mosque_name || '-' },
+            { label: 'مدرسه', value: (profile.school && profile.school.name) || '-' },
+            { label: 'مسجد', value: (profile.mosque && profile.mosque.name) || '-' },
             { label: 'شهر', value: profile.city || '-' },
             { label: 'استان', value: profile.province || '-' }
         ];
@@ -705,16 +839,17 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('first_name').value = profile.first_name || '';
         document.getElementById('last_name').value = profile.last_name || '';
         document.getElementById('national_code').value = profile.national_code || '';
-        document.getElementById('birth_date').value = profile.birth_date || '';
+        birthDateHidden.value = profile.birth_date || '';
+        birthDateDisplay.value = formatBirthDateForInput(profile.birth_date);
         document.getElementById('gender').value = profile.gender || '';
         document.getElementById('city').value = profile.city || '';
         document.getElementById('province').value = profile.province || '';
         
         if (profile.school) {
-            document.getElementById('school').value = profile.school;
+            document.getElementById('school').value = profile.school.id;
         }
         if (profile.mosque) {
-            document.getElementById('mosque').value = profile.mosque;
+            document.getElementById('mosque').value = profile.mosque.id;
         }
     }
 
@@ -756,15 +891,58 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
     });
 
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.persianDatepicker) {
+        window.jQuery(birthDateDisplay).persianDatepicker({
+            initialValue: false,
+            observer: true,
+            autoClose: true,
+            format: 'YYYY/MM/DD',
+            toolbox: {
+                enabled: true,
+                calendarSwitch: {
+                    enabled: false
+                },
+                todayButton: {
+                    enabled: false
+                },
+                submitButton: {
+                    enabled: true,
+                    text: {
+                        fa: 'تایید'
+                    }
+                }
+            },
+            navigator: {
+                enabled: true,
+                scroll: {
+                    enabled: false
+                }
+            },
+            onSelect: function() {
+                syncBirthDateHidden();
+            }
+        });
+    }
+
+    birthDateDisplay.addEventListener('change', syncBirthDateHidden);
+    birthDateDisplay.addEventListener('blur', syncBirthDateHidden);
+    clearBirthDateBtn.addEventListener('click', clearBirthDate);
+
     // Submit form
     profileEditForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+
+        const birthDate = syncBirthDateHidden().trim();
+        if (birthDateDisplay.value.trim() && !birthDate) {
+            showMessage('تاریخ تولد انتخاب شده معتبر نیست. لطفاً دوباره از تقویم انتخاب کنید.', 'error');
+            return;
+        }
 
         const formData = {
             first_name: document.getElementById('first_name').value,
             last_name: document.getElementById('last_name').value,
             national_code: document.getElementById('national_code').value,
-            birth_date: document.getElementById('birth_date').value,
+            birth_date: birthDate || null,
             gender: document.getElementById('gender').value,
             school: document.getElementById('school').value || null,
             mosque: document.getElementById('mosque').value || null,

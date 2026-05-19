@@ -4,7 +4,7 @@
         <div class="hero-content">
             <h1>از همین جبهه نوجوانی، بهترین نسخه‌ات را بساز</h1>
             <p>مرزها را بشکن و استعدادهای پنهانت را بیدار کن. اینجا هر چالش یک فرصت است؛ وارد میدان شو و مسیر موفقیتت را رقم بزن.</p>
-            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <div class="hero-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                 <a href="{% url 'learning:rank_cards' %}" class="btn btn-primary">شروع مسیر یادگیری ✦</a>
                 <a href="{% url 'profile' %}" class="btn btn-secondary">مشاهده پروفایل</a>
             </div>
@@ -14,37 +14,38 @@
     <section class="container mt-5 mb-5" id="features">
         <div class="features">
             <div class="glass-card feature-item">
-                <i style="font-style: normal;">🎯</i>
-                <h3 class="text-gold">چالش‌های روزانه</h3>
+                <span role="img" aria-label="هدف" style="font-size: 2rem;">🎯</span>
+                <h3 class="text-gold mt-3">چالش‌های روزانه</h3>
                 <p style="margin-top: 1rem; color: var(--gray-light);">هر روز با سوالات و مینی‌گیم‌های جدید دانش خود را محک بزنید و امتیاز بگیرید.</p>
             </div>
             <div class="glass-card feature-item">
-                <i style="font-style: normal;">🏆</i>
-                <h3 class="text-gold">رقابت با برترین‌ها</h3>
+                <span role="img" aria-label="کاپ" style="font-size: 2rem;">🏆</span>
+                <h3 class="text-gold mt-3">رقابت با برترین‌ها</h3>
                 <p style="margin-top: 1rem; color: var(--gray-light);">در جدول رده‌بندی صعود کنید و جایگاه خود را در میان نخبگان تثبیت کنید.</p>
             </div>
             <div class="glass-card feature-item">
-                <i style="font-style: normal;">🎁</i>
-                <h3 class="text-gold">جوایز ارزنده</h3>
+                <span role="img" aria-label="جایزه" style="font-size: 2rem;">🎁</span>
+                <h3 class="text-gold mt-3">جوایز ارزنده</h3>
                 <p style="margin-top: 1rem; color: var(--gray-light);">امتیازات خود را در فروشگاه جشنواره به جوایز فیزیکی و دیجیتالی تبدیل کنید.</p>
             </div>
         </div>
     </section>
 
-    <section class="container how-it-works mb-5">
-        <h2 class="text-gold">مسیر پیشرفت شما</h2>
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">۱</div>
-                <h3>ثبت‌نام و ورود</h3>
-            </div>
-            <div class="step">
-                <div class="step-number">۲</div>
-                <h3>شرکت در مسابقات</h3>
-            </div>
-            <div class="step">
+    <!-- بخش مسیر پیشرفت با جابه‌جایی گام‌های ۱ و ۳ -->
+    <section class="container how-it-works mb-5" dir="rtl">
+        <h2 class="text-gold text-center mb-4">مسیر پیشرفت شما</h2>
+        <div class="steps" style="display: flex; flex-direction: row; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 2rem;">
+            <div class="step" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
                 <div class="step-number">۳</div>
-                <h3>کسب جایزه</h3>
+                <h3 class="mt-2">کسب جایزه</h3>
+            </div>
+            <div class="step" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                <div class="step-number">۲</div>
+                <h3 class="mt-2">شرکت در مسابقات</h3>
+            </div>
+            <div class="step" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                <div class="step-number">۱</div>
+                <h3 class="mt-2">ثبت‌نام و ورود</h3>
             </div>
         </div>
     </section>
@@ -53,7 +54,7 @@
         <div class="profile-header">
             <div class="profile-avatar">👤</div>
             <div>
-                <h2 class="profile-name">{{ user.get_full_name|default:"کاربر عزیز" }}, خوش آمدید</h2>
+                <h2 class="profile-name">{{ user.get_full_name|default:"کاربر عزیز" }}، خوش آمدید</h2>
                 <p class="text-purple" style="margin-top: 0.5rem;">
                     {% if user.current_rank %}
                         رتبه فعلی شما: {{ user.current_rank.name }} | 
@@ -75,14 +76,14 @@
     </section>
 
     <section class="container mb-5 mt-5">
-        <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">آخرین مسابقات</h2>
+        <h2 class="text-gold" style="text-align: center; margin-bottom: 2rem;">آخرین مسابقات</h2>
         <div class="glass-card" style="padding: 3rem; text-align: center;">
             <p style="color: var(--text-muted);">بخش مسابقات به زودی فعال خواهد شد.</p>
         </div>
     </section>
 
     <section class="container mb-5">
-        <h2 style="text-align: center; margin-bottom: 2rem;" class="text-gold">جدول امتیازات</h2>
+        <h2 class="text-gold" style="text-align: center; margin-bottom: 2rem;">جدول امتیازات</h2>
         <div class="leaderboard-list">
             {% for u in leaderboard %}
             <div class="leaderboard-item glass-card {% if user.id == u.id %}leaderboard-item-current{% endif %}">

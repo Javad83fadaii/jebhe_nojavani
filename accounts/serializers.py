@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 
 from django.contrib.auth import authenticate
 from django.db import transaction
@@ -92,6 +93,83 @@ def _normalize_text(value: str | None) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+
+def _jalali_to_gregorian(jy: int, jm: int, jd: int) -> tuple[int, int, int]:
+    jy += 1595
+    days = -355668 + (365 * jy) + (jy // 33) * 8 + ((jy % 33) + 3) // 4 + jd
+    if jm < 7:
+        days += (jm - 1) * 31
+    else:
+        days += 186 + ((jm - 7) * 30)
+
+    gy = 400 * (days // 146097)
+    days %= 146097
+
+    if days > 36524:
+        gy += 100 * ((days - 1) // 36524)
+        days = (days - 1) % 36524
+        if days >= 365:
+            days += 1
+
+    gy += 4 * (days // 1461)
+    days %= 1461
+
+    if days > 365:
+        gy += (days - 1) // 365
+        days = (days - 1) % 365
+
+    gd = days + 1
+    february_days = 29 if ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)) else 28
+    gregorian_month_days = [0, 31, february_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    gm = 1
+    while gm <= 12 and gd > gregorian_month_days[gm]:
+        gd -= gregorian_month_days[gm]
+        gm += 1
+
+    return gy, gm, gd
+
+
+class FlexibleBirthDateField(serializers.DateField):
+    default_error_messages = {
+        "invalid": "تاریخ تولد معتبر نیست.",
+    }
+
+    def to_internal_value(self, value):
+        if value in (None, ""):
+            return None
+
+        if isinstance(value, date):
+            return value
+
+        normalized = _normalize_digits(str(value))
+        normalized = re.sub(r"\s+", "", normalized or "").replace(".", "/")
+
+        if not normalized:
+            return None
+
+        match = re.fullmatch(r"(?P<year>\d{4})[-/](?P<month>\d{1,2})[-/](?P<day>\d{1,2})", normalized)
+        if not match:
+            self.fail("invalid")
+
+        year = int(match.group("year"))
+        month = int(match.group("month"))
+        day = int(match.group("day"))
+
+        try:
+            if 1300 <= year <= 1600:
+                if month < 1 or month > 12:
+                    self.fail("invalid")
+                if day < 1 or day > 31:
+                    self.fail("invalid")
+                if month > 6 and day > 30:
+                    self.fail("invalid")
+                gregorian_year, gregorian_month, gregorian_day = _jalali_to_gregorian(year, month, day)
+                return date(gregorian_year, gregorian_month, gregorian_day)
+
+            return date(year, month, day)
+        except ValueError:
+            self.fail("invalid")
 
 
 def _extract_place_geography(place) -> tuple[str | None, str | None]:
@@ -197,10 +275,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "invalid": "کد ملی معتبر نیست.",
         },
     )
-    birth_date = serializers.DateField(
+    birth_date = FlexibleBirthDateField(
         required=False,
         allow_null=True,
-        input_formats=["%Y-%m-%d"],
         error_messages={
             "invalid": "تاریخ تولد معتبر نیست.",
         },
@@ -300,6 +377,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     wallet_balance = serializers.DecimalField(max_digits=10, decimal_places=0, read_only=True)
     date_joined = serializers.DateTimeField(read_only=True)
     current_rank = RankSerializer(read_only=True)
+    birth_date = FlexibleBirthDateField(required=False, allow_null=True)
     school = NestedWritablePKField(
         serializer_class=SchoolSerializer,
         queryset=School.objects.all(),

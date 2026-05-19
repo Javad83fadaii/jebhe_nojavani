@@ -156,6 +156,12 @@
     height: 100%;
 }
 
+.stage-hero-side {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+}
+
 .stage-status-value {
     font-size: 1.55rem;
     font-weight: 900;
@@ -176,6 +182,32 @@
     height: 100%;
     background: linear-gradient(90deg, #6c3fc5, #f5a623);
     border-radius: 999px;
+}
+
+.stage-summary-card {
+    padding: 1.25rem;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.stage-summary-card h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 0.9rem;
+    color: #fff;
+    font-size: 1.05rem;
+}
+
+.stage-summary-card h2 i {
+    color: #f5a623;
+}
+
+.stage-summary-card p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 2;
 }
 
 .stage-main-grid {
@@ -393,6 +425,14 @@
                 <div class="stage-status-track">
                     <div class="stage-status-fill"></div>
                 </div>
+            </div>
+
+            <div class="stage-summary-card">
+                <h2>
+                    <i class="fa-solid fa-circle-info"></i>
+                    توضیحات این مرحله
+                </h2>
+                <p>{{ stage_detail_summary }}</p>
             </div>
         </div>
     </section>

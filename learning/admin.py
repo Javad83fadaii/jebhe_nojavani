@@ -1,4 +1,6 @@
+from django import forms
 from django.contrib import admin
+from django.db import models
 from learning.models import (
     LearningPath,
     LearningStage,
@@ -117,9 +119,43 @@ class LearningStageAdmin(admin.ModelAdmin):
         "min_passing_score",
     )
     list_filter = ("content_type", "is_active", "learning_path")
-    search_fields = ("title", "description", "learning_path__title")
+    search_fields = ("title", "description", "detail_summary", "learning_path__title")
     inlines = [StageQuestionSetInline]
     readonly_fields = ("created_at", "updated_at")
+    formfield_overrides = {
+        models.TextField: {
+            "widget": forms.Textarea(
+                attrs={
+                    "rows": 5,
+                    "style": "direction: rtl;",
+                }
+            )
+        }
+    }
+    fieldsets = (
+        ("اطلاعات اصلی", {
+            "fields": ("learning_path", "stage_number", "title", "content_type", "is_active"),
+        }),
+        ("محتوا و امتیاز", {
+            "fields": (
+                "content_link_or_file",
+                "estimated_study_time",
+                "required_points",
+                "stage_points",
+                "min_passing_score",
+            ),
+        }),
+        ("توضیحات مرحله", {
+            "fields": ("description", "detail_summary"),
+            "description": (
+                "فیلد «توضیحات مرحله» برای معرفی کلی مرحله استفاده می‌شود. "
+                "فیلد «متن باکس توضیحات مرحله» داخل باکس کنار وضعیت کاربر در صفحه جزئیات نمایش داده می‌شود."
+            ),
+        }),
+        ("زمان‌های ثبت", {
+            "fields": ("created_at", "updated_at"),
+        }),
+    )
 
 
 @admin.register(StageQuestionSet)

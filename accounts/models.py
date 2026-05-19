@@ -23,7 +23,7 @@ class TimestampedModel(models.Model):
 
 
 class Rank(TimestampedModel):
-    POINTS_PER_LEVEL = 100
+    POINTS_PER_LEVEL = 1000
     DEFAULT_RANKS = (
         (1, "افسر 6"),
         (2, "افسر 5"),
@@ -58,16 +58,17 @@ class Rank(TimestampedModel):
         return f"{self.name} ({self.min_points}-{self.max_points})"
 
     def save(self, *args, **kwargs):
-        if self.min_points is None:
-            self.min_points = (self.level - 1) * self.POINTS_PER_LEVEL
-        
         total_default = len(self.DEFAULT_RANKS)
-        if self.max_points is None and self.level < total_default:
+
+        # Rank thresholds are fixed per level, so always normalize them on save.
+        self.min_points = (self.level - 1) * self.POINTS_PER_LEVEL
+
+        if self.level < total_default:
             self.max_points = (self.level * self.POINTS_PER_LEVEL) - 1
-        
+
         if self.level >= total_default:
             self.max_points = None
-            
+
         super().save(*args, **kwargs)
 
     @classmethod

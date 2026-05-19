@@ -149,6 +149,7 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         learning_stage = self.get_object()
         user = self.request.user
+        context["stage_detail_summary"] = learning_stage.get_detail_summary()
 
         if user.is_authenticated:
             user_progress = UserLearningProgress.objects.filter(
