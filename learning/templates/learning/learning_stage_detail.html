@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}
 مرحله {{ learning_stage.stage_number }} | {{ learning_stage.title }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/unified-card-surfaces.css' %}">
 {% endblock %}
 
 {% block content %}

@@ -1,0 +1,491 @@
+:root {
+    --unified-card-bg: linear-gradient(145deg, rgba(18, 24, 42, 0.96), rgba(9, 13, 24, 0.98));
+    --unified-card-soft-bg: linear-gradient(145deg, rgba(27, 34, 58, 0.92), rgba(12, 16, 30, 0.94));
+    --unified-card-border: rgba(255, 255, 255, 0.12);
+    --unified-card-hover-border: rgba(168, 129, 255, 0.34);
+    --unified-card-shadow: 0 24px 60px rgba(0, 0, 0, 0.36), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    --unified-card-hover-shadow: 0 32px 80px rgba(0, 0, 0, 0.42), 0 0 28px rgba(108, 63, 197, 0.18);
+    --unified-card-overlay: linear-gradient(135deg, rgba(108, 63, 197, 0.14), rgba(245, 166, 35, 0.08));
+    --unified-text-muted: rgba(255, 255, 255, 0.72);
+}
+
+.profile-header,
+.stat-card,
+.info-section,
+.edit-section,
+.learning-hero,
+.hero-stat,
+.progress-box,
+.stage-card,
+.empty-box,
+.stage-breadcrumb,
+.stage-hero,
+.stage-meta-card,
+.stage-status-card,
+.stage-actions-card,
+.stage-content-card,
+.stage-note-card,
+.stage-summary-card,
+.stage-locked-card,
+.stage-questions-hero,
+.stage-questions-meta-card,
+.question-set-card,
+.question-card,
+.question-note,
+.empty-questions,
+.ranks-hero,
+.rank-card,
+.exam-page .glass-card,
+.progress-page .glass-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--unified-card-overlay), var(--unified-card-bg) !important;
+    border-color: var(--unified-card-border) !important;
+    box-shadow: var(--unified-card-shadow) !important;
+    backdrop-filter: blur(18px) saturate(130%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(130%) !important;
+}
+
+.profile-header::after,
+.stat-card::after,
+.info-section::after,
+.edit-section::after,
+.hero-stat::after,
+.progress-box::after,
+.stage-card::after,
+.empty-box::after,
+.stage-breadcrumb::after,
+.stage-meta-card::after,
+.stage-status-card::after,
+.stage-actions-card::after,
+.stage-content-card::after,
+.stage-note-card::after,
+.stage-summary-card::after,
+.stage-locked-card::after,
+.stage-questions-hero::after,
+.stage-questions-meta-card::after,
+.question-set-card::after,
+.question-card::after,
+.question-note::after,
+.empty-questions::after,
+.ranks-hero::after,
+.rank-card::after,
+.exam-page .glass-card::after,
+.progress-page .glass-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 24%);
+    opacity: 0.9;
+    z-index: -1;
+}
+
+.stat-card:hover,
+.hero-stat:hover,
+.stage-card:hover,
+.question-set-card:hover,
+.question-card:hover,
+.rank-card:hover,
+.exam-page .exam-question:hover,
+.progress-page .progress-stage-item:hover {
+    border-color: var(--unified-card-hover-border) !important;
+    box-shadow: var(--unified-card-hover-shadow) !important;
+}
+
+.rank-card.locked,
+.stage-locked {
+    opacity: 0.78 !important;
+}
+
+.rank-card.current,
+.rank-card.completed,
+.profile-header,
+.stage-hero,
+.stage-questions-hero,
+.ranks-hero,
+.exam-page .exam-hero,
+.progress-page .progress-hero {
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42), 0 0 34px rgba(108, 63, 197, 0.14) !important;
+}
+
+.profile-header p,
+.info-label,
+.hero-description,
+.stage-description,
+.stage-meta,
+.stage-summary-card p,
+.stage-actions-card p,
+.stage-note-card p,
+.stage-questions-description,
+.question-card-type,
+.question-note,
+.empty-questions,
+.rank-points-info,
+.progress-page .progress-hero__subtitle,
+.exam-page .exam-hero__subtitle,
+.exam-page .exam-option__text,
+.progress-page .progress-locked-note {
+    color: var(--unified-text-muted) !important;
+}
+
+.profile-container .info-value,
+.profile-container .form-group input,
+.profile-container .form-group select,
+.profile-container .date-picker-btn,
+.profile-container .date-clear-btn,
+.question-option,
+.exam-page .exam-option,
+.exam-page .exam-textarea,
+.progress-page .progress-stat,
+.progress-page .progress-meta-chip {
+    background: var(--unified-card-soft-bg) !important;
+    border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+.profile-container .info-value:hover,
+.profile-container .form-group input:focus,
+.profile-container .form-group select:focus,
+.profile-container .date-picker-btn:hover,
+.profile-container .date-clear-btn:hover,
+.question-option:hover,
+.exam-page .exam-option:hover {
+    border-color: rgba(245, 166, 35, 0.28) !important;
+    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.08) !important;
+}
+
+.profile-container .stat-icon,
+.stage-number,
+.question-card-number,
+.progress-page .progress-stage-item__number,
+.exam-page .exam-question__number {
+    box-shadow: 0 14px 32px rgba(108, 63, 197, 0.28);
+}
+
+.rank-card .rank-level,
+.stage-time-icon,
+.exam-page .exam-meta-chip,
+.progress-page .progress-meta-chip,
+.progress-page .progress-stat {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+.exam-page {
+    width: min(1260px, 94%);
+    margin: 0 auto;
+    padding: 2rem 0 5rem;
+}
+
+.exam-page .exam-hero,
+.progress-page .progress-hero {
+    padding: 2rem;
+    border-radius: 30px;
+    margin-bottom: 1.75rem;
+}
+
+.exam-page .exam-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.exam-page .exam-hero__title,
+.progress-page .progress-hero__title {
+    margin: 0 0 0.6rem;
+    font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.exam-page .exam-hero__subtitle,
+.progress-page .progress-hero__subtitle {
+    margin: 0;
+    line-height: 1.9;
+}
+
+.exam-page .exam-hero__meta,
+.progress-page .progress-hero__meta,
+.progress-page .progress-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+}
+
+.exam-page .exam-meta-chip,
+.progress-page .progress-meta-chip,
+.progress-page .progress-stat {
+    min-width: 180px;
+    padding: 1rem 1.1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.exam-page .exam-meta-chip__label,
+.progress-page .progress-meta-chip__label,
+.progress-page .progress-stat__label,
+.progress-page .progress-bar__label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.88rem;
+}
+
+.exam-page .exam-meta-chip__value,
+.progress-page .progress-meta-chip__value,
+.progress-page .progress-stat__value,
+.progress-page .progress-bar__value {
+    color: #fff;
+    font-size: 1.05rem;
+}
+
+.exam-page .exam-messages {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    display: grid;
+    gap: 0.8rem;
+}
+
+.exam-page .exam-messages li {
+    padding: 1rem 1.15rem;
+    border-radius: 18px;
+    background: var(--unified-card-soft-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.exam-page .exam-questions,
+.progress-page .progress-stage-list {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.exam-page .exam-question,
+.progress-page .progress-stage-item {
+    padding: 1.5rem;
+    border-radius: 26px;
+}
+
+.exam-page .exam-question__header,
+.progress-page .progress-stage-item__header,
+.progress-page .progress-stage-item__actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.exam-page .exam-question__number,
+.progress-page .progress-stage-item__number {
+    min-width: 52px;
+    height: 52px;
+    padding: 0 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(108, 63, 197, 0.32), rgba(245, 166, 35, 0.2));
+    color: #fff;
+    font-weight: 900;
+}
+
+.exam-page .exam-question__text,
+.progress-page .progress-stage-item__title,
+.progress-page .progress-section-title h2 {
+    margin: 0;
+    color: #fff;
+}
+
+.exam-page .exam-answer-form {
+    margin-top: 1.2rem;
+}
+
+.exam-page .exam-options {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.exam-page .exam-option {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: 0.3s ease;
+    cursor: pointer;
+}
+
+.exam-page .exam-option__input {
+    accent-color: #8b5cf6;
+}
+
+.exam-page .exam-textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 1rem 1.1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+    resize: vertical;
+}
+
+.exam-page .exam-question__actions {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.exam-page .exam-save-btn,
+.exam-page .exam-finish-btn,
+.progress-page .progress-stage-btn {
+    border-radius: 16px;
+}
+
+.exam-page .exam-saved-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.22);
+    color: #8af0c5;
+    font-weight: 700;
+}
+
+.exam-page .exam-empty,
+.progress-page .progress-empty {
+    padding: 2rem;
+    text-align: center;
+    border-radius: 26px;
+}
+
+.exam-page .exam-finish {
+    margin-top: 1.8rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.progress-page {
+    width: min(1240px, 94%);
+    margin: 0 auto;
+    padding: 2rem 0 5rem;
+}
+
+.progress-page .progress-bar {
+    margin-top: 1.5rem;
+    margin-bottom: 1.3rem;
+}
+
+.progress-page .progress-bar__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.7rem;
+}
+
+.progress-page .progress-bar__track {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-page .progress-bar__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #6c3fc5, #f5a623);
+}
+
+.progress-page .progress-stages {
+    margin-top: 2rem;
+}
+
+.progress-page .progress-section-title {
+    margin-bottom: 1rem;
+}
+
+.progress-page .progress-stage-item__info {
+    flex: 1;
+    min-width: 240px;
+}
+
+.progress-page .progress-stage-item__link {
+    color: #fff;
+    text-decoration: none;
+}
+
+.progress-page .progress-stage-item__meta {
+    display: flex;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-top: 0.85rem;
+}
+
+.progress-page .progress-status-chip,
+.progress-page .progress-score-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.progress-page .status-passed {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(16, 185, 129, 0.22);
+    color: #8af0c5;
+}
+
+.progress-page .status-ready_for_exam,
+.progress-page .status-failed_previously {
+    background: rgba(245, 166, 35, 0.16);
+    border-color: rgba(245, 166, 35, 0.24);
+    color: #ffd48c;
+}
+
+.progress-page .status-in_study {
+    background: rgba(108, 63, 197, 0.16);
+    border-color: rgba(108, 63, 197, 0.24);
+    color: #dccfff;
+}
+
+.progress-page .status-locked {
+    color: rgba(255, 255, 255, 0.64);
+}
+
+@media (max-width: 768px) {
+    .exam-page,
+    .progress-page {
+        width: 92%;
+        padding-top: 1.2rem;
+    }
+
+    .exam-page .exam-hero,
+    .progress-page .progress-hero,
+    .exam-page .exam-question,
+    .progress-page .progress-stage-item {
+        padding: 1.25rem;
+        border-radius: 24px;
+    }
+
+    .exam-page .exam-finish {
+        justify-content: stretch;
+    }
+
+    .exam-page .exam-finish__form,
+    .exam-page .exam-finish-btn,
+    .progress-page .progress-stage-btn {
+        width: 100%;
+    }
+}

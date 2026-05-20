@@ -1,0 +1,68 @@
+.footer {
+    background: rgba(10, 7, 22, 0.72);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 4rem 5% 1.5rem;
+    margin-top: 5rem;
+    position: relative;
+    z-index: 10;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 3rem;
+    margin-bottom: 3rem;
+}
+
+.footer-section h3 {
+    color: var(--primary-gold);
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    font-weight: var(--font-weight-heading);
+    position: relative;
+    display: inline-block;
+}
+
+.footer-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    right: 0;
+    width: 50%;
+    height: 2px;
+    background: var(--primary-purple);
+    transition: var(--transition);
+}
+
+.footer-section:hover h3::after {
+    width: 100%;
+}
+
+.footer-section p {
+    color: var(--gray-light);
+    opacity: 0.8;
+}
+
+.footer-section a {
+    color: var(--gray-light);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.8rem;
+    transition: var(--transition);
+    opacity: 0.8;
+}
+
+.footer-section a:hover {
+    color: var(--primary-gold);
+    padding-right: 8px;
+    opacity: 1;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--gray-medium);
+    font-size: 0.9rem;
+}

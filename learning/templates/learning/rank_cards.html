@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}درجه‌بندی | جبهه نوجوانی{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/unified-card-surfaces.css' %}">
+{% endblock %}
 
 {% block content %}
     <style>

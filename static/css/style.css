@@ -4,16 +4,16 @@
     --primary-purple-glow: rgba(108, 63, 197, 0.5);
     --primary-gold: #F5A623;
     --primary-gold-glow: rgba(245, 166, 35, 0.5);
-    --dark-bg: #0B0B1A; /* کمی تاریک‌تر برای درخشش بهتر شیشه‌ها */
+    --dark-bg: #070512; /* کمی تاریک‌تر برای درخشش بهتر شیشه‌ها */
     --white: #FFFFFF;
     --gray-light: #F5F5F5;
     --gray-medium: #E0E0E0;
     
     /* تنظیمات حرفه‌ای افکت شیشه‌ای */
-    --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-    --glass-border-top: rgba(255, 255, 255, 0.15);
-    --glass-border-bottom: rgba(255, 255, 255, 0.05);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-bg: linear-gradient(135deg, rgba(30, 22, 60, 0.78), rgba(12, 9, 28, 0.55));
+    --glass-border-top: rgba(255, 255, 255, 0.22);
+    --glass-border-bottom: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 14px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     --glass-blur: blur(16px);
     
     --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -49,7 +49,7 @@ body::after {
     border-radius: 50%;
     filter: blur(120px);
     z-index: -1;
-    opacity: 0.5;
+    opacity: 0.42;
     animation: float 15s infinite alternate ease-in-out;
 }
 
@@ -893,76 +893,6 @@ input[type="radio"] {
     animation: scorePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     z-index: 2000;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 50px var(--primary-gold);
-}
-
-/* Footer */
-.footer {
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255,255,255,0.05);
-    padding: 4rem 5% 1.5rem;
-    margin-top: 5rem;
-    position: relative;
-    z-index: 10;
-}
-
-.footer-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 3rem;
-    margin-bottom: 3rem;
-}
-
-.footer-section h3 {
-    color: var(--primary-gold);
-    margin-bottom: 1.5rem;
-    font-size: 1.3rem;
-    font-weight: var(--font-weight-heading);
-    position: relative;
-    display: inline-block;
-}
-
-.footer-section h3::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    right: 0;
-    width: 50%;
-    height: 2px;
-    background: var(--primary-purple);
-    transition: var(--transition);
-}
-
-.footer-section:hover h3::after {
-    width: 100%;
-}
-
-.footer-section p {
-    color: var(--gray-light);
-    opacity: 0.8;
-}
-
-.footer-section a {
-    color: var(--gray-light);
-    text-decoration: none;
-    display: block;
-    margin-bottom: 0.8rem;
-    transition: var(--transition);
-    opacity: 0.8;
-}
-
-.footer-section a:hover {
-    color: var(--primary-gold);
-    padding-right: 8px;
-    opacity: 1;
-}
-
-.footer-bottom {
-    text-align: center;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    color: var(--gray-medium);
-    font-size: 0.9rem;
 }
 
 /* Learning Paths */

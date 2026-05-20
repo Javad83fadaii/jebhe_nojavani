@@ -1,8 +1,12 @@
 {% extends 'base.html' %}
-{% load learning_filters %}
+{% load static learning_filters %}
 
 {% block title %}
 مراحل {{ learning_path.title }}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/unified-card-surfaces.css' %}">
 {% endblock %}
 
 {% block content %}

@@ -1,0 +1,55 @@
+<nav class="navbar" id="navbar">
+    <div class="navbar-container">
+        <a href="{% if request.user.is_authenticated %}{% url 'home' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+                <defs>
+                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#F5A623" />
+                        <stop offset="100%" stop-color="#6C3FC5" />
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="15" r="5" fill="#F5A623" />
+                <path d="M50 28 L85 45 L50 62 L15 45 Z" fill="url(#logoGrad)" />
+                <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
+                <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+            <span>جبهه نوجوانی</span>
+        </a>
+
+        <div class="menu-toggle" id="menu-toggle" aria-label="منوی موبایل">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="nav-container-inner" id="nav-container-inner">
+            <div class="nav-links">
+                <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
+                    <i class="fa-solid fa-house"></i> خانه
+                </a>
+                <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
+                    <i class="fa-solid fa-trophy"></i> چالش‌ها
+                </a>
+                <a href="{% url 'learning:rank_cards' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
+                    <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
+                </a>
+                <a href="{% url 'shop' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
+                    <i class="fa-solid fa-store"></i> جبهه بازار
+                </a>
+            </div>
+
+            <div class="nav-actions">
+                <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:100 }}" data-total-points="{{ user_total_points|default:0 }}">
+                    <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
+                        <i class="fa-regular fa-star star-outline"></i>
+                        <span class="star-fill-wrap" style="width: {{ user_level_progress_percent|default:0 }}%;">
+                            <i class="fa-solid fa-star star-fill"></i>
+                        </span>
+                    </span>
+                    <span class="rank-name" id="user-rank-name">{{ user_current_rank|default:"بدون درجه" }}</span>
+                </div>
+                <div id="auth-nav-links"></div>
+            </div>
+        </div>
+    </div>
+</nav>
