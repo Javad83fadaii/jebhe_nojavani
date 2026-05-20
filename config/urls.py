@@ -21,6 +21,7 @@ urlpatterns = [
     path('seller/register/', views.seller_register, name='seller_register'),
     path('seller/login/', views.seller_login, name='seller_login'),
     path('seller/profile/', views.seller_profile, name='seller_profile'),
+    path("api/progress/", views.user_progress_api, name="user-progress-api"),
     path("api/accounts/", include("accounts.urls")),
     path("api/geography/", include("geography.urls")),
     path("learning/", include("learning.urls")),

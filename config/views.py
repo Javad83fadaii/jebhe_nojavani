@@ -1,5 +1,7 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout
 from django.db.models import Prefetch
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import Rank
@@ -255,3 +257,24 @@ def logout_view(request):
     """
     auth_logout(request)
     return redirect("/?logout=true")
+
+
+@login_required
+def user_progress_api(request):
+    total_points = int(getattr(request.user, "total_points", 0) or 0)
+    points_per_level = int(getattr(LearningPath, "DEFAULT_TOTAL_POINTS", 100) or 100)
+    level_points = total_points % points_per_level
+    level_number = (total_points // points_per_level) + 1
+    level_progress_percent = int(round((level_points / points_per_level) * 100)) if points_per_level else 0
+    current_rank = getattr(request.user, "current_rank", None)
+
+    return JsonResponse(
+        {
+            "total_points": total_points,
+            "points_per_level": points_per_level,
+            "level_points": level_points,
+            "level_number": level_number,
+            "level_progress_percent": level_progress_percent,
+            "current_rank": getattr(current_rank, "name", None),
+        }
+    )

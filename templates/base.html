@@ -154,6 +154,81 @@
             align-items: center;
         }
 
+        .profile-dropdown {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .profile-trigger {
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .profile-trigger .profile-trigger-name {
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .profile-trigger .profile-trigger-caret {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-right: 4px;
+        }
+
+        .profile-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 210px;
+            background: rgba(15, 10, 25, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            border-radius: 16px;
+            padding: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-6px);
+            transition: all 0.2s ease;
+            z-index: 2001;
+        }
+
+        .profile-dropdown.open .profile-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .profile-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 0.85rem 0.9rem;
+            border-radius: 12px;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.92);
+            transition: all 0.2s ease;
+        }
+
+        .profile-menu a:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .profile-menu a.profile-menu-logout {
+            color: #ff6b6b;
+            background: rgba(255, 71, 87, 0.08);
+            border: 1px solid rgba(255, 71, 87, 0.25);
+        }
+
+        .profile-menu a.profile-menu-logout:hover {
+            background: rgba(255, 71, 87, 0.14);
+            border-color: rgba(255, 71, 87, 0.35);
+        }
+
         /* استایل دکمه‌ها */
         .btn-nav {
             padding: 0.6rem 1.5rem !important;
@@ -205,10 +280,66 @@
             white-space: nowrap;
         }
 
-        .points-badge i {
+        .points-badge .star-meter {
+            position: relative;
+            width: 1.25rem;
+            height: 1.25rem;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .points-badge .star-meter i {
+            font-size: 1.15rem;
+            line-height: 1.25rem;
+        }
+
+        .points-badge .star-outline {
+            position: absolute;
+            inset: 0;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .points-badge .star-fill-wrap {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            width: 0%;
+        }
+
+        .points-badge .star-fill {
             color: #F5A623;
-            font-size: 1.1rem;
             filter: drop-shadow(0 0 4px rgba(245,166,35,0.6));
+        }
+
+        .points-badge .rank-name {
+            font-weight: var(--font-weight-heading);
+        }
+
+        .points-badge .star-meter::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 50%;
+            transform: translateX(50%);
+            background: rgba(15, 10, 25, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            border-radius: 12px;
+            padding: 0.6rem 0.8rem;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 2001;
+        }
+
+        .points-badge .star-meter:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(50%) translateY(2px);
         }
 
         .site-modal-backdrop {
@@ -423,12 +554,30 @@
                 justify-content: center;
                 margin-top: 1rem;
             }
+
+            .profile-menu {
+                position: static;
+                top: auto;
+                left: auto;
+                min-width: 100%;
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                box-shadow: none;
+                border-radius: 14px;
+                margin-top: 0.75rem;
+                display: none;
+            }
+
+            .profile-dropdown.open .profile-menu {
+                display: block;
+            }
         }
     </style>
     
     {% block extra_head %}{% endblock %}
 </head>
-<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}">
+<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}" data-user-full-name="{% if request.user.is_authenticated %}{{ request.user.get_full_name }}{% endif %}">
     
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
@@ -480,10 +629,14 @@
                         <!-- توسط جاوااسکریپت پر می‌شود -->
                     </div>
                     
-                    <div class="points-badge" id="points-badge">
-                        <i class="fa-solid fa-star"></i>
-                        <span class="user-points">{{ user_total_points|default:0 }}</span>
-                        <span>امتیاز</span>
+                    <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:100 }}" data-total-points="{{ user_total_points|default:0 }}">
+                        <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
+                            <i class="fa-regular fa-star star-outline"></i>
+                            <span class="star-fill-wrap" style="width: {{ user_level_progress_percent|default:0 }}%;">
+                                <i class="fa-solid fa-star star-fill"></i>
+                            </span>
+                        </span>
+                        <span class="rank-name" id="user-rank-name">{{ user_current_rank|default:"بدون درجه" }}</span>
                     </div>
                 </div>
 
@@ -555,15 +708,30 @@
         
         if (isAuthenticated) {
             const profileUrl = userType === 'seller' ? "{% url 'seller_profile' %}" : "{% url 'profile' %}";
+            const userFullName = (document.body.dataset.userFullName || '').trim() || 'حساب کاربری';
             authNav.innerHTML = `
-                <a href="${profileUrl}" class="btn-nav btn-login" data-nav="profile">
-                    <i class="fa-solid fa-user-astronaut"></i> پروفایل
-                </a>
-                <a href="#" id="logout-btn" class="btn-nav" style="background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.4); color: #ff4757 !important;" data-nav="logout">
-                    <i class="fa-solid fa-power-off"></i> خروج
-                </a>
+                <div class="profile-dropdown" id="profile-dropdown">
+                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                        <span class="profile-trigger-name">${userFullName}</span>
+                        <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
+                    </button>
+                    <div class="profile-menu" id="profile-menu" role="menu">
+                        <a href="${profileUrl}" role="menuitem">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>پروفایل</span>
+                        </a>
+                        <a href="#" id="logout-btn" class="profile-menu-logout" role="menuitem">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span>خروج</span>
+                        </a>
+                    </div>
+                </div>
             `;
             if (pointsBadge) pointsBadge.style.display = 'flex';
+
+            const dropdown = document.getElementById('profile-dropdown');
+            const trigger = document.getElementById('profile-trigger');
             
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) {
@@ -575,6 +743,27 @@
                     localStorage.removeItem('userSession');
                     sessionStorage.removeItem('userSession');
                     window.location.href = "{% url 'logout' %}";
+                });
+            }
+
+            if (dropdown && trigger) {
+                trigger.addEventListener('click', function() {
+                    const isOpen = dropdown.classList.toggle('open');
+                    trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!dropdown.classList.contains('open')) return;
+                    if (dropdown.contains(event.target)) return;
+                    dropdown.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                });
+
+                document.addEventListener('keydown', function(event) {
+                    if (event.key !== 'Escape') return;
+                    if (!dropdown.classList.contains('open')) return;
+                    dropdown.classList.remove('open');
+                    trigger.setAttribute('aria-expanded', 'false');
                 });
             }
         } else {
@@ -624,6 +813,44 @@
     
     document.addEventListener('DOMContentLoaded', updateNavBar);
     document.addEventListener('DOMContentLoaded', setupGuestNavGuards);
+    document.addEventListener('DOMContentLoaded', function() {
+        const badge = document.getElementById('points-badge');
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        if (!badge || !isAuthenticated) return;
+
+        const fillWrap = badge.querySelector('.star-fill-wrap');
+        const starMeter = badge.querySelector('.star-meter');
+        const rankNameEl = document.getElementById('user-rank-name');
+        const pointsPerLevel = Number(badge.dataset.pointsPerLevel) || 100;
+
+        function applyProgress(data) {
+            const nextPointsPerLevel = Number(data.points_per_level) || pointsPerLevel;
+            const percent = Math.max(0, Math.min(100, Number(data.level_progress_percent) || 0));
+            const totalPoints = Number(data.total_points) || 0;
+            const rankName = data.current_rank || 'بدون درجه';
+
+            if (fillWrap) fillWrap.style.width = `${percent}%`;
+            badge.dataset.pointsPerLevel = nextPointsPerLevel;
+            badge.dataset.totalPoints = totalPoints;
+            if (rankNameEl) rankNameEl.textContent = rankName;
+            if (starMeter) starMeter.dataset.tooltip = `امتیاز کل شما: ${totalPoints.toLocaleString('fa-IR')}`;
+        }
+
+        async function refreshProgress() {
+            try {
+                const res = await fetch("{% url 'user-progress-api' %}", { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const data = await res.json();
+                applyProgress(data);
+            } catch (_) {}
+        }
+
+        refreshProgress();
+        setInterval(refreshProgress, 8000);
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') refreshProgress();
+        });
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         const modalBackdrop = document.getElementById('site-modal-backdrop');
