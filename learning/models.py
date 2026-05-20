@@ -33,6 +33,10 @@ class LearningPath(TimestampedModel):
         PUBLISHED = "published", "منتشر شده"
         ARCHIVED = "archived", "آرشیو شده"
 
+    DEFAULT_TOTAL_STAGES = 10
+    DEFAULT_STAGE_POINTS = 10
+    DEFAULT_TOTAL_POINTS = DEFAULT_TOTAL_STAGES * DEFAULT_STAGE_POINTS
+
     rank = models.ForeignKey("accounts.Rank", on_delete=models.SET_NULL, null=True, blank=True, related_name="learning_paths", verbose_name="درجه مربوطه")
     title = models.CharField(max_length=255, verbose_name="عنوان سیر مطالعاتی")
     description = models.TextField(blank=True, verbose_name="توضیحات")
@@ -44,8 +48,8 @@ class LearningPath(TimestampedModel):
         max_length=20, choices=PublishStatus.choices, default=PublishStatus.DRAFT, verbose_name="وضعیت انتشار"
     )
     display_order = models.PositiveSmallIntegerField(default=0, verbose_name="ترتیب نمایش")
-    total_stages = models.PositiveSmallIntegerField(default=10, verbose_name="تعداد کل مراحل")
-    total_points = models.PositiveIntegerField(default=100, verbose_name="کل امتیاز قابل کسب")
+    total_stages = models.PositiveSmallIntegerField(default=DEFAULT_TOTAL_STAGES, verbose_name="تعداد کل مراحل")
+    total_points = models.PositiveIntegerField(default=DEFAULT_TOTAL_POINTS, verbose_name="کل امتیاز قابل کسب")
 
     class Meta:
         ordering = ("display_order", "title")
@@ -66,9 +70,7 @@ class LearningPath(TimestampedModel):
     def sync_totals(self, *, save: bool = True):
         active_stages = self.get_active_stages()
         self.total_stages = active_stages.count()
-        self.total_points = active_stages.aggregate(
-            summed_points=models.Sum("stage_points")
-        )["summed_points"] or 0
+        self.total_points = self.total_stages * self.DEFAULT_STAGE_POINTS
         if save:
             self.save(update_fields=["total_stages", "total_points", "updated_at"])
         return self.total_stages, self.total_points
@@ -92,14 +94,17 @@ class LearningStage(TimestampedModel):
 
     learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE, related_name="stages", verbose_name="سیر مطالعاتی")
     title = models.CharField(max_length=255, verbose_name="عنوان مرحله")
-    stage_number = models.PositiveSmallIntegerField(verbose_name="شماره مرحله")
+    stage_number = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(LearningPath.DEFAULT_TOTAL_STAGES)],
+        verbose_name="شماره مرحله",
+    )
     content_type = models.CharField(max_length=20, choices=ContentType.choices, verbose_name="نوع محتوا")
     content_link_or_file = models.CharField(max_length=500, blank=True, verbose_name="لینک یا فایل محتوا")
     estimated_study_time = models.PositiveSmallIntegerField(default=0, verbose_name="مدت زمان تقریبی مطالعه (دقیقه)")
     description = models.TextField(blank=True, verbose_name="توضیحات مرحله")
     detail_summary = models.TextField(blank=True, verbose_name="متن باکس توضیحات مرحله")
     required_points = models.PositiveIntegerField(default=0, verbose_name="امتیاز مورد نیاز برای باز شدن")
-    stage_points = models.PositiveIntegerField(default=100, verbose_name="امتیاز مرحله")
+    stage_points = models.PositiveIntegerField(default=LearningPath.DEFAULT_STAGE_POINTS, verbose_name="امتیاز مرحله")
     min_passing_score = models.PositiveSmallIntegerField(
         default=14, validators=[MinValueValidator(0), MaxValueValidator(20)], verbose_name="حداقل نمره قبولی آزمون"
     )
@@ -113,6 +118,11 @@ class LearningStage(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.learning_path.title} - مرحله {self.stage_number}: {self.title}"
+
+    def save(self, *args, **kwargs):
+        self.stage_points = LearningPath.DEFAULT_STAGE_POINTS
+        self.required_points = max(self.stage_number - 1, 0) * LearningPath.DEFAULT_STAGE_POINTS
+        super().save(*args, **kwargs)
 
     def get_detail_summary(self) -> str:
         if self.detail_summary:
@@ -233,7 +243,9 @@ class UserLearningProgress(TimestampedModel):
         }
 
         completed_count = 0
-        user_points = getattr(self.user, "total_points", 0)
+        total_score = 0
+        current_stage = None
+        now = timezone.now()
 
         for i, stage in enumerate(ordered_stages):
             user_stage_progress = existing_progresses.get(stage.pk)
@@ -247,37 +259,36 @@ class UserLearningProgress(TimestampedModel):
                 existing_progresses[stage.pk] = user_stage_progress
 
             if user_stage_progress.status == UserStageProgress.StageStatus.PASSED:
+                if user_stage_progress.score_earned != stage.stage_points:
+                    user_stage_progress.score_earned = stage.stage_points
+                    user_stage_progress.save(update_fields=["score_earned", "updated_at"])
                 completed_count += 1
+                total_score += stage.stage_points
                 continue
 
-            # Logic to unlock stages:
-            # 1. It's the first stage of the path
-            # 2. OR the previous stage was passed
-            # 3. OR the user has enough points for this specific stage
-            
-            should_unlock = False
-            if i == 0: # First stage
-                should_unlock = True
-            else:
-                prev_stage = ordered_stages[i-1]
-                prev_progress = existing_progresses.get(prev_stage.pk)
-                if prev_progress and prev_progress.status == UserStageProgress.StageStatus.PASSED:
-                    should_unlock = True
-                elif user_points >= stage.required_points:
-                    should_unlock = True
+            should_unlock = i == 0 or existing_progresses[ordered_stages[i - 1].pk].status == UserStageProgress.StageStatus.PASSED
+            updated_fields = []
 
-            if should_unlock and user_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
-                user_stage_progress.unlock()
+            if should_unlock:
+                if user_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
+                    user_stage_progress.status = UserStageProgress.StageStatus.UNLOCKED
+                    if not user_stage_progress.unlocked_at:
+                        user_stage_progress.unlocked_at = now
+                        updated_fields.append("unlocked_at")
+                    updated_fields.extend(["status", "updated_at"])
+                if current_stage is None:
+                    current_stage = stage
+            elif user_stage_progress.status != UserStageProgress.StageStatus.LOCKED:
+                user_stage_progress.status = UserStageProgress.StageStatus.LOCKED
+                updated_fields.extend(["status", "updated_at"])
+
+            if updated_fields:
+                user_stage_progress.save(update_fields=updated_fields)
 
         self.completed_stages_count = completed_count
-        # Find the first non-passed stage to be the 'current' stage
-        self.current_stage = None
-        for stage in ordered_stages:
-            progress = existing_progresses.get(stage.pk)
-            if progress and progress.status != UserStageProgress.StageStatus.PASSED:
-                self.current_stage = stage
-                break
-        
+        self.total_score = total_score
+        self.current_stage = current_stage
+
         total_stage_count = len(ordered_stages)
         if total_stage_count:
             self.progress_percentage = (
@@ -285,13 +296,27 @@ class UserLearningProgress(TimestampedModel):
             ) * Decimal("100.00")
         else:
             self.progress_percentage = Decimal("0.00")
-        
+
+        status = self.status
+        completed_at = self.completed_at
+        if total_stage_count and completed_count == total_stage_count:
+            status = self.ProgressStatus.COMPLETED
+            completed_at = completed_at or now
+        elif status == self.ProgressStatus.COMPLETED:
+            status = self.ProgressStatus.IN_PROGRESS
+            completed_at = None
+
         self.__class__.objects.filter(pk=self.pk).update(
             completed_stages_count=completed_count,
-            current_stage=self.current_stage,
+            total_score=total_score,
+            current_stage=current_stage,
             progress_percentage=self.progress_percentage,
-            updated_at=timezone.now(),
+            status=status,
+            completed_at=completed_at,
+            updated_at=now,
         )
+        self.status = status
+        self.completed_at = completed_at
         return existing_progresses
 
     def calculate_progress(self):
@@ -302,7 +327,7 @@ class UserLearningProgress(TimestampedModel):
         self.save(update_fields=["progress_percentage", "updated_at"])
 
     def complete_path(self):
-        if self.completed_stages_count == self.learning_path.total_stages and self.status != self.ProgressStatus.COMPLETED:
+        if self.completed_stages_count >= self.learning_path.total_stages and self.status != self.ProgressStatus.COMPLETED:
             self.status = self.ProgressStatus.COMPLETED
             self.completed_at = timezone.now()
             self.save(update_fields=["status", "completed_at", "updated_at"])
@@ -403,19 +428,14 @@ class UserStageProgress(TimestampedModel):
     def pass_stage(self, score: int):
         from accounts.models import Rank
 
+        if self.status == self.StageStatus.PASSED:
+            return
+
         if score >= self.learning_stage.min_passing_score:
             with transaction.atomic():
                 self.status = self.StageStatus.PASSED
                 self.passed_at = timezone.now()
                 self.score_earned = self.learning_stage.stage_points
-
-                self.user_learning_progress.__class__.objects.filter(
-                    pk=self.user_learning_progress_id
-                ).update(
-                    completed_stages_count=F("completed_stages_count") + 1,
-                    total_score=F("total_score") + self.learning_stage.stage_points,
-                    updated_at=timezone.now(),
-                )
 
                 self.user.__class__.objects.filter(pk=self.user_id).update(
                     total_points=F("total_points") + self.learning_stage.stage_points,

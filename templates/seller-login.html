@@ -72,7 +72,7 @@
         const urlParams = new URLSearchParams(window.location.search);
 
         if (urlParams.get('registered') === 'true') {
-            showMessage('ثبت‌نام شما انجام شد. پس از تایید ادمین می‌توانید وارد شوید.', 'success');
+            showMessage('ثبت‌نام شما با موفقیت انجام شد. پس از تایید حساب، می‌توانید وارد شوید.', 'success');
         }
 
         form.addEventListener('submit', function(e) {
@@ -100,7 +100,7 @@
                 const data = await res.json();
                 if (!res.ok) {
                     const detail = data.detail || Object.values(data).flat().join(' ');
-                    showMessage(detail || 'خطا در ورود', 'error');
+                    showMessage(detail || 'ورود انجام نشد. دوباره تلاش کنید.', 'error');
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                     return;
@@ -110,10 +110,10 @@
                 localStorage.setItem('refresh_token', data.refresh);
                 localStorage.setItem('user_type', 'seller');
 
-                showMessage('ورود موفق! در حال انتقال...', 'success');
+                showMessage('ورود با موفقیت انجام شد. در حال انتقال...', 'success');
                 window.location.href = '/seller/profile/';
             }).catch(() => {
-                showMessage('خطای شبکه', 'error');
+                showMessage('خطا در ارتباط با سرور. دوباره تلاش کنید.', 'error');
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             });

@@ -1,22 +1,57 @@
-/* Doran - Medium (وزن متوسط) */
+/* Manshoor - Medium */
 @font-face {
-  font-family: 'Doran';
-  src: url('../fonts/Doran-Medium.woff2') format('woff2');
+  font-family: 'Manshoor';
+  src: url('woff2/Manshoor-Medium.woff2') format('woff2'),
+       url('Manshoor-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
-/* Doran - ExtraBold (وزن خیلی ضخیم) */
+/* Manshoor - SemiBold */
 @font-face {
-  font-family: 'Doran';
-  src: url('../fonts/Doran-ExtraBold.woff2') format('woff2');
+  font-family: 'Manshoor';
+  src: url('woff2/Manshoor-SemiBold.woff2') format('woff2'),
+       url('Manshoor-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Manshoor - Bold */
+@font-face {
+  font-family: 'Manshoor';
+  src: url('woff2/Manshoor-Bold.woff2') format('woff2'),
+       url('Manshoor-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Manshoor - ExtraBold */
+@font-face {
+  font-family: 'Manshoor';
+  src: url('woff2/Manshoor-ExtraBold.woff2') format('woff2'),
+       url('Manshoor-ExtraBold.ttf') format('truetype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
 }
 
-/* اعمال فونت جدید به عنوان فونت پیش‌فرض کل سایت */
-body {
-  font-family: 'Doran', sans-serif;
+/* Manshoor - Black */
+@font-face {
+  font-family: 'Manshoor';
+  src: url('woff2/Manshoor-Black.woff2') format('woff2'),
+       url('Manshoor-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Manshoor', sans-serif;
 }

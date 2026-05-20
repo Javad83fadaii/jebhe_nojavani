@@ -80,7 +80,7 @@
             });
             const data = await res.json();
             if (!res.ok) {
-                showMessage(data.detail || 'خطا در دریافت پروفایل', 'error');
+                showMessage(data.detail || 'دریافت اطلاعات انجام نشد. دوباره تلاش کنید.', 'error');
                 return null;
             }
             renderProfile(data);
@@ -138,18 +138,18 @@
                 const data = await res.json();
                 if (!res.ok) {
                     const detail = data.detail || Object.values(data).flat().join(' ');
-                    showMessage(detail || 'خطا در ویرایش', 'error');
+                    showMessage(detail || 'ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.', 'error');
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
                     return;
                 }
 
-                showMessage('تغییرات ذخیره شد.', 'success');
+                showMessage('اطلاعات با موفقیت ذخیره شد.', 'success');
                 renderProfile(data);
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             } catch (err) {
-                showMessage('خطای شبکه', 'error');
+                showMessage('خطا در ارتباط با سرور. دوباره تلاش کنید.', 'error');
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }

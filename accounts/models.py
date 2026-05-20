@@ -14,6 +14,49 @@ from django.utils import timezone
 from learning.models import LearningPath, UserLearningProgress, UserStageProgress
 
 
+def _gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
+    g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    j_days_in_month = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]
+
+    gy2 = gy - 1600
+    gm2 = gm - 1
+    gd2 = gd - 1
+
+    g_day_no = 365 * gy2 + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400
+    for index in range(gm2):
+        g_day_no += g_days_in_month[index]
+    if gm2 > 1 and ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)):
+        g_day_no += 1
+    g_day_no += gd2
+
+    j_day_no = g_day_no - 79
+    j_np = j_day_no // 12053
+    j_day_no %= 12053
+
+    jy = 979 + 33 * j_np + 4 * (j_day_no // 1461)
+    j_day_no %= 1461
+
+    if j_day_no >= 366:
+        jy += (j_day_no - 1) // 365
+        j_day_no = (j_day_no - 1) % 365
+
+    jm = 0
+    while jm < 11 and j_day_no >= j_days_in_month[jm]:
+        j_day_no -= j_days_in_month[jm]
+        jm += 1
+
+    return jy, jm + 1, j_day_no + 1
+
+
+def validate_birth_date_range(value):
+    if value in (None, ""):
+        return
+
+    jalali_year, _, _ = _gregorian_to_jalali(value.year, value.month, value.day)
+    if jalali_year < 1385 or jalali_year > 1395:
+        raise ValidationError("غیر مجاز")
+
+
 class TimestampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -160,11 +203,26 @@ class User(AbstractBaseUser, PermissionsMixin):
         FEMALE = "female", "female"
         OTHER = "other", "other"
 
+    class GradeLevel(models.IntegerChoices):
+        FIRST = 1, "اول"
+        SECOND = 2, "دوم"
+        THIRD = 3, "سوم"
+        FOURTH = 4, "چهارم"
+        FIFTH = 5, "پنجم"
+        SIXTH = 6, "ششم"
+        SEVENTH = 7, "هفتم"
+        EIGHTH = 8, "هشتم"
+        NINTH = 9, "نهم"
+        TENTH = 10, "دهم"
+        ELEVENTH = 11, "یازدهم"
+        TWELFTH = 12, "دوازدهم"
+
     phone_number = models.CharField(max_length=11, unique=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     national_code = models.CharField(max_length=10, unique=True, null=True, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
+    birth_date = models.DateField(null=True, blank=True, validators=[validate_birth_date_range])
+    grade_level = models.PositiveSmallIntegerField(choices=GradeLevel.choices, default=GradeLevel.TWELFTH)
     gender = models.CharField(
         choices=Gender.choices,
         max_length=10,

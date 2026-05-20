@@ -82,14 +82,13 @@
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">رمز عبور جدید</label>
                         <input type="password" id="new_password" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
-                        <div style="margin-top: 0.5rem; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden;">
-                            <div id="edit-strength-bar" style="height: 100%; width: 0%; transition: width 0.3s ease;"></div>
-                        </div>
+                        <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--gray-light);">رمز عبور باید حداقل ۸ کاراکتر داشته باشد.</p>
                     </div>
                     
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">تکرار رمز عبور جدید</label>
                         <input type="password" id="new_password_confirm" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
+                        <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--gray-light);">رمز عبور را دوباره وارد کنید.</p>
                     </div>
                 </div>
             </div>
@@ -214,28 +213,7 @@
             });
         });
         
-        // بررسی قدرت رمز در ویرایش
         const newPassword = document.getElementById('new_password');
-        const editStrengthBar = document.getElementById('edit-strength-bar');
-        
-        function checkEditPasswordStrength(password) {
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-            if (password.match(/\d/)) strength++;
-            if (password.match(/[^a-zA-Z\d]/)) strength++;
-            
-            const colors = ['#f44336', '#ff9800', '#ffc107', '#4caf50', '#4caf50'];
-            const widths = ['20%', '40%', '60%', '80%', '100%'];
-            editStrengthBar.style.width = widths[strength];
-            editStrengthBar.style.backgroundColor = colors[strength];
-        }
-        
-        if (newPassword) {
-            newPassword.addEventListener('input', function() {
-                checkEditPasswordStrength(this.value);
-            });
-        }
         
         // بررسی یکتا بودن نام کاربری
         const usernameInput = document.getElementById('username');
@@ -307,11 +285,11 @@
                     return;
                 }
                 if (newPasswordValue !== newPasswordConfirm) {
-                    showMessage('رمز عبور جدید و تکرار آن مطابقت ندارند.', 'error');
+                    showMessage('رمز عبور جدید و تکرار آن با هم مطابقت ندارند.', 'error');
                     return;
                 }
                 if (newPasswordValue.length < 8) {
-                    showMessage('رمز عبور باید حداقل ۸ کاراکتر باشد.', 'error');
+                    showMessage('رمز عبور باید حداقل ۸ کاراکتر داشته باشد.', 'error');
                     return;
                 }
             }
@@ -350,7 +328,7 @@
                     sessionStorage.setItem('userSession', JSON.stringify(updatedSession));
                     localStorage.setItem('userSession', JSON.stringify(updatedSession));
                     
-                    showMessage('اطلاعات با موفقیت به‌روزرسانی شد!', 'success');
+                    showMessage('اطلاعات با موفقیت ذخیره شد.', 'success');
                     
                     setTimeout(() => {
                         window.location.href = '/profile/';

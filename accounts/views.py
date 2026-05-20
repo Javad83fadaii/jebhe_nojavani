@@ -85,7 +85,7 @@ class SellerRegistrationView(APIView):
         serializer.save()
 
         return Response(
-            {"detail": "ثبت‌نام شما موفق بود. پس از تایید ادمین می‌توانید وارد شوید."},
+            {"detail": "ثبت‌نام با موفقیت انجام شد. پس از تایید حساب، می‌توانید وارد شوید."},
             status=status.HTTP_201_CREATED,
         )
 

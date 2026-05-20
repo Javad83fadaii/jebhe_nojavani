@@ -68,10 +68,10 @@ class LearningPathStagesView(LoginRequiredMixin, DetailView):
             user_progress = UserLearningProgress.objects.filter(
                 user=self.request.user, learning_path=learning_path
             ).first()
-            context["user_progress"] = user_progress
 
             if user_progress:
                 user_progress.sync_stage_progresses()
+                user_progress.refresh_from_db()
                 user_stage_progresses = UserStageProgress.objects.filter(
                     user_learning_progress=user_progress
                 ).select_related("learning_stage")
@@ -79,6 +79,7 @@ class LearningPathStagesView(LoginRequiredMixin, DetailView):
                 context["user_stage_progresses_map"] = {
                     usp.learning_stage.pk: usp for usp in user_stage_progresses
                 }
+            context["user_progress"] = user_progress
 
         return context
 
@@ -158,6 +159,7 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
             ).first()
             if user_progress:
                 user_progress.sync_stage_progresses()
+                user_progress.refresh_from_db()
             user_stage_progress = UserStageProgress.objects.filter(
                 user=user,
                 learning_stage=learning_stage,
@@ -218,6 +220,7 @@ class LearningStageQuestionsView(LoginRequiredMixin, DetailView):
 
         if user_progress:
             user_progress.sync_stage_progresses()
+            user_progress.refresh_from_db()
             user_stage_progress = UserStageProgress.objects.filter(
                 user=self.request.user,
                 learning_stage=learning_stage,

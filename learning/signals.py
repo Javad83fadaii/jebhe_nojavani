@@ -38,15 +38,3 @@ def handle_stage_completion_and_next_stage_unlock(sender, instance, created, **k
 
         with transaction.atomic():
             user_learning_progress.sync_stage_progresses()
-            next_stage = user_learning_progress.get_next_stage()
-            if next_stage:
-                next_stage_progress, created_next_stage = UserStageProgress.objects.get_or_create(
-                    user=instance.user,
-                    learning_stage=next_stage,
-                    user_learning_progress=user_learning_progress,
-                    defaults={"status": UserStageProgress.StageStatus.UNLOCKED},
-                )
-                if not created_next_stage and next_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
-                    next_stage_progress.unlock()
-            else:
-                user_learning_progress.complete_path()

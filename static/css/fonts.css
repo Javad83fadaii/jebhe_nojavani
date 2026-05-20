@@ -1,0 +1,83 @@
+:root {
+  --font-weight-text: 500;
+  --font-weight-ui: 600;
+  --font-weight-heading: 700;
+  --font-weight-display: 800;
+}
+
+@font-face {
+  font-family: 'Manshoor';
+  src: url('../fonts/woff2/Manshoor-Medium.woff2') format('woff2'),
+       url('../fonts/Manshoor-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manshoor';
+  src: url('../fonts/woff2/Manshoor-SemiBold.woff2') format('woff2'),
+       url('../fonts/Manshoor-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manshoor';
+  src: url('../fonts/woff2/Manshoor-Bold.woff2') format('woff2'),
+       url('../fonts/Manshoor-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manshoor';
+  src: url('../fonts/woff2/Manshoor-ExtraBold.woff2') format('woff2'),
+       url('../fonts/Manshoor-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Manshoor';
+  src: url('../fonts/woff2/Manshoor-Black.woff2') format('woff2'),
+       url('../fonts/Manshoor-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Manshoor', sans-serif;
+  font-weight: var(--font-weight-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-weight-heading);
+  line-height: 1.4;
+}
+
+b,
+strong {
+  font-weight: var(--font-weight-heading);
+}
+
+button,
+.btn,
+[type='button'],
+[type='submit'],
+[type='reset'] {
+  font-weight: var(--font-weight-ui);
+}

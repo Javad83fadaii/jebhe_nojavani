@@ -71,7 +71,7 @@
 
     .profile-title-section h1 {
         font-size: 2rem;
-        font-weight: 700;
+        font-weight: var(--font-weight-display);
         background: linear-gradient(135deg, #fff 0%, var(--profile-gold) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -97,7 +97,7 @@
         padding: 0.85rem 2rem;
         border-radius: 12px;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: var(--font-weight-ui);
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(108, 63, 197, 0.4);
@@ -226,7 +226,7 @@
 
     .info-section h2 {
         font-size: 1.5rem;
-        font-weight: 700;
+        font-weight: var(--font-weight-heading);
         color: white;
         margin: 0 0 1.5rem 0;
         display: flex;
@@ -302,7 +302,7 @@
 
     .edit-section h2 {
         font-size: 1.5rem;
-        font-weight: 700;
+        font-weight: var(--font-weight-heading);
         color: white;
         margin: 0 0 1.5rem 0;
         display: flex;
@@ -341,7 +341,7 @@
         padding: 0.9rem 1.2rem;
         color: white;
         font-size: 1rem;
-        font-family: 'Vazirmatn', sans-serif;
+        font-family: 'Manshoor', sans-serif;
         transition: all 0.3s ease;
     }
 
@@ -352,9 +352,11 @@
     }
 
     .date-input {
-        cursor: pointer;
+        direction: ltr;
+        text-align: left;
     }
 
+    .date-picker-btn,
     .date-clear-btn {
         min-width: 72px;
         padding: 0.9rem 0.75rem;
@@ -362,11 +364,12 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(255, 255, 255, 0.05);
         color: white;
-        font-family: 'Vazirmatn', sans-serif;
+        font-family: 'Manshoor', sans-serif;
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
+    .date-picker-btn:hover,
     .date-clear-btn:hover {
         border-color: var(--profile-gold);
         color: var(--profile-gold);
@@ -378,6 +381,10 @@
         margin-top: 0.5rem;
         color: rgba(255, 255, 255, 0.6);
         font-size: 0.8rem;
+    }
+
+    .datepicker-plot-area {
+        z-index: 4000 !important;
     }
 
     .form-group input:focus,
@@ -406,7 +413,7 @@
         padding: 0.9rem 2.5rem;
         border-radius: 12px;
         font-size: 1rem;
-        font-weight: 700;
+        font-weight: var(--font-weight-heading);
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(245, 166, 35, 0.4);
@@ -424,7 +431,7 @@
         padding: 0.9rem 2rem;
         border-radius: 12px;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: var(--font-weight-ui);
         cursor: pointer;
         transition: all 0.3s ease;
     }
@@ -544,6 +551,7 @@
             <i class="fas fa-pen-to-square"></i>
             ویرایش اطلاعات
         </h2>
+        <p class="date-help-text" style="margin-bottom: 1.5rem;">در صورت تغییر رمز عبور، رمز جدید باید حداقل ۸ کاراکتر داشته باشد.</p>
         <form id="profile-edit-form">
             <div class="form-grid">
                 <div class="form-group">
@@ -562,10 +570,11 @@
                     <label for="birth_date">تاریخ تولد</label>
                     <input type="hidden" id="birth_date" name="birth_date">
                     <div class="date-input-group">
-                        <input type="text" id="birth_date_display" class="form-control date-input" placeholder="انتخاب تاریخ (شمسی)" readonly>
+                        <input type="text" id="birth_date_display" class="form-control date-input" placeholder="مثال: 1388/05/12" dir="ltr" inputmode="numeric" autocomplete="bday" maxlength="10">
+                        <button type="button" id="open_birth_date_picker" class="date-picker-btn" aria-label="باز کردن تقویم تاریخ تولد">تقویم</button>
                         <button type="button" id="clear_birth_date" class="date-clear-btn" aria-label="پاک کردن تاریخ تولد">حذف</button>
                     </div>
-                    <small class="date-help-text">روی فیلد کلیک کنید و تاریخ را از تقویم شمسی انتخاب کنید.</small>
+                    <small class="date-help-text">تاریخ را به صورت شمسی وارد کنید یا از تقویم انتخاب کنید. فقط سال‌های 1385 تا 1395 مجاز است.</small>
                 </div>
                 <div class="form-group">
                     <label for="gender">جنسیت</label>
@@ -574,6 +583,24 @@
                         <option value="male">مرد</option>
                         <option value="female">زن</option>
                         <option value="other">سایر</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="grade_level">پایه تحصیلی</label>
+                    <select id="grade_level" name="grade_level">
+                        <option value="">انتخاب کنید</option>
+                        <option value="1">اول</option>
+                        <option value="2">دوم</option>
+                        <option value="3">سوم</option>
+                        <option value="4">چهارم</option>
+                        <option value="5">پنجم</option>
+                        <option value="6">ششم</option>
+                        <option value="7">هفتم</option>
+                        <option value="8">هشتم</option>
+                        <option value="9">نهم</option>
+                        <option value="10">دهم</option>
+                        <option value="11">یازدهم</option>
+                        <option value="12">دوازدهم</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -634,6 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mosqueSelect = document.getElementById('mosque');
     const birthDateHidden = document.getElementById('birth_date');
     const birthDateDisplay = document.getElementById('birth_date_display');
+    const openBirthDatePickerBtn = document.getElementById('open_birth_date_picker');
     const clearBirthDateBtn = document.getElementById('clear_birth_date');
 
     function normalizeDigits(value) {
@@ -646,38 +674,52 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(value || '').trim().replace(/[۰-۹٠-٩]/g, (digit) => map[digit] || digit);
     }
 
-    function normalizeBirthDateValue(rawValue) {
-        const normalized = normalizeDigits(rawValue).replace(/\./g, '/').trim();
+    function parseBirthDateValue(rawValue) {
+        const normalized = normalizeDigits(rawValue).replace(/[.\-]/g, '/').replace(/\s+/g, '').trim();
         if (!normalized) {
-            return '';
+            return { valid: true, normalized: '', message: '' };
         }
 
-        if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
-            return normalized;
+        const match = normalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+        if (!match) {
+            return {
+                valid: false,
+                normalized: '',
+                message: 'تاریخ تولد معتبر نیست. تاریخ را به صورت 1388/05/12 وارد کنید.'
+            };
         }
 
-        if (/^\d{4}\/\d{2}\/\d{2}$/.test(normalized)) {
-            const parts = normalized.split('/').map(Number);
-            try {
-                return new persianDate([parts[0], parts[1], parts[2]])
-                    .toCalendar('gregorian')
-                    .format('YYYY-MM-DD');
-            } catch (error) {
-                return '';
-            }
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+
+        if (year < 1385 || year > 1395) {
+            return { valid: false, normalized: '', message: 'غیر مجاز' };
         }
 
-        return '';
+        if (month < 1 || month > 12) {
+            return { valid: false, normalized: '', message: 'تاریخ تولد معتبر نیست.' };
+        }
+
+        const maxDay = month <= 6 ? 31 : 30;
+        if (day < 1 || day > maxDay) {
+            return { valid: false, normalized: '', message: 'تاریخ تولد معتبر نیست.' };
+        }
+
+        return {
+            valid: true,
+            normalized: `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`,
+            message: ''
+        };
     }
 
     function formatBirthDateForInput(value) {
-        const normalized = normalizeBirthDateValue(value);
-        if (!normalized) {
+        if (!value) {
             return '';
         }
 
         try {
-            const [year, month, day] = normalized.split('-').map(Number);
+            const [year, month, day] = String(value).split('-').map(Number);
             return new persianDate(new Date(year, month - 1, day))
                 .toCalendar('persian')
                 .format('YYYY/MM/DD');
@@ -687,13 +729,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function syncBirthDateHidden() {
-        birthDateHidden.value = normalizeBirthDateValue(birthDateDisplay.value || '');
-        return birthDateHidden.value;
+        const parsed = parseBirthDateValue(birthDateDisplay.value || '');
+        birthDateHidden.value = parsed.valid ? parsed.normalized : '';
+        if (parsed.valid && parsed.normalized) {
+            birthDateDisplay.value = parsed.normalized;
+        }
+        return parsed;
     }
 
     function clearBirthDate() {
         birthDateDisplay.value = '';
         birthDateHidden.value = '';
+    }
+
+    function openBirthDatePicker() {
+        birthDateDisplay.focus();
+        birthDateDisplay.click();
+
+        if (window.jQuery && window.jQuery.fn) {
+            const pickerInstance = window.jQuery(birthDateDisplay).data('datepicker');
+            if (pickerInstance && typeof pickerInstance.show === 'function') {
+                pickerInstance.show();
+            }
+        }
     }
 
     function formatPersianDate(value, options = {}) {
@@ -811,12 +869,27 @@ document.addEventListener('DOMContentLoaded', function() {
             'female': 'زن',
             'other': 'سایر'
         };
+        const gradeMap = {
+            '1': 'اول',
+            '2': 'دوم',
+            '3': 'سوم',
+            '4': 'چهارم',
+            '5': 'پنجم',
+            '6': 'ششم',
+            '7': 'هفتم',
+            '8': 'هشتم',
+            '9': 'نهم',
+            '10': 'دهم',
+            '11': 'یازدهم',
+            '12': 'دوازدهم'
+        };
 
         const fields = [
             { label: 'نام و نام خانوادگی', value: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || '-' },
             { label: 'شماره تماس', value: profile.phone_number || '-' },
             { label: 'کد ملی', value: profile.national_code || '-' },
             { label: 'تاریخ تولد', value: formatPersianDate(profile.birth_date) },
+            { label: 'پایه تحصیلی', value: gradeMap[String(profile.grade_level)] || '-' },
             { label: 'جنسیت', value: genderMap[profile.gender] || '-' },
             { label: 'مدرسه', value: (profile.school && profile.school.name) || '-' },
             { label: 'مسجد', value: (profile.mosque && profile.mosque.name) || '-' },
@@ -842,6 +915,7 @@ document.addEventListener('DOMContentLoaded', function() {
         birthDateHidden.value = profile.birth_date || '';
         birthDateDisplay.value = formatBirthDateForInput(profile.birth_date);
         document.getElementById('gender').value = profile.gender || '';
+        document.getElementById('grade_level').value = profile.grade_level || '12';
         document.getElementById('city').value = profile.city || '';
         document.getElementById('province').value = profile.province || '';
         
@@ -870,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderProfile(data);
             fillForm(data);
         } catch (error) {
-            showMessage('خطا در دریافت اطلاعات پروفایل', 'error');
+            showMessage('دریافت اطلاعات انجام نشد. دوباره تلاش کنید.', 'error');
             console.error('Error loading profile:', error);
         }
     }
@@ -897,6 +971,8 @@ document.addEventListener('DOMContentLoaded', function() {
             observer: true,
             autoClose: true,
             format: 'YYYY/MM/DD',
+            minDate: new persianDate([1385, 1, 1]).valueOf(),
+            maxDate: new persianDate([1395, 12, 29]).valueOf(),
             toolbox: {
                 enabled: true,
                 calendarSwitch: {
@@ -924,17 +1000,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    birthDateDisplay.addEventListener('input', function() {
+        birthDateDisplay.value = normalizeDigits(birthDateDisplay.value).replace(/[^0-9/.\-]/g, '');
+    });
     birthDateDisplay.addEventListener('change', syncBirthDateHidden);
     birthDateDisplay.addEventListener('blur', syncBirthDateHidden);
+    openBirthDatePickerBtn.addEventListener('click', openBirthDatePicker);
     clearBirthDateBtn.addEventListener('click', clearBirthDate);
 
     // Submit form
     profileEditForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const birthDate = syncBirthDateHidden().trim();
-        if (birthDateDisplay.value.trim() && !birthDate) {
-            showMessage('تاریخ تولد انتخاب شده معتبر نیست. لطفاً دوباره از تقویم انتخاب کنید.', 'error');
+        const birthDateState = syncBirthDateHidden();
+        const birthDate = (birthDateState.normalized || '').trim();
+        if (birthDateDisplay.value.trim() && !birthDateState.valid) {
+            showMessage(birthDateState.message || 'تاریخ تولد معتبر نیست.', 'error');
+            return;
+        }
+
+        const gradeLevel = document.getElementById('grade_level').value;
+        if (!gradeLevel) {
+            showMessage('پایه تحصیلی الزامی است.', 'error');
             return;
         }
 
@@ -943,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
             last_name: document.getElementById('last_name').value,
             national_code: document.getElementById('national_code').value,
             birth_date: birthDate || null,
+            grade_level: Number(gradeLevel),
             gender: document.getElementById('gender').value,
             school: document.getElementById('school').value || null,
             mosque: document.getElementById('mosque').value || null,
@@ -962,12 +1050,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                const errorMsg = errorData.detail || Object.values(errorData).flat().join(', ') || 'خطا در ویرایش پروفایل';
+                const errorMsg = errorData.detail || Object.values(errorData).flat().join(', ') || 'ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.';
                 throw new Error(errorMsg);
             }
 
             const data = await response.json();
-            showMessage('تغییرات با موفقیت ذخیره شد', 'success');
+            showMessage('اطلاعات با موفقیت ذخیره شد.', 'success');
             renderProfile(data);
             fillForm(data);
             editSection.classList.remove('active');

@@ -24,7 +24,7 @@
         body {
             /* فضای خالی برای هدر شناور */
             padding-top: 110px; 
-            font-family: 'Vazirmatn', sans-serif;
+            font-family: 'Manshoor', sans-serif;
             background-color: #0b0716;
             color: #fff;
         }
@@ -85,7 +85,7 @@
             text-decoration: none;
             color: #fff;
             font-size: 1.5rem;
-            font-weight: 800;
+            font-weight: var(--font-weight-display);
             transition: transform 0.3s ease;
             flex-shrink: 0;
             margin-left: 2rem;
@@ -115,7 +115,7 @@
             text-decoration: none;
             padding: 0.6rem 1rem;
             border-radius: 12px;
-            font-weight: 500;
+            font-weight: var(--font-weight-ui);
             font-size: 0.95rem;
             transition: all 0.3s ease;
             white-space: nowrap;
@@ -158,7 +158,7 @@
         .btn-nav {
             padding: 0.6rem 1.5rem !important;
             border-radius: 50px !important;
-            font-weight: 600 !important;
+            font-weight: var(--font-weight-ui) !important;
             font-size: 0.95rem !important;
             display: flex;
             align-items: center;
@@ -200,7 +200,7 @@
             padding: 0.5rem 1rem;
             border-radius: 50px;
             color: #fff;
-            font-weight: 700;
+            font-weight: var(--font-weight-heading);
             border: 1px solid rgba(245, 166, 35, 0.3);
             white-space: nowrap;
         }
@@ -269,7 +269,7 @@
 
         .site-modal-title {
             font-size: 1.5rem;
-            font-weight: 800;
+            font-weight: var(--font-weight-heading);
             margin-bottom: 0.75rem;
             color: #fff;
         }
@@ -536,12 +536,12 @@
             <div class="site-modal-icon">
                 <i class="fa-solid fa-lock"></i>
             </div>
-            <h3 class="site-modal-title" id="site-modal-title">این بخش بعد از ورود فعال می‌شود</h3>
+            <h3 class="site-modal-title" id="site-modal-title">این بخش پس از ورود در دسترس است</h3>
             <p class="site-modal-text" id="site-modal-text">برای استفاده از بخش‌های اصلی جبهه نوجوانی، ابتدا وارد حساب کاربری خود شوید یا ثبت‌نام کنید.</p>
             <div class="site-modal-actions">
                 <a href="{% url 'login' %}" class="btn-nav btn-login">ورود</a>
                 <a href="{% url 'register' %}" class="btn-nav btn-register">ثبت‌نام</a>
-                <button type="button" class="btn-nav site-modal-secondary" id="site-modal-dismiss">فعلا بعدا</button>
+                <button type="button" class="btn-nav site-modal-secondary" id="site-modal-dismiss">فعلاً نه</button>
             </div>
         </div>
     </div>
@@ -595,8 +595,8 @@
         const modalTitle = document.getElementById('site-modal-title');
         const modalText = document.getElementById('site-modal-text');
 
-        modalTitle.textContent = `دسترسی به ${sectionName} بعد از ورود فعال می‌شود`;
-        modalText.textContent = `برای ورود به بخش ${sectionName} لازم است ابتدا وارد حساب کاربری خود شوید. اگر تازه با سایت آشنا شده‌اید، می‌توانید از همین صفحه معرفی شروع کنید.`;
+        modalTitle.textContent = `بخش ${sectionName} پس از ورود در دسترس است`;
+        modalText.textContent = `برای استفاده از بخش ${sectionName}، ابتدا وارد حساب کاربری خود شوید. اگر هنوز حساب ندارید، می‌توانید از همین‌جا ثبت‌نام کنید.`;
         modalBackdrop.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
@@ -650,7 +650,7 @@
         if (params.get('logout') === 'true') {
             openGuestModal('حساب کاربری');
             document.getElementById('site-modal-title').textContent = 'خروج با موفقیت انجام شد';
-            document.getElementById('site-modal-text').textContent = 'اکنون در صفحه معرفی سایت هستید. برای ورود دوباره یا ساخت حساب جدید می‌توانید از دکمه‌های زیر استفاده کنید.';
+            document.getElementById('site-modal-text').textContent = 'برای ورود دوباره یا ساخت حساب جدید، از دکمه‌های زیر استفاده کنید.';
         }
     });
 

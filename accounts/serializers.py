@@ -8,7 +8,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
-from accounts.models import Rank, Seller, User
+from accounts.models import Rank, Seller, User, validate_birth_date_range
 from geography.models import Mosque, School
 
 
@@ -172,6 +172,17 @@ class FlexibleBirthDateField(serializers.DateField):
             self.fail("invalid")
 
 
+def _validate_allowed_birth_date(value: date | None):
+    if value in (None, ""):
+        return value
+
+    try:
+        validate_birth_date_range(value)
+    except Exception as exc:
+        raise serializers.ValidationError(str(exc))
+    return value
+
+
 def _extract_place_geography(place) -> tuple[str | None, str | None]:
     if place is None:
         return None, None
@@ -264,7 +275,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         error_messages={
             "blank": "رمز عبور الزامی است.",
             "required": "رمز عبور الزامی است.",
-            "min_length": "رمز عبور باید حداقل ۸ کاراکتر باشد.",
+            "min_length": "رمز عبور باید حداقل ۸ کاراکتر داشته باشد.",
         },
     )
     national_code = serializers.CharField(
@@ -287,6 +298,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
         error_messages={"invalid_choice": "جنسیت انتخاب شده معتبر نیست."},
+    )
+    grade_level = serializers.ChoiceField(
+        choices=User.GradeLevel.choices,
+        required=False,
+        allow_null=True,
+        error_messages={"invalid_choice": "پایه تحصیلی انتخاب شده معتبر نیست."},
     )
     city = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     province = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -318,6 +335,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "national_code",
             "birth_date",
+            "grade_level",
             "gender",
             "school",
             "mosque",
@@ -343,6 +361,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("این کد ملی قبلاً ثبت شده است.")
         return value
 
+    def validate_birth_date(self, value: date | None):
+        return _validate_allowed_birth_date(value)
+
+    def validate_grade_level(self, value):
+        if value in (None, ""):
+            return User.GradeLevel.TWELFTH
+        return value
+
     def validate(self, attrs):
         return _sync_user_geography(attrs)
 
@@ -353,8 +379,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
-    password = serializers.CharField()
+    phone_number = serializers.CharField(
+        error_messages={
+            "blank": "شماره تلفن الزامی است.",
+            "required": "شماره تلفن الزامی است.",
+        }
+    )
+    password = serializers.CharField(
+        error_messages={
+            "blank": "رمز عبور الزامی است.",
+            "required": "رمز عبور الزامی است.",
+        }
+    )
 
     def validate(self, attrs):
         phone_number = attrs.get("phone_number")
@@ -366,7 +402,7 @@ class UserLoginSerializer(serializers.Serializer):
         if hasattr(user, "seller_profile"):
             raise serializers.ValidationError("این حساب کاربری فروشنده است.")
         if not user.is_active:
-            raise serializers.ValidationError("حساب کاربری غیرفعال است.")
+            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
         attrs["user"] = user
         return attrs
 
@@ -378,6 +414,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(read_only=True)
     current_rank = RankSerializer(read_only=True)
     birth_date = FlexibleBirthDateField(required=False, allow_null=True)
+    grade_level = serializers.ChoiceField(
+        choices=User.GradeLevel.choices,
+        required=False,
+        allow_null=True,
+        error_messages={"invalid_choice": "پایه تحصیلی انتخاب شده معتبر نیست."},
+    )
     school = NestedWritablePKField(
         serializer_class=SchoolSerializer,
         queryset=School.objects.all(),
@@ -400,6 +442,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "last_name",
             "national_code",
             "birth_date",
+            "grade_level",
             "gender",
             "profile_image",
             "total_points",
@@ -416,14 +459,58 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         return _sync_user_geography(attrs, instance=self.instance)
 
+    def validate_birth_date(self, value: date | None):
+        return _validate_allowed_birth_date(value)
+
+    def validate_grade_level(self, value):
+        if value in (None, ""):
+            return User.GradeLevel.TWELFTH
+        return value
+
 
 class SellerRegistrationSerializer(serializers.Serializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    phone_number = serializers.CharField()
-    first_name = serializers.CharField(max_length=50)
-    last_name = serializers.CharField(max_length=50)
-    seller_shop_name = serializers.CharField(max_length=150)
-    seller_shop_address = serializers.CharField()
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "blank": "رمز عبور الزامی است.",
+            "required": "رمز عبور الزامی است.",
+            "min_length": "رمز عبور باید حداقل ۸ کاراکتر داشته باشد.",
+        },
+    )
+    phone_number = serializers.CharField(
+        error_messages={
+            "blank": "شماره تلفن الزامی است.",
+            "required": "شماره تلفن الزامی است.",
+        }
+    )
+    first_name = serializers.CharField(
+        max_length=50,
+        error_messages={
+            "blank": "نام الزامی است.",
+            "required": "نام الزامی است.",
+        }
+    )
+    last_name = serializers.CharField(
+        max_length=50,
+        error_messages={
+            "blank": "نام خانوادگی الزامی است.",
+            "required": "نام خانوادگی الزامی است.",
+        }
+    )
+    seller_shop_name = serializers.CharField(
+        max_length=150,
+        error_messages={
+            "blank": "نام فروشگاه الزامی است.",
+            "required": "نام فروشگاه الزامی است.",
+        }
+    )
+    seller_shop_address = serializers.CharField(
+        error_messages={
+            "blank": "آدرس فروشگاه الزامی است.",
+            "required": "آدرس فروشگاه الزامی است.",
+        }
+    )
     seller_shop_phone_number = serializers.CharField(required=False, allow_blank=True, max_length=20)
     seller_shop_description = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -455,8 +542,18 @@ class SellerRegistrationSerializer(serializers.Serializer):
 
 
 class SellerLoginSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
-    password = serializers.CharField()
+    phone_number = serializers.CharField(
+        error_messages={
+            "blank": "شماره تلفن الزامی است.",
+            "required": "شماره تلفن الزامی است.",
+        }
+    )
+    password = serializers.CharField(
+        error_messages={
+            "blank": "رمز عبور الزامی است.",
+            "required": "رمز عبور الزامی است.",
+        }
+    )
 
     def validate(self, attrs):
         phone_number = attrs.get("phone_number")
@@ -469,9 +566,9 @@ class SellerLoginSerializer(serializers.Serializer):
         if not seller_profile:
             raise serializers.ValidationError("این حساب کاربری فروشنده نیست.")
         if not seller_profile.verified:
-            raise PermissionDenied("حساب شما هنوز تایید نشده است")
+            raise PermissionDenied("حساب فروشنده شما هنوز تایید نشده است.")
         if not user.is_active:
-            raise serializers.ValidationError("حساب کاربری غیرفعال است.")
+            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
         attrs["user"] = user
         return attrs
 

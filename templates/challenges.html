@@ -543,13 +543,13 @@
                             openModal();
                             btn.innerHTML = '<i class="fa-solid fa-check"></i> ثبت شد';
                         } else {
-                            alert(data.non_field_errors || data.detail || 'خطا در شرکت در چالش');
+                            alert(data.non_field_errors || data.detail || 'شرکت در چالش انجام نشد. دوباره تلاش کنید.');
                             btn.disabled = false;
                             btn.innerHTML = originalText;
                         }
                     } catch (error) {
                         console.error(error);
-                        alert('در برقراری ارتباط با سرور مشکلی پیش آمد.');
+                        alert('خطا در ارتباط با سرور. دوباره تلاش کنید.');
                         btn.disabled = false;
                         btn.innerHTML = originalText;
                     }
@@ -590,13 +590,13 @@
                             alert(data.message || 'مدرک با موفقیت ارسال شد.');
                             closeModal(true);
                         } else {
-                            alert(data.message || 'خطا در ثبت مدرک');
+                            alert(data.message || 'ارسال مدرک انجام نشد. دوباره تلاش کنید.');
                             submitBtn.disabled = false;
                             submitBtn.textContent = originalBtnText;
                         }
                     } catch (error) {
                         console.error(error);
-                        alert('در ثبت مدرک مشکلی پیش آمد.');
+                        alert('خطا در ارتباط با سرور. دوباره تلاش کنید.');
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalBtnText;
                     }

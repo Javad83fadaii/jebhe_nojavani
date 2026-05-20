@@ -30,7 +30,7 @@
 
 /* اضافه کردن هاله‌های نور متحرک در پس‌زمینه */
 body {
-    font-family: 'Vazirmatn', 'Inter', sans-serif;
+    font-family: 'Manshoor', 'Inter', sans-serif;
     background-color: var(--dark-bg);
     color: var(--white);
     line-height: 1.6;
@@ -106,7 +106,7 @@ body::after {
     align-items: center;
     gap: 0.5rem;
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-display);
     color: var(--white);
     text-decoration: none;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
@@ -133,7 +133,7 @@ body::after {
 .nav-links a {
     color: var(--gray-light);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: var(--font-weight-ui);
     transition: all 0.3s ease;
     position: relative;
     padding: 0.5rem 0;
@@ -171,7 +171,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-heading);
     border: 1px solid var(--primary-gold);
     box-shadow: 0 0 15px rgba(245, 166, 35, 0.2);
     transition: var(--transition);
@@ -232,6 +232,7 @@ body::after {
 
 .hero h1 {
     font-size: 3.5rem;
+    font-weight: var(--font-weight-display);
     margin-bottom: 1rem;
     background: linear-gradient(to right, #fff, var(--primary-gold));
     -webkit-background-clip: text;
@@ -256,7 +257,7 @@ body::after {
     padding: 1rem 2.5rem;
     border-radius: 50px;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: var(--font-weight-ui);
     transition: var(--transition);
     cursor: pointer;
     border: none;
@@ -398,7 +399,7 @@ body::after {
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-display);
     margin: 0 auto 1.5rem;
     box-shadow: 0 0 20px var(--primary-gold-glow);
     transition: var(--transition);
@@ -454,7 +455,7 @@ body::after {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: var(--font-weight-heading);
     box-shadow: 0 0 10px var(--primary-gold-glow);
 }
 
@@ -534,7 +535,7 @@ body::after {
     padding: 0.4rem 1rem;
     border-radius: 20px;
     font-size: 0.85rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-ui);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
@@ -545,7 +546,7 @@ body::after {
 .card-title {
     font-size: 1.3rem;
     margin-bottom: 0.8rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-heading);
 }
 
 .card-category {
@@ -560,7 +561,7 @@ body::after {
 
 .card-points {
     color: var(--primary-gold);
-    font-weight: bold;
+    font-weight: var(--font-weight-heading);
     font-size: 1.2rem;
     display: flex;
     align-items: center;
@@ -916,6 +917,7 @@ input[type="radio"] {
     color: var(--primary-gold);
     margin-bottom: 1.5rem;
     font-size: 1.3rem;
+    font-weight: var(--font-weight-heading);
     position: relative;
     display: inline-block;
 }
@@ -1063,6 +1065,7 @@ input[type="radio"] {
 .learning-path-title {
     font-size: 1.4rem;
     line-height: 1.7;
+    font-weight: var(--font-weight-heading);
 }
 
 .learning-path-title a {
@@ -1098,6 +1101,7 @@ input[type="radio"] {
 .learning-stage-list__header h4 {
     color: var(--white);
     font-size: 1rem;
+    font-weight: var(--font-weight-heading);
 }
 
 .learning-stage-list__header span {
@@ -1144,6 +1148,7 @@ input[type="radio"] {
 
 .learning-stage-item__content strong {
     color: var(--white);
+    font-weight: var(--font-weight-heading);
 }
 
 .learning-stage-item__content small {
@@ -1757,7 +1762,7 @@ input[type="radio"] {
     border-radius: 14px;
     background: linear-gradient(135deg, var(--primary-gold), #d48a10);
     color: var(--dark-bg);
-    font-weight: 900;
+    font-weight: var(--font-weight-display);
     box-shadow: 0 8px 18px rgba(245, 166, 35, 0.25);
 }
 
@@ -1838,7 +1843,7 @@ input[type="radio"] {
     align-items: center;
     gap: 0.5rem;
     color: rgba(180, 255, 210, 0.95);
-    font-weight: 800;
+    font-weight: var(--font-weight-heading);
 }
 
 .exam-finish {

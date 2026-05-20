@@ -49,7 +49,8 @@ class AccountsAPITestCase(TestCase):
             "last_name": "رضایی",
             "password": "StrongPass123!",
             "national_code": "0010350829",
-            "birth_date": "2000-01-01",
+            "birth_date": "2010-01-01",
+            "grade_level": 9,
             "gender": "male",
             "school": self.school.pk,
             "mosque": self.mosque.pk,
@@ -71,6 +72,7 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.data["mosque"]["id"], self.mosque.pk)
         self.assertEqual(res.data["city"], "تهران")
         self.assertEqual(res.data["province"], "تهران")
+        self.assertEqual(res.data["grade_level"], 9)
 
         patch_payload = {"school": self.other_school.pk, "mosque": None}
         res = self.client.patch("/api/accounts/profile/me/", patch_payload, format="json", HTTP_AUTHORIZATION=f"Bearer {access}")
@@ -148,13 +150,13 @@ class AccountsAPITestCase(TestCase):
             "first_name": "مهدی",
             "last_name": "کریمی",
             "password": "StrongPass123!",
-            "birth_date": "2000/01/15",
+            "birth_date": "2010/01/15",
         }
         res = self.client.post("/api/accounts/register/", register_payload, format="json")
         self.assertEqual(res.status_code, 201)
 
         user = User.objects.get(phone_number="09125555555")
-        self.assertEqual(user.birth_date, date(2000, 1, 15))
+        self.assertEqual(user.birth_date, date(2010, 1, 15))
 
     def test_user_registration_accepts_birth_date_with_persian_digits(self):
         register_payload = {
@@ -162,13 +164,13 @@ class AccountsAPITestCase(TestCase):
             "first_name": "امیر",
             "last_name": "کاظمی",
             "password": "StrongPass123!",
-            "birth_date": "۲۰۰۰/۰۱/۱۵",
+            "birth_date": "۲۰۱۰/۰۱/۱۵",
         }
         res = self.client.post("/api/accounts/register/", register_payload, format="json")
         self.assertEqual(res.status_code, 201)
 
         user = User.objects.get(phone_number="09126666666")
-        self.assertEqual(user.birth_date, date(2000, 1, 15))
+        self.assertEqual(user.birth_date, date(2010, 1, 15))
 
     def test_user_registration_accepts_jalali_birth_date(self):
         register_payload = {
@@ -176,13 +178,15 @@ class AccountsAPITestCase(TestCase):
             "first_name": "سینا",
             "last_name": "عباسی",
             "password": "StrongPass123!",
-            "birth_date": "۱۴۰۳/۰۲/۲۷",
+            "birth_date": "1385/01/01",
+            "grade_level": 1,
         }
         res = self.client.post("/api/accounts/register/", register_payload, format="json")
         self.assertEqual(res.status_code, 201)
 
         user = User.objects.get(phone_number="09127777777")
-        self.assertEqual(user.birth_date, date(2024, 5, 16))
+        self.assertEqual(user.birth_date, date(2006, 3, 21))
+        self.assertEqual(user.grade_level, 1)
 
     def test_user_profile_update_accepts_jalali_birth_date(self):
         user = User.objects.create_user(
@@ -195,9 +199,49 @@ class AccountsAPITestCase(TestCase):
 
         res = self.client.patch(
             "/api/accounts/profile/me/",
-            {"birth_date": "۱۴۰۳/۰۲/۲۷"},
+            {"birth_date": "1395/01/01", "grade_level": 12},
             format="json",
         )
         self.assertEqual(res.status_code, 200)
         user.refresh_from_db()
-        self.assertEqual(user.birth_date, date(2024, 5, 16))
+        self.assertEqual(user.birth_date, date(2016, 3, 20))
+        self.assertEqual(user.grade_level, 12)
+
+    def test_user_registration_defaults_grade_level_to_twelveth(self):
+        register_payload = {
+            "phone_number": "09129999999",
+            "first_name": "نوید",
+            "last_name": "مرادی",
+            "password": "StrongPass123!",
+            "birth_date": "2011-05-10",
+        }
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+        self.assertEqual(res.status_code, 201)
+
+        user = User.objects.get(phone_number="09129999999")
+        self.assertEqual(user.grade_level, User.GradeLevel.TWELFTH)
+
+    def test_user_registration_rejects_birth_date_outside_allowed_range(self):
+        too_old_payload = {
+            "phone_number": "09120000001",
+            "first_name": "قدیمی",
+            "last_name": "نمونه",
+            "password": "StrongPass123!",
+            "birth_date": "1384/12/29",
+        }
+        res = self.client.post("/api/accounts/register/", too_old_payload, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("birth_date", res.data)
+        self.assertIn("غیر مجاز", str(res.data["birth_date"]))
+
+        too_new_payload = {
+            "phone_number": "09120000002",
+            "first_name": "جدید",
+            "last_name": "نمونه",
+            "password": "StrongPass123!",
+            "birth_date": "1396/01/01",
+        }
+        res = self.client.post("/api/accounts/register/", too_new_payload, format="json")
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("birth_date", res.data)
+        self.assertIn("غیر مجاز", str(res.data["birth_date"]))

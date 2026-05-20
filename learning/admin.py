@@ -42,7 +42,7 @@ class LearningStageInline(admin.TabularInline):
         "min_passing_score",
         "is_active",
     )
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("required_points", "stage_points", "created_at", "updated_at")
     show_change_link = True
 
 
@@ -121,7 +121,7 @@ class LearningStageAdmin(admin.ModelAdmin):
     list_filter = ("content_type", "is_active", "learning_path")
     search_fields = ("title", "description", "detail_summary", "learning_path__title")
     inlines = [StageQuestionSetInline]
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("required_points", "stage_points", "created_at", "updated_at")
     formfield_overrides = {
         models.TextField: {
             "widget": forms.Textarea(
@@ -144,6 +144,7 @@ class LearningStageAdmin(admin.ModelAdmin):
                 "stage_points",
                 "min_passing_score",
             ),
+            "description": "امتیاز هر مرحله به صورت ثابت 10 در نظر گرفته می‌شود و امتیاز مورد نیاز باز شدن نیز بر اساس شماره مرحله به صورت خودکار محاسبه می‌شود.",
         }),
         ("توضیحات مرحله", {
             "fields": ("description", "detail_summary"),

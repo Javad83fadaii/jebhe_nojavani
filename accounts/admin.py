@@ -13,7 +13,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("phone_number", "first_name", "last_name")
+        fields = ("phone_number", "first_name", "last_name", "grade_level", "birth_date")
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -280,6 +280,7 @@ class UserAdmin(admin.ModelAdmin):
         "phone_number",
         "first_name",
         "last_name",
+        "grade_level",
         "is_seller_display",
         "seller_verified_display",
         "is_active",
@@ -287,13 +288,16 @@ class UserAdmin(admin.ModelAdmin):
         "challenge_coins",
         "current_rank",
     )
-    list_filter = ("is_active", "is_staff", "gender", "province", "current_rank")
+    list_filter = ("is_active", "is_staff", "gender", "grade_level", "province", "current_rank")
     search_fields = ("phone_number", "first_name", "last_name", "national_code")
     ordering = ("-date_joined",)
     readonly_fields = ("current_rank", "city", "province", "date_joined", "updated_at", "last_login")
 
     fieldsets = (
-        ("اطلاعات شخصی", {"fields": ("phone_number", "password", "first_name", "last_name", "national_code", "birth_date", "gender", "profile_image")}),
+        (
+            "اطلاعات شخصی",
+            {"fields": ("phone_number", "password", "first_name", "last_name", "national_code", "birth_date", "grade_level", "gender", "profile_image")},
+        ),
         ("گیمیفیکیشن", {"fields": ("total_points", "challenge_coins", "wallet_balance", "current_rank")}),
         ("جغرافیایی", {"fields": (("province_ref", "city_ref"), ("school", "mosque"), ("province", "city"))}),
         ("دسترسی‌ها", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
