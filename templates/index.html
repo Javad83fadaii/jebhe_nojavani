@@ -218,8 +218,10 @@ body {
     animation: float 6s ease-in-out infinite;
 }
 
-.visual-placeholder i {
-    font-size: 7rem;
+.visual-placeholder .hero-logo {
+    height: 7rem;
+    width: auto;
+    display: block;
     filter: drop-shadow(0 0 30px var(--primary-gold-glow));
     margin-bottom: 20px;
 }
@@ -510,7 +512,7 @@ Hero Section
             </div>
             <div class="hero-visual">
                 <div class="visual-placeholder">
-                    <i class="fa-solid fa-user-astronaut"></i>
+                    <img src="{% static 'images/logo-color-01.svg' %}" alt="لوگوی جبهه نوجوانی" class="hero-logo">
                     <span style="font-size: 1.5rem; font-weight: 700; color: white; margin-top: 15px;">جبهه نوجوانی <br> جایی برای قوی‌تر شدن</span>
                 </div>
             </div>

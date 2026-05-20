@@ -1,18 +1,14 @@
+{% load static %}
 <nav class="navbar" id="navbar">
     <div class="navbar-container">
         <a href="{% if request.user.is_authenticated %}{% url 'home' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
-                <defs>
-                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#F5A623" />
-                        <stop offset="100%" stop-color="#6C3FC5" />
-                    </linearGradient>
-                </defs>
-                <circle cx="50" cy="15" r="5" fill="#F5A623" />
-                <path d="M50 28 L85 45 L50 62 L15 45 Z" fill="url(#logoGrad)" />
-                <path d="M20 55 L50 70 L80 55" fill="none" stroke="#F5A623" stroke-width="5" stroke-linecap="round"/>
-                <path d="M28 68 L50 80 L72 68" fill="none" stroke="#6C3FC5" stroke-width="5" stroke-linecap="round"/>
-            </svg>
+            <img
+                src="{% static 'images/logo-color-01.svg' %}"
+                alt="لوگوی جبهه نوجوانی"
+                class="logo-mark"
+                width="40"
+                height="40"
+            >
             <span>جبهه نوجوانی</span>
         </a>
 

@@ -71,6 +71,14 @@ body {
     transform: scale(1.05);
 }
 
+.logo-mark {
+    width: 56px;
+    height: 56px;
+    display: block;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
 .nav-container-inner {
     display: flex;
     flex-grow: 1;
@@ -450,6 +458,7 @@ body {
     }
 
     .logo { margin-left: 1rem; }
+    .logo-mark { width: 48px; height: 48px; }
     .nav-links a.nav-item { padding: 0.5rem; font-size: 0.9rem; }
     .btn-nav { padding: 0.5rem 1rem !important; }
 }
