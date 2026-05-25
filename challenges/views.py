@@ -33,24 +33,26 @@ class ParticipationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='complete')
     def complete(self, request, pk=None):
         participation = self.get_object()
-        evidence = request.FILES.get('evidence')
-        
-        if evidence:
-            participation.evidence = evidence
-            participation.save()
+        evidence = request.FILES.get("evidence")
+        text = request.data.get("text")
+        attended = str(request.data.get("attended") or "").lower() in {"1", "true", "yes", "on"}
 
         try:
-            participation.complete_challenge()
-            return Response({
-                'status': 'success',
-                'message': f'چالش با موفقیت تکمیل شد! {participation.coins_received} سکه دریافت کردید.',
-                'coins_received': participation.coins_received
-            })
+            participation.submit(attended=attended, text=text, evidence=evidence)
+            return Response(
+                {
+                    "status": "success",
+                    "message": "ارسال شما ثبت شد و پس از پایان چالش توسط ادمین بررسی می‌شود.",
+                }
+            )
         except ValidationError as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "status": "error",
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     @action(detail=False, methods=['get'], url_path='my-challenges')
     def my_challenges(self, request):

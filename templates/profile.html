@@ -695,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const day = Number(match[3]);
 
         if (year < 1385 || year > 1395) {
-            return { valid: false, normalized: '', message: 'غیر مجاز' };
+            return { valid: false, normalized: '', message: 'ثبت‌نام برای این سن مقدور نمی‌باشد. فقط متولدین سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز هستند.' };
         }
 
         if (month < 1 || month > 12) {

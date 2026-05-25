@@ -85,15 +85,17 @@ def challenges(request):
         end_date__gte=now
     )
     
-    user_participations = []
+    user_participations = set()
     if request.user.is_authenticated:
-        user_participations = ChallengeParticipation.objects.filter(
+        user_participations = set(
+            ChallengeParticipation.objects.filter(
             user=request.user
-        ).values_list('challenge_id', flat=True)
+            ).values_list('challenge_id', flat=True)
+        )
 
     return render(
         request,
-        "challenges.html",
+        "challenges/challenges.html",
         {
             "page_name": "challenges",
             "page_title": "چالش‌ها | جبهه نوجوانی",
@@ -108,14 +110,54 @@ def challenge_detail(request, pk):
     if guest_redirect:
         return guest_redirect
 
-    challenge = get_object_or_404(LearningPath, pk=pk, publish_status=LearningPath.PublishStatus.PUBLISHED)
+    challenge = get_object_or_404(Challenge, pk=pk, is_active=True)
+    participation = None
+    if request.user.is_authenticated:
+        participation = ChallengeParticipation.objects.filter(user=request.user, challenge=challenge).first()
     return render(
         request,
-        "challenge_detail.html",
+        "challenges/challenge_detail.html",
         {
             "page_name": "challenges",
             "page_title": f"جزئیات چالش {challenge.title} | جبهه نوجوانی",
             "challenge": challenge,
+            "participation": participation,
+        },
+    )
+
+
+def my_challenges(request):
+    guest_redirect = _redirect_guest_to_index(request)
+    if guest_redirect:
+        return guest_redirect
+
+    participations = (
+        ChallengeParticipation.objects.filter(user=request.user)
+        .select_related("challenge")
+        .order_by("-participated_at")
+    )
+
+    active_participations = []
+    pending_participations = []
+    past_participations = []
+    for participation in participations:
+        if participation.status == ChallengeParticipation.Status.SUBMITTED:
+            pending_participations.append(participation)
+            continue
+        if participation.challenge.is_currently_active:
+            active_participations.append(participation)
+        else:
+            past_participations.append(participation)
+
+    return render(
+        request,
+        "challenges/my_challenges.html",
+        {
+            "page_name": "challenges",
+            "page_title": "چالش‌های من | جبهه نوجوانی",
+            "active_participations": active_participations,
+            "pending_participations": pending_participations,
+            "past_participations": past_participations,
         },
     )
 

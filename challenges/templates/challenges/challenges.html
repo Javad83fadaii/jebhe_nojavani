@@ -3,7 +3,6 @@
 {% block content %}
 
 <style>
-    /* تنظیمات رنگی و متغیرها */
     :root {
         --primary-color: #6c5ce7;
         --secondary-color: #00cec9;
@@ -26,7 +25,6 @@
         box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
-    /* استایل بخش هدر */
     .challenge-hero {
         padding: 3rem 2rem;
         margin-top: 2rem;
@@ -76,7 +74,6 @@
         color: white;
     }
 
-    /* گرید کارت‌های چالش */
     .challenge-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -109,6 +106,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .challenge-countdown {
@@ -183,6 +181,12 @@
         text-align: center;
     }
 
+    .challenge-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+    }
+
     .challenge-action-btn {
         width: 100%;
         padding: 0.8rem;
@@ -217,7 +221,6 @@
         cursor: not-allowed;
     }
 
-    /* استایل مودال (پاپ‌آپ) */
     .challenge-modal-overlay {
         position: fixed;
         inset: 0;
@@ -234,7 +237,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -40%);
-        background: #2d3436; /* رنگ پس‌زمینه تیره و سالید برای خوانایی */
+        background: #2d3436;
         padding: 2.5rem;
         border-radius: 20px;
         z-index: 1001;
@@ -264,7 +267,6 @@
         margin-bottom: 1rem;
     }
 
-    /* استایل آپلود فایل به شکل Drop-zone */
     .challenge-file-label {
         display: block;
         padding: 2rem 1rem;
@@ -306,7 +308,6 @@
 </style>
 
     <div class="challenge-page" data-csrf="{{ csrf_token }}">
-        <!-- هدر چالش‌ها -->
         <section class="container challenge-page__hero-wrap">
             <div class="glass-card challenge-hero">
                 <div class="challenge-hero__content">
@@ -316,7 +317,7 @@
                     </span>
                     <h1 class="text-gold" style="margin-bottom: 1rem;">چالش‌های فعال جبهه نوجوانی</h1>
                     <p style="color: var(--text-muted); line-height: 1.8; max-width: 600px;">
-                        چالش مناسب خودت را انتخاب کن، در زمان مشخص آن را کامل کن و با ارسال مدرک، سکه جایزه بگیر.
+                        چالش مناسب خودت را انتخاب کن، در زمان مشخص آن را کامل کن و بعد از پایان چالش، نتیجه توسط ادمین بررسی می‌شود.
                     </p>
                 </div>
                 <div class="challenge-hero__stats">
@@ -332,7 +333,6 @@
             </div>
         </section>
 
-        <!-- لیست چالش‌ها -->
         <section class="container challenge-page__content">
             {% if active_challenges %}
                 <div class="challenge-grid">
@@ -342,8 +342,10 @@
                                 <span class="learning-path-badge">
                                     <i class="fa-solid fa-coins"></i>
                                     {{ challenge.coin_reward }} سکه
+                                    {% if challenge.points_reward %}
+                                        / {{ challenge.points_reward }} امتیاز
+                                    {% endif %}
                                 </span>
-                                <!-- رفع باگ تاریخ با استفاده از فرمت 'c' -->
                                 <div class="challenge-countdown countdown-timer" data-endtime="{{ challenge.end_date|date:'c' }}">
                                     <span class="challenge-countdown__label">زمان باقی‌مانده:</span>
                                     <strong class="challenge-countdown__value">در حال بارگذاری...</strong>
@@ -361,10 +363,18 @@
                             {% endif %}
 
                             <div class="challenge-card__body">
-                                <h3 class="learning-path-title text-white">{{ challenge.title }}</h3>
+                                <h3 class="learning-path-title text-white">
+                                    <a href="{% url 'challenge_detail' pk=challenge.pk %}" style="color: inherit; text-decoration: none;">
+                                        {{ challenge.title }}
+                                    </a>
+                                </h3>
                                 <p class="learning-path-description">{{ challenge.description|truncatechars:150 }}</p>
 
                                 <div class="challenge-meta-row">
+                                    <div class="challenge-meta-chip">
+                                        <i class="fa-solid fa-list-check text-gold"></i>
+                                        نوع: {{ challenge.get_submission_type_display }}
+                                    </div>
                                     <div class="challenge-meta-chip">
                                         <i class="fa-solid fa-calendar-check text-gold"></i>
                                         شروع: {{ challenge.start_date|jalali_date }}
@@ -379,15 +389,21 @@
                             <div class="challenge-actions">
                                 {% if user.is_authenticated %}
                                     {% if challenge.id in user_participations %}
-                                        <button class="btn btn-secondary challenge-action-btn" disabled>
-                                            <i class="fa-solid fa-check-circle" style="color: var(--secondary-color);"></i>
-                                            قبلاً در این چالش شرکت کرده‌اید
-                                        </button>
+                                        <a href="{% url 'challenge_detail' pk=challenge.pk %}" class="btn btn-secondary challenge-action-btn" style="text-decoration: none;">
+                                            <i class="fa-solid fa-eye" style="color: var(--secondary-color);"></i>
+                                            مشاهده وضعیت / ارسال
+                                        </a>
                                     {% else %}
-                                        <button class="btn btn-primary join-challenge-btn challenge-action-btn" data-id="{{ challenge.id }}">
-                                            <i class="fa-solid fa-bolt"></i>
-                                            شرکت در چالش
-                                        </button>
+                                        <div class="challenge-actions-grid">
+                                            <a href="{% url 'challenge_detail' pk=challenge.pk %}" class="btn btn-secondary challenge-action-btn" style="text-decoration: none;">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                                جزئیات
+                                            </a>
+                                            <button class="btn btn-primary join-challenge-btn challenge-action-btn" data-id="{{ challenge.id }}" data-type="{{ challenge.submission_type }}" data-title="{{ challenge.title|escape }}">
+                                                <i class="fa-solid fa-bolt"></i>
+                                                شرکت
+                                            </button>
+                                        </div>
                                     {% endif %}
                                 {% else %}
                                     <a href="{% url 'login' %}" class="btn btn-primary challenge-action-btn" style="text-decoration: none;">
@@ -409,24 +425,36 @@
         </section>
     </div>
 
-    <!-- مودال آپلود مدرک -->
     <div id="modal-overlay" class="challenge-modal-overlay"></div>
     <div id="complete-challenge-modal" class="challenge-modal">
         <div class="challenge-modal__icon">
             <i class="fa-solid fa-cloud-arrow-up"></i>
         </div>
-        <h3 class="text-gold mb-2">ارسال مدرک چالش</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">برای ثبت نهایی چالش، تصویر یا فایل مدرک خود را آپلود کنید.</p>
+        <h3 class="text-gold mb-2" id="modal-title">ثبت ارسال چالش</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;" id="modal-description">ارسال شما پس از پایان چالش توسط ادمین بررسی می‌شود.</p>
         
         <form id="complete-challenge-form" class="challenge-modal__form">
-            <label for="challenge-evidence" class="challenge-file-label" id="file-label-text">
-                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                <span id="file-name-display">برای انتخاب فایل کلیک کنید</span>
-            </label>
-            <input type="file" id="challenge-evidence" class="challenge-file-input" required>
+            <div id="attendance-field" style="display: none; text-align: right; margin-top: 1.5rem;">
+                <label style="color: white; display: flex; gap: 0.6rem; align-items: center; justify-content: flex-start;">
+                    <input type="checkbox" id="challenge-attendance" style="transform: scale(1.2);">
+                    شرکت می‌کنم
+                </label>
+            </div>
+
+            <div id="text-field" style="display: none; margin-top: 1.5rem; text-align: right;">
+                <textarea id="challenge-text" rows="5" style="width: 100%; border-radius: 12px; padding: 1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white;" placeholder="متن فعالیت را بنویسید..."></textarea>
+            </div>
+
+            <div id="file-field" style="display: none;">
+                <label for="challenge-evidence" class="challenge-file-label" id="file-label-text">
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                    <span id="file-name-display">برای انتخاب فایل کلیک کنید</span>
+                </label>
+                <input type="file" id="challenge-evidence" class="challenge-file-input">
+            </div>
             
             <div class="challenge-modal__actions">
-                <button type="submit" class="btn btn-primary challenge-action-btn" id="submit-evidence-btn">ارسال و دریافت سکه</button>
+                <button type="submit" class="btn btn-primary challenge-action-btn" id="submit-evidence-btn">ثبت ارسال</button>
                 <button type="button" id="close-modal" class="btn btn-secondary challenge-action-btn">انصراف</button>
             </div>
         </form>
@@ -436,12 +464,10 @@
 
 {% block extra_js %}
     <script>
-        // فرمت کردن زمان (افزودن صفر قبل از اعداد یک رقمی)
         function formatTimeUnit(value) {
             return String(value).padStart(2, '0');
         }
 
-        // بروزرسانی تایمرها
         function updateTimers() {
             document.querySelectorAll('.countdown-timer').forEach(timer => {
                 const endTimeStr = timer.dataset.endtime;
@@ -465,7 +491,6 @@
                 const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-                // نمایش زمان به شکل خوانا
                 if (days > 0) {
                     valueElement.textContent = `${days} روز و ${formatTimeUnit(hours)}:${formatTimeUnit(minutes)}:${formatTimeUnit(seconds)}`;
                 } else {
@@ -483,10 +508,17 @@
             const challengeForm = document.getElementById('complete-challenge-form');
             const evidenceInput = document.getElementById('challenge-evidence');
             const fileNameDisplay = document.getElementById('file-name-display');
+            const attendanceField = document.getElementById('attendance-field');
+            const attendanceInput = document.getElementById('challenge-attendance');
+            const textField = document.getElementById('text-field');
+            const textInput = document.getElementById('challenge-text');
+            const fileField = document.getElementById('file-field');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
             const submitBtn = document.getElementById('submit-evidence-btn');
             let currentParticipationId = null;
+            let currentSubmissionType = null;
 
-            // نمایش نام فایل انتخاب شده در دراپ‌زون
             evidenceInput.addEventListener('change', function(e) {
                 if (e.target.files.length > 0) {
                     fileNameDisplay.textContent = 'فایل انتخاب شد: ' + e.target.files[0].name;
@@ -517,13 +549,40 @@
                 }
             }
 
+            function configureModalForSubmissionType(submissionType, challengeTitle) {
+                currentSubmissionType = submissionType;
+                if (modalTitle) modalTitle.textContent = challengeTitle ? `ثبت ارسال: ${challengeTitle}` : 'ثبت ارسال چالش';
+                if (modalDescription) modalDescription.textContent = 'ارسال شما پس از پایان چالش توسط ادمین بررسی می‌شود.';
+
+                attendanceField.style.display = 'none';
+                textField.style.display = 'none';
+                fileField.style.display = 'none';
+                evidenceInput.value = '';
+                evidenceInput.removeAttribute('accept');
+
+                if (submissionType === 'attendance') {
+                    attendanceField.style.display = 'block';
+                } else if (submissionType === 'text') {
+                    textField.style.display = 'block';
+                } else if (submissionType === 'image') {
+                    fileField.style.display = 'block';
+                    evidenceInput.setAttribute('accept', 'image/*');
+                } else if (submissionType === 'video') {
+                    fileField.style.display = 'block';
+                    evidenceInput.setAttribute('accept', 'video/*');
+                } else {
+                    fileField.style.display = 'block';
+                }
+            }
+
             updateTimers();
             setInterval(updateTimers, 1000);
 
-            // هندل کردن کلیک روی دکمه شرکت در چالش
             document.querySelectorAll('.join-challenge-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const challengeId = btn.dataset.id;
+                    const submissionType = btn.dataset.type;
+                    const challengeTitle = btn.dataset.title;
                     const originalText = btn.innerHTML;
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> در حال پردازش...';
@@ -541,6 +600,7 @@
 
                         if (response.ok) {
                             currentParticipationId = data.id;
+                            configureModalForSubmissionType(submissionType, challengeTitle);
                             openModal();
                             btn.innerHTML = '<i class="fa-solid fa-check"></i> ثبت شد';
                         } else {
@@ -560,22 +620,41 @@
             if (closeModalBtn) closeModalBtn.addEventListener('click', () => closeModal(true));
             if (overlay) overlay.addEventListener('click', () => closeModal(true));
 
-            // هندل کردن فرم آپلود مدرک
             if (challengeForm) {
                 challengeForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
 
-                    if (!evidenceInput.files.length || !currentParticipationId) {
-                        alert('ابتدا فایل مدرک را انتخاب کنید.');
+                    if (!currentParticipationId) {
+                        alert('ابتدا در چالش شرکت کنید.');
                         return;
+                    }
+
+                    const formData = new FormData();
+
+                    if (currentSubmissionType === 'attendance') {
+                        if (!attendanceInput.checked) {
+                            alert('برای ثبت حضور باید گزینه «شرکت می‌کنم» را تایید کنید.');
+                            return;
+                        }
+                        formData.append('attended', 'true');
+                    } else if (currentSubmissionType === 'text') {
+                        const textValue = (textInput.value || '').trim();
+                        if (!textValue) {
+                            alert('متن نمی‌تواند خالی باشد.');
+                            return;
+                        }
+                        formData.append('text', textValue);
+                    } else {
+                        if (!evidenceInput.files.length) {
+                            alert('ابتدا فایل را انتخاب کنید.');
+                            return;
+                        }
+                        formData.append('evidence', evidenceInput.files[0]);
                     }
 
                     submitBtn.disabled = true;
                     const originalBtnText = submitBtn.textContent;
-                    submitBtn.textContent = 'در حال ارسال مدرک...';
-
-                    const formData = new FormData();
-                    formData.append('evidence', evidenceInput.files[0]);
+                    submitBtn.textContent = 'در حال ثبت ارسال...';
 
                     try {
                         const response = await fetch(`/challenges-system/api/participations/${currentParticipationId}/complete/`, {
@@ -588,10 +667,10 @@
                         const data = await response.json();
 
                         if (response.ok) {
-                            alert(data.message || 'مدرک با موفقیت ارسال شد.');
+                            alert(data.message || 'ارسال با موفقیت ثبت شد.');
                             closeModal(true);
                         } else {
-                            alert(data.message || 'ارسال مدرک انجام نشد. دوباره تلاش کنید.');
+                            alert(data.message || 'ثبت ارسال انجام نشد. دوباره تلاش کنید.');
                             submitBtn.disabled = false;
                             submitBtn.textContent = originalBtnText;
                         }
@@ -606,3 +685,4 @@
         });
     </script>
 {% endblock %}
+

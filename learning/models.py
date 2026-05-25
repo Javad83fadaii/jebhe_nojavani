@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from datetime import timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Iterable
@@ -139,7 +140,10 @@ class LearningStage(TimestampedModel):
 
 class StageQuestionSet(TimestampedModel):
     learning_stage = models.ForeignKey(LearningStage, on_delete=models.CASCADE, related_name="question_sets", verbose_name="مرحله سیر مطالعاتی")
-    set_number = models.PositiveSmallIntegerField(verbose_name="شماره نمونه سوال")
+    set_number = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(3)],
+        verbose_name="شماره نمونه سوال",
+    )
     title = models.CharField(max_length=255, verbose_name="عنوان نمونه سوال")
     is_active = models.BooleanField(default=True, verbose_name="وضعیت فعال بودن")
 
@@ -151,6 +155,18 @@ class StageQuestionSet(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.learning_stage.title} - مجموعه سوال {self.set_number}: {self.title}"
+
+    def clean(self):
+        super().clean()
+        if not self.learning_stage_id:
+            return
+        existing_count = (
+            self.__class__.objects.filter(learning_stage_id=self.learning_stage_id)
+            .exclude(pk=self.pk)
+            .count()
+        )
+        if existing_count >= 3:
+            raise ValidationError("هر مرحله فقط می‌تواند ۳ آزمون (۳ مجموعه سوال) داشته باشد.")
 
 
 class StageQuestion(TimestampedModel):
@@ -394,20 +410,33 @@ class UserStageProgress(TimestampedModel):
 
     def get_next_question_set(self) -> StageQuestionSet | None:
         """
-        Determines the next question set based on the number of attempts.
-        Attempt 1: Set 1
-        Attempt 2: Set 2
-        Attempt 3: Set 1
-        And so on...
-        If not enough question sets, repeat from the beginning.
+        برای هر مرحله ۳ آزمون (۳ مجموعه سوال) در نظر گرفته می‌شود.
+        هنگام شروع آزمون، یکی از مجموعه‌ها به شکل تصادفی برای کاربر انتخاب می‌شود.
+        تا زمانی که کاربر هر سه مجموعه را تجربه نکرده باشد، تلاش می‌شود مجموعه تکراری انتخاب نشود.
         """
-        question_sets = list(self.learning_stage.question_sets.filter(is_active=True).order_by("set_number"))
+        question_sets = list(
+            self.learning_stage.question_sets.filter(
+                is_active=True,
+                set_number__in=(1, 2, 3),
+            ).order_by("set_number")
+        )
+        if not question_sets:
+            question_sets = list(
+                self.learning_stage.question_sets.filter(is_active=True)
+                .order_by("set_number")[:3]
+            )
         if not question_sets:
             return None
 
-        # Cycle through available question sets
-        index = (self.exam_attempts % len(question_sets))
-        return question_sets[index]
+        candidate_ids = [question_set.pk for question_set in question_sets]
+        used_ids = set(
+            self.exams.filter(question_set_id__in=candidate_ids).values_list(
+                "question_set_id",
+                flat=True,
+            )
+        )
+        unused_sets = [question_set for question_set in question_sets if question_set.pk not in used_ids]
+        return random.choice(unused_sets or question_sets)
 
     def start_exam(self, question_set: StageQuestionSet):
         if not self.can_take_exam():

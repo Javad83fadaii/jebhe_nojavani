@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load learning_filters %}
+{% block content %}
+    <section class="container" style="padding-top: 3rem;">
+        <div class="glass-card" style="text-align: center;">
+            <h1 class="text-gold" style="margin-bottom: 1rem;">{{ challenge.title }}</h1>
+            <p style="color: var(--gray-light);">{{ challenge.description }}</p>
+        </div>
+    </section>
+
+    <main class="container" style="padding: 2rem 5%;" data-csrf="{{ csrf_token }}">
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2 style="color: var(--primary-gold); margin-bottom: 1rem;">جزئیات چالش</h2>
+            <p style="margin-bottom: 0.5rem;"><strong>نوع چالش:</strong> {{ challenge.get_submission_type_display }}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>پاداش:</strong> {{ challenge.coin_reward }} سکه{% if challenge.points_reward %} / {{ challenge.points_reward }} امتیاز{% endif %}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>شروع:</strong> {{ challenge.start_date|jalali_date }}</p>
+            <p style="margin-bottom: 1rem;"><strong>پایان:</strong> {{ challenge.end_date|jalali_date }}</p>
+        </div>
+
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2 style="color: var(--primary-gold); margin-bottom: 1rem;">ثبت فعالیت</h2>
+
+            {% if not challenge.is_currently_active %}
+                <p style="color: var(--gray-light); margin-bottom: 1rem;">این چالش در حال حاضر فعال نیست و امکان ثبت ارسال وجود ندارد.</p>
+            {% endif %}
+
+            {% if participation %}
+                {% if participation.status == 'joined' %}
+                    {% if challenge.is_currently_active %}
+                        <p style="color: var(--gray-light); margin-bottom: 1rem;">پس از ثبت ارسال، وضعیت «ارسال شده» می‌شود و بعد از پایان چالش توسط ادمین بررسی خواهد شد.</p>
+
+                        <form id="submit-challenge-form" data-participation-id="{{ participation.pk }}">
+                            {% if challenge.submission_type == 'attendance' %}
+                                <div style="text-align: right; margin-top: 1rem;">
+                                    <label style="color: white; display: flex; gap: 0.6rem; align-items: center; justify-content: flex-start;">
+                                        <input type="checkbox" id="challenge-attendance" style="transform: scale(1.2);">
+                                        شرکت می‌کنم
+                                    </label>
+                                </div>
+                            {% elif challenge.submission_type == 'text' %}
+                                <div style="margin-top: 1rem; text-align: right;">
+                                    <textarea id="challenge-text" rows="6" style="width: 100%; border-radius: 12px; padding: 1rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.14); color: white;" placeholder="متن فعالیت را بنویسید..."></textarea>
+                                </div>
+                            {% elif challenge.submission_type == 'image' %}
+                                <div style="margin-top: 1rem; text-align: right;">
+                                    <input type="file" id="challenge-evidence" accept="image/*" style="width: 100%; color: white;">
+                                </div>
+                            {% elif challenge.submission_type == 'video' %}
+                                <div style="margin-top: 1rem; text-align: right;">
+                                    <input type="file" id="challenge-evidence" accept="video/*" style="width: 100%; color: white;">
+                                </div>
+                            {% else %}
+                                <div style="margin-top: 1rem; text-align: right;">
+                                    <input type="file" id="challenge-evidence" style="width: 100%; color: white;">
+                                </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary" id="submit-btn" style="margin-top: 1rem;">ثبت ارسال</button>
+                        </form>
+                    {% else %}
+                        <p style="color: var(--gray-light); margin: 0;">مهلت ثبت فعالیت این چالش به پایان رسیده است.</p>
+                    {% endif %}
+                {% elif participation.status == 'submitted' %}
+                    <p style="color: var(--gray-light); margin: 0;">ارسال شما ثبت شده است. بعد از پایان چالش توسط ادمین بررسی می‌شود.</p>
+                {% elif participation.status == 'approved' %}
+                    <p style="color: var(--gray-light); margin: 0;">
+                        ارسال شما تایید شد.
+                        {% if participation.coins_received %} {{ participation.coins_received }} سکه{% endif %}
+                        {% if participation.points_received %} / {{ participation.points_received }} امتیاز{% endif %}
+                        به حساب شما اضافه شد.
+                    </p>
+                {% elif participation.status == 'rejected' %}
+                    <p style="color: var(--gray-light); margin: 0;">ارسال شما توسط ادمین رد شد.</p>
+                {% else %}
+                    <p style="color: var(--gray-light); margin: 0;">وضعیت فعلی: {{ participation.get_status_display }}</p>
+                {% endif %}
+            {% else %}
+                {% if challenge.is_currently_active %}
+                    <button class="btn btn-primary" id="join-challenge-btn" data-challenge-id="{{ challenge.pk }}">شرکت در چالش</button>
+                    <p style="color: var(--gray-light); margin-top: 1rem;">بعد از شرکت، می‌توانید فعالیت این چالش را ثبت کنید.</p>
+                {% else %}
+                    <p style="color: var(--gray-light); margin: 0;">این چالش در حال حاضر فعال نیست.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.querySelector('main.container');
+            const csrfToken = container ? container.dataset.csrf : '';
+
+            const joinBtn = document.getElementById('join-challenge-btn');
+            if (joinBtn) {
+                joinBtn.addEventListener('click', async () => {
+                    const challengeId = joinBtn.dataset.challengeId;
+                    joinBtn.disabled = true;
+                    const originalText = joinBtn.textContent;
+                    joinBtn.textContent = 'در حال ثبت...';
+
+                    try {
+                        const response = await fetch('/challenges-system/api/participations/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify({ challenge: challengeId })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            alert(data.non_field_errors || data.detail || 'شرکت در چالش انجام نشد.');
+                            joinBtn.disabled = false;
+                            joinBtn.textContent = originalText;
+                        }
+                    } catch (e) {
+                        alert('خطا در ارتباط با سرور.');
+                        joinBtn.disabled = false;
+                        joinBtn.textContent = originalText;
+                    }
+                });
+            }
+
+            const submitForm = document.getElementById('submit-challenge-form');
+            if (submitForm) {
+                submitForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const participationId = submitForm.dataset.participationId;
+                    const submitBtn = document.getElementById('submit-btn');
+                    submitBtn.disabled = true;
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = 'در حال ثبت ارسال...';
+
+                    const formData = new FormData();
+                    const attendanceEl = document.getElementById('challenge-attendance');
+                    const textEl = document.getElementById('challenge-text');
+                    const evidenceEl = document.getElementById('challenge-evidence');
+
+                    if (attendanceEl) {
+                        if (!attendanceEl.checked) {
+                            alert('برای ثبت حضور باید گزینه «شرکت می‌کنم» را تایید کنید.');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                            return;
+                        }
+                        formData.append('attended', 'true');
+                    } else if (textEl) {
+                        const textValue = (textEl.value || '').trim();
+                        if (!textValue) {
+                            alert('متن نمی‌تواند خالی باشد.');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                            return;
+                        }
+                        formData.append('text', textValue);
+                    } else if (evidenceEl) {
+                        if (!evidenceEl.files.length) {
+                            alert('ابتدا فایل را انتخاب کنید.');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                            return;
+                        }
+                        formData.append('evidence', evidenceEl.files[0]);
+                    }
+
+                    try {
+                        const response = await fetch(`/challenges-system/api/participations/${participationId}/complete/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            alert(data.message || 'ارسال ثبت شد.');
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'ثبت ارسال انجام نشد.');
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalText;
+                        }
+                    } catch (e) {
+                        alert('خطا در ارتباط با سرور.');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

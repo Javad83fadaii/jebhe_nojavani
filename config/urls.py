@@ -14,6 +14,7 @@ urlpatterns = [
     path('login/', views.login, name='login'),
     path('register/', views.register, name='register'),
     path('challenges/', views.challenges, name='challenges'),
+    path('challenges/my/', views.my_challenges, name='my_challenges'),
     path('challenges/<int:pk>/', views.challenge_detail, name='challenge_detail'),
     path('shop/', views.shop, name='shop'),
     path('profile/', views.profile, name='profile'),

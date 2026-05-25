@@ -232,7 +232,8 @@ class AccountsAPITestCase(TestCase):
         res = self.client.post("/api/accounts/register/", too_old_payload, format="json")
         self.assertEqual(res.status_code, 400)
         self.assertIn("birth_date", res.data)
-        self.assertIn("غیر مجاز", str(res.data["birth_date"]))
+        self.assertTrue(res.data["birth_date"])
+        self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
 
         too_new_payload = {
             "phone_number": "09120000002",
@@ -244,4 +245,5 @@ class AccountsAPITestCase(TestCase):
         res = self.client.post("/api/accounts/register/", too_new_payload, format="json")
         self.assertEqual(res.status_code, 400)
         self.assertIn("birth_date", res.data)
-        self.assertIn("غیر مجاز", str(res.data["birth_date"]))
+        self.assertTrue(res.data["birth_date"])
+        self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))

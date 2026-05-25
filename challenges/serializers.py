@@ -9,7 +9,8 @@ class ChallengeSerializer(serializers.ModelSerializer):
         model = Challenge
         fields = [
             'id', 'title', 'description', 'image', 
-            'start_date', 'end_date', 'coin_reward', 
+            'start_date', 'end_date', 'coin_reward', 'points_reward',
+            'submission_type',
             'is_active', 'is_active_now', 'created_at'
         ]
 
@@ -20,9 +21,22 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
         model = ChallengeParticipation
         fields = [
             'id', 'challenge', 'challenge_details', 'participated_at', 
-            'is_completed', 'completed_at', 'coins_received', 'evidence'
+            'status', 'submitted_at', 'reviewed_at',
+            'submission_text', 'attended', 'evidence',
+            'is_completed', 'completed_at',
+            'coins_received', 'points_received', 'reward_awarded',
         ]
-        read_only_fields = ['participated_at', 'is_completed', 'completed_at', 'coins_received']
+        read_only_fields = [
+            'participated_at',
+            'status',
+            'submitted_at',
+            'reviewed_at',
+            'is_completed',
+            'completed_at',
+            'coins_received',
+            'points_received',
+            'reward_awarded',
+        ]
 
     def validate(self, data):
         user = self.context['request'].user

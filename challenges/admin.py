@@ -1,17 +1,50 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from .models import Challenge, ChallengeParticipation
 
 class ChallengeParticipationInline(admin.TabularInline):
     model = ChallengeParticipation
     extra = 0
-    readonly_fields = ('participated_at', 'completed_at', 'coins_received')
+    readonly_fields = (
+        "participated_at",
+        "submitted_at",
+        "reviewed_at",
+        "status",
+        "is_completed",
+        "completed_at",
+        "reward_awarded",
+        "coins_received",
+        "points_received",
+    )
     can_delete = False
+    fields = (
+        "user",
+        "status",
+        "participated_at",
+        "submitted_at",
+        "reviewed_at",
+        "attended",
+        "submission_text",
+        "evidence",
+        "reward_awarded",
+        "coins_received",
+        "points_received",
+    )
 
 @admin.register(Challenge)
 class ChallengeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'coin_reward', 'start_date', 'end_date', 'is_active', 'is_currently_active')
-    list_filter = ('is_active', 'start_date', 'end_date')
-    search_fields = ('title', 'description')
+    list_display = (
+        "title",
+        "submission_type",
+        "coin_reward",
+        "points_reward",
+        "start_date",
+        "end_date",
+        "is_active",
+        "is_currently_active",
+    )
+    list_filter = ("is_active", "submission_type", "start_date", "end_date")
+    search_fields = ("title", "description")
     inlines = [ChallengeParticipationInline]
     date_hierarchy = 'start_date'
     
@@ -22,7 +55,64 @@ class ChallengeAdmin(admin.ModelAdmin):
 
 @admin.register(ChallengeParticipation)
 class ChallengeParticipationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'challenge', 'participated_at', 'is_completed', 'completed_at', 'coins_received')
-    list_filter = ('is_completed', 'participated_at', 'completed_at')
-    search_fields = ('user__username', 'user__phone_number', 'challenge__title')
-    readonly_fields = ('participated_at',)
+    list_display = (
+        "user",
+        "challenge",
+        "challenge_submission_type",
+        "status",
+        "attended",
+        "participated_at",
+        "submitted_at",
+        "reviewed_at",
+        "reward_awarded",
+        "coins_received",
+        "points_received",
+    )
+    list_filter = (
+        "challenge",
+        "status",
+        "reward_awarded",
+        "participated_at",
+        "submitted_at",
+        "reviewed_at",
+        "challenge__submission_type",
+    )
+    search_fields = ("user__phone_number", "user__first_name", "user__last_name", "challenge__title")
+    readonly_fields = ("participated_at", "submitted_at", "reviewed_at", "completed_at", "coins_received", "points_received", "reward_awarded")
+    actions = ("approve_and_award_selected", "reject_selected")
+
+    @admin.display(description="نوع", ordering="challenge__submission_type")
+    def challenge_submission_type(self, obj):
+        return obj.challenge.get_submission_type_display()
+
+    @admin.action(description="تایید و پرداخت پاداش (بعد از پایان چالش)")
+    def approve_and_award_selected(self, request, queryset):
+        success_count = 0
+        error_count = 0
+        for participation in queryset.select_related("challenge", "user"):
+            try:
+                participation.approve_and_award()
+                success_count += 1
+            except ValidationError as e:
+                error_count += 1
+                messages.error(request, f"{participation}: {e}")
+        if success_count:
+            messages.success(request, f"{success_count} مورد تایید شد و پاداش پرداخت شد.")
+        if error_count and not success_count:
+            messages.warning(request, "هیچ موردی تایید نشد.")
+
+    @admin.action(description="رد کردن ارسال")
+    def reject_selected(self, request, queryset):
+        success_count = 0
+        error_count = 0
+        for participation in queryset.select_related("challenge", "user"):
+            try:
+                participation.reject()
+                success_count += 1
+            except ValidationError as e:
+                error_count += 1
+                messages.error(request, f"{participation}: {e}")
+        if success_count:
+            messages.success(request, f"{success_count} مورد رد شد.")
+        if error_count and not success_count:
+            messages.warning(request, "هیچ موردی رد نشد.")

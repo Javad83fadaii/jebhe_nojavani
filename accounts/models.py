@@ -54,7 +54,7 @@ def validate_birth_date_range(value):
 
     jalali_year, _, _ = _gregorian_to_jalali(value.year, value.month, value.day)
     if jalali_year < 1385 or jalali_year > 1395:
-        raise ValidationError("غیر مجاز")
+        raise ValidationError("ثبت‌نام برای این سن مقدور نمی‌باشد. فقط متولدین سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز هستند.")
 
 
 class TimestampedModel(models.Model):

@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+{% load learning_filters %}
+{% block content %}
+
+<style>
+    :root {
+        --primary-color: #6c5ce7;
+        --secondary-color: #00cec9;
+        --gold-color: #fdcb6e;
+        --glass-bg: rgba(20, 16, 45, 0.72);
+        --glass-border: rgba(255, 255, 255, 0.14);
+        --text-muted: #b2bec3;
+        --danger-color: #ff7675;
+        --success-color: #00b894;
+    }
+
+    .challenge-page {
+        padding-bottom: 4rem;
+    }
+
+    .glass-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .challenge-hero {
+        padding: 2.5rem 2rem;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .challenge-hero__badge {
+        display: inline-block;
+        background: rgba(253, 203, 110, 0.2);
+        color: var(--gold-color);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(253, 203, 110, 0.3);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .tab-btn {
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.2);
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
+        transition: 0.25s;
+        display: inline-flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .tab-btn.is-active {
+        border-color: var(--primary-color);
+        background: rgba(108, 92, 231, 0.2);
+    }
+
+    .challenge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .challenge-card {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .challenge-card__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--glass-border);
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .challenge-card__title {
+        margin: 0;
+        font-size: 1.05rem;
+        color: white;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        border: 1px solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .chip--success {
+        color: var(--success-color);
+        border-color: rgba(0, 184, 148, 0.45);
+        background: rgba(0, 184, 148, 0.12);
+    }
+
+    .chip--danger {
+        color: var(--danger-color);
+        border-color: rgba(255, 118, 117, 0.45);
+        background: rgba(255, 118, 117, 0.12);
+    }
+
+    .chip--primary {
+        color: var(--gold-color);
+        border-color: rgba(253, 203, 110, 0.4);
+        background: rgba(253, 203, 110, 0.1);
+    }
+
+    .challenge-card__body {
+        padding: 1.25rem;
+        flex-grow: 1;
+    }
+
+    .muted {
+        color: var(--text-muted);
+        line-height: 1.8;
+        margin: 0.75rem 0 0;
+        font-size: 0.92rem;
+    }
+
+    .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 1rem;
+    }
+
+    .challenge-card__actions {
+        padding: 1.25rem;
+        border-top: 1px solid var(--glass-border);
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-link {
+        text-decoration: none;
+        display: inline-flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-weight: 800;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+</style>
+
+<div class="challenge-page">
+    <section class="container">
+        <div class="glass-card challenge-hero">
+            <div>
+                <span class="challenge-hero__badge">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    چالش‌های من
+                </span>
+                <h1 class="text-gold" style="margin-bottom: 0.5rem;">سوابق و وضعیت شرکت در چالش‌ها</h1>
+                <p style="color: var(--text-muted); line-height: 1.8; max-width: 720px; margin: 0;">
+                    اینجا تمام چالش‌هایی که شرکت کردی (فعال و تمام‌شده) نمایش داده می‌شود. برای ثبت/مشاهده وضعیت هر چالش وارد صفحه جزئیات شو.
+                </p>
+                <div class="tabs" role="tablist" aria-label="فیلتر چالش‌ها">
+                    <button type="button" class="tab-btn is-active" data-tab="active" role="tab" aria-selected="true">
+                        <i class="fa-solid fa-bolt" style="color: var(--secondary-color);"></i>
+                        فعال‌ها ({{ active_participations|length }})
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="pending" role="tab" aria-selected="false">
+                        <i class="fa-solid fa-user-clock" style="color: var(--gold-color);"></i>
+                        در انتظار بررسی ({{ pending_participations|length }})
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="past" role="tab" aria-selected="false">
+                        <i class="fa-solid fa-hourglass-end" style="color: var(--gold-color);"></i>
+                        تمام‌شده‌ها ({{ past_participations|length }})
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container">
+        <div id="tab-active" class="tab-panel">
+            {% if active_participations %}
+                <div class="challenge-grid">
+                    {% for participation in active_participations %}
+                        <article class="challenge-card glass-card">
+                            <div class="challenge-card__header">
+                                <h3 class="challenge-card__title">{{ participation.challenge.title }}</h3>
+                                <span class="chip chip--primary">
+                                    <i class="fa-solid fa-list-check"></i>
+                                    {{ participation.challenge.get_submission_type_display }}
+                                </span>
+                            </div>
+                            <div class="challenge-card__body">
+                                <p class="muted">{{ participation.challenge.description|truncatechars:160 }}</p>
+                                <div class="meta-row">
+                                    <span class="chip">
+                                        <i class="fa-solid fa-clock"></i>
+                                        پایان: {{ participation.challenge.end_date|jalali_date }}
+                                    </span>
+                                    <span class="chip">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        وضعیت: {{ participation.get_status_display }}
+                                    </span>
+                                    <span class="chip">
+                                        <i class="fa-solid fa-coins"></i>
+                                        پاداش: {{ participation.challenge.coin_reward }} سکه{% if participation.challenge.points_reward %} / {{ participation.challenge.points_reward }} امتیاز{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="challenge-card__actions">
+                                <a class="btn btn-secondary btn-link" href="{% url 'challenge_detail' pk=participation.challenge.pk %}">
+                                    <i class="fa-solid fa-eye" style="color: var(--secondary-color);"></i>
+                                    مشاهده / ثبت فعالیت
+                                </a>
+                                {% if participation.status == 'submitted' %}
+                                    <span class="chip">در انتظار بررسی ادمین</span>
+                                {% elif participation.status == 'approved' %}
+                                    <span class="chip chip--success">
+                                        <i class="fa-solid fa-check"></i>
+                                        تایید شد
+                                    </span>
+                                {% elif participation.status == 'rejected' %}
+                                    <span class="chip chip--danger">
+                                        <i class="fa-solid fa-xmark"></i>
+                                        رد شد
+                                    </span>
+                                {% else %}
+                                    <span class="chip">آماده ثبت</span>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card empty-state">
+                    <i class="fa-solid fa-bolt" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+                    <h2 class="text-gold" style="margin-top: 1rem;">هنوز در چالش فعالی شرکت نکردی</h2>
+                    <p class="muted" style="margin-top: 0.5rem;">از بخش چالش‌ها وارد شو و در یک چالش شرکت کن.</p>
+                    <a href="{% url 'challenges' %}" class="btn btn-primary" style="margin-top: 1rem; text-decoration: none;">رفتن به چالش‌ها</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="tab-pending" class="tab-panel" style="display:none;">
+            {% if pending_participations %}
+                <div class="challenge-grid">
+                    {% for participation in pending_participations %}
+                        <article class="challenge-card glass-card">
+                            <div class="challenge-card__header">
+                                <h3 class="challenge-card__title">{{ participation.challenge.title }}</h3>
+                                <span class="chip chip--primary">
+                                    <i class="fa-solid fa-list-check"></i>
+                                    {{ participation.challenge.get_submission_type_display }}
+                                </span>
+                            </div>
+                            <div class="challenge-card__body">
+                                <p class="muted">{{ participation.challenge.description|truncatechars:160 }}</p>
+                                <div class="meta-row">
+                                    <span class="chip">
+                                        <i class="fa-solid fa-clock"></i>
+                                        پایان: {{ participation.challenge.end_date|jalali_date }}
+                                    </span>
+                                    {% if participation.submitted_at %}
+                                        <span class="chip">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                            ارسال: {{ participation.submitted_at|jalali_date }}
+                                        </span>
+                                    {% endif %}
+                                    <span class="chip">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        وضعیت: {{ participation.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="challenge-card__actions">
+                                <a class="btn btn-secondary btn-link" href="{% url 'challenge_detail' pk=participation.challenge.pk %}">
+                                    <i class="fa-solid fa-eye" style="color: var(--secondary-color);"></i>
+                                    مشاهده جزئیات
+                                </a>
+                                <span class="chip">در انتظار بررسی ادمین</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card empty-state">
+                    <i class="fa-solid fa-user-clock" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+                    <h2 class="text-gold" style="margin-top: 1rem;">فعلاً موردی برای بررسی نیست</h2>
+                    <p class="muted" style="margin-top: 0.5rem;">ارسال‌هایی که ثبت می‌کنی تا زمان بررسی ادمین در این بخش می‌آیند.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="tab-past" class="tab-panel" style="display:none;">
+            {% if past_participations %}
+                <div class="challenge-grid">
+                    {% for participation in past_participations %}
+                        <article class="challenge-card glass-card">
+                            <div class="challenge-card__header">
+                                <h3 class="challenge-card__title">{{ participation.challenge.title }}</h3>
+                                <span class="chip chip--primary">
+                                    <i class="fa-solid fa-list-check"></i>
+                                    {{ participation.challenge.get_submission_type_display }}
+                                </span>
+                            </div>
+                            <div class="challenge-card__body">
+                                <p class="muted">{{ participation.challenge.description|truncatechars:160 }}</p>
+                                <div class="meta-row">
+                                    <span class="chip">
+                                        <i class="fa-solid fa-flag-checkered"></i>
+                                        پایان: {{ participation.challenge.end_date|jalali_date }}
+                                    </span>
+                                    <span class="chip">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        وضعیت: {{ participation.get_status_display }}
+                                    </span>
+                                    {% if participation.status == 'approved' %}
+                                        <span class="chip chip--success">
+                                            <i class="fa-solid fa-gift"></i>
+                                            دریافت: {% if participation.coins_received %}{{ participation.coins_received }} سکه{% endif %}{% if participation.points_received %} / {{ participation.points_received }} امتیاز{% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="challenge-card__actions">
+                                <a class="btn btn-secondary btn-link" href="{% url 'challenge_detail' pk=participation.challenge.pk %}">
+                                    <i class="fa-solid fa-eye" style="color: var(--secondary-color);"></i>
+                                    مشاهده جزئیات
+                                </a>
+                                {% if participation.status == 'approved' %}
+                                    <span class="chip chip--success">
+                                        <i class="fa-solid fa-check"></i>
+                                        تایید شد
+                                    </span>
+                                {% elif participation.status == 'rejected' %}
+                                    <span class="chip chip--danger">
+                                        <i class="fa-solid fa-xmark"></i>
+                                        رد شد
+                                    </span>
+                                {% elif participation.status == 'submitted' %}
+                                    <span class="chip">در انتظار بررسی</span>
+                                {% else %}
+                                    <span class="chip">ثبت‌نام</span>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="glass-card empty-state">
+                    <i class="fa-solid fa-hourglass-end" style="font-size: 3.5rem; color: var(--text-muted);"></i>
+                    <h2 class="text-gold" style="margin-top: 1rem;">چالش تمام‌شده‌ای نداری</h2>
+                    <p class="muted" style="margin-top: 0.5rem;">وقتی یک چالش به پایان برسد، اینجا نمایش داده می‌شود.</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.tab-btn');
+        const activePanel = document.getElementById('tab-active');
+        const pendingPanel = document.getElementById('tab-pending');
+        const pastPanel = document.getElementById('tab-past');
+
+        function setTab(tabName) {
+            buttons.forEach(btn => {
+                const isActive = btn.dataset.tab === tabName;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            if (activePanel) activePanel.style.display = tabName === 'active' ? '' : 'none';
+            if (pendingPanel) pendingPanel.style.display = tabName === 'pending' ? '' : 'none';
+            if (pastPanel) pastPanel.style.display = tabName === 'past' ? '' : 'none';
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                setTab(this.dataset.tab);
+            });
+        });
+    });
+</script>
+{% endblock %}

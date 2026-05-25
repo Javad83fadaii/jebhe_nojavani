@@ -4,6 +4,7 @@ import re
 from datetime import date
 
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
@@ -178,8 +179,11 @@ def _validate_allowed_birth_date(value: date | None):
 
     try:
         validate_birth_date_range(value)
-    except Exception as exc:
-        raise serializers.ValidationError(str(exc))
+    except DjangoValidationError as exc:
+        message = getattr(exc, "message", None) or (exc.messages[0] if getattr(exc, "messages", None) else None) or str(exc)
+        raise serializers.ValidationError(message)
+    except Exception:
+        raise serializers.ValidationError("تاریخ تولد معتبر نیست.")
     return value
 
 

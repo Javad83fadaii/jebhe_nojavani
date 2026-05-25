@@ -165,11 +165,17 @@ body {
 .hero-video-frame {
     width: 100%;
     aspect-ratio: 16 / 9;
+    max-height: 60vh;
+    margin: 0 auto;
     border-radius: 22px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.16);
     box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45), 0 0 28px rgba(108, 63, 197, 0.22);
     background: rgba(0, 0, 0, 0.28);
+}
+
+.hero-video-frame.is-portrait {
+    max-width: min(520px, 100%);
 }
 
 .hero-video-frame video,
@@ -178,6 +184,11 @@ body {
     height: 100%;
     display: block;
     border: 0;
+}
+
+.hero-video-frame video {
+    object-fit: contain;
+    background: rgba(0, 0, 0, 0.55);
 }
 
 .hero-title-new {
@@ -268,6 +279,28 @@ body {
     display: block;
     filter: drop-shadow(0 0 30px var(--primary-gold-glow));
     margin-bottom: 20px;
+}
+
+.hero-brand {
+    margin-top: 15px;
+    color: white;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    line-height: 1.35;
+}
+
+.hero-brand-title {
+    font-size: 2.05rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.hero-brand-tagline {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.86);
 }
 
 @keyframes float {
@@ -543,7 +576,10 @@ Hero Section
             <div class="hero-visual">
                 <div class="visual-placeholder">
                     <img src="{% static 'images/logo-color-01.svg' %}" alt="لوگوی جبهه نوجوانی" class="hero-logo">
-                    <span style="font-size: 1.5rem; font-weight: 800; color: white; margin-top: 15px;"><span class="gradient-text">جبهه نوجوانی</span> <br> جایی برای قوی‌تر شدن</span>
+                    <span class="hero-brand">
+                        <span class="hero-brand-title"><span class="gradient-text">جبهه نوجوانی</span></span>
+                        <span class="hero-brand-tagline">جایی برای قوی‌تر شدن</span>
+                    </span>
                 </div>
             </div>
             <div class="hero-text-content hero-video-card glass-card">
@@ -642,5 +678,27 @@ Final CTA Section
         </div>
     </div>
 </section>
+
+<script>
+(() => {
+    const frames = document.querySelectorAll('.hero-video-frame');
+    frames.forEach((frame) => {
+        const video = frame.querySelector('video');
+        if (!video) return;
+
+        const applyVideoRatio = () => {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            if (!w || !h) return;
+
+            frame.style.aspectRatio = `${w} / ${h}`;
+            frame.classList.toggle('is-portrait', h > w);
+        };
+
+        applyVideoRatio();
+        video.addEventListener('loadedmetadata', applyVideoRatio);
+    });
+})();
+</script>
 
 {% endblock %}

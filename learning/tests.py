@@ -153,3 +153,30 @@ class LearningProgressFlowTestCase(TestCase):
         self.assertEqual(self.user.total_points, 10)
         self.assertEqual(stage_2_progress.status, UserStageProgress.StageStatus.UNLOCKED)
         self.assertEqual(stage_3_progress.status, UserStageProgress.StageStatus.LOCKED)
+
+    def test_each_stage_uses_three_random_question_sets_without_repeating_until_all_used(self):
+        user_progress = self.user.enroll_in_path(self.learning_path)
+        stage_1_progress = UserStageProgress.objects.get(
+            user_learning_progress=user_progress,
+            learning_stage=self.stages[0],
+        )
+        question_sets = [
+            StageQuestionSet.objects.create(
+                learning_stage=self.stages[0],
+                set_number=set_number,
+                title=f"نمونه سوال {set_number}",
+            )
+            for set_number in (1, 2, 3)
+        ]
+
+        chosen_set_ids = []
+        for _ in range(3):
+            question_set = stage_1_progress.get_next_question_set()
+            self.assertIsNotNone(question_set)
+            chosen_set_ids.append(question_set.pk)
+            exam = stage_1_progress.start_exam(question_set)
+            exam.status = UserStageExam.ExamStatus.FAILED
+            exam.save(update_fields=["status", "updated_at"])
+
+        self.assertEqual(len(set(chosen_set_ids)), 3)
+        self.assertEqual(set(chosen_set_ids), {qs.pk for qs in question_sets})
