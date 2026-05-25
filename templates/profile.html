@@ -845,10 +845,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 color: 'green'
             },
             {
-                icon: 'fa-calendar-check',
-                label: 'تاریخ عضویت',
-                value: formatPersianDate(profile.date_joined),
-                color: 'purple'
+                icon: 'fa-coins',
+                label: 'سکه‌های چالش',
+                value: `${profile.challenge_coins || 0} سکه`,
+                color: 'gold'
             }
         ];
 
@@ -895,7 +895,8 @@ document.addEventListener('DOMContentLoaded', function() {
             { label: 'مدرسه', value: (profile.school && profile.school.name) || '-' },
             { label: 'مسجد', value: (profile.mosque && profile.mosque.name) || '-' },
             { label: 'شهر', value: profile.city || '-' },
-            { label: 'استان', value: profile.province || '-' }
+            { label: 'استان', value: profile.province || '-' },
+            { label: 'تاریخ عضویت', value: formatPersianDate(profile.date_joined) }
         ];
 
         profileInfo.innerHTML = fields.map(field => `
