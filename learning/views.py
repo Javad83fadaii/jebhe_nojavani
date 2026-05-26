@@ -37,7 +37,21 @@ def _get_active_rank_for_points(points, ranks):
     return active_rank
 
 
-class LearningPathStagesView(LoginRequiredMixin, DetailView):
+def _redirect_seller_to_panel(request):
+    if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
+        return redirect("bazar:seller-dashboard")
+    return None
+
+
+class SellerSiteAccessMixin(LoginRequiredMixin):
+    def dispatch(self, request, *args, **kwargs):
+        seller_redirect = _redirect_seller_to_panel(request)
+        if seller_redirect:
+            return seller_redirect
+        return super().dispatch(request, *args, **kwargs)
+
+
+class LearningPathStagesView(SellerSiteAccessMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = LearningPath
@@ -50,6 +64,9 @@ class LearningPathStagesView(LoginRequiredMixin, DetailView):
         ).select_related("rank")
 
     def dispatch(self, request, *args, **kwargs):
+        seller_redirect = _redirect_seller_to_panel(request)
+        if seller_redirect:
+            return seller_redirect
         learning_path = self.get_object()
         if not learning_path.can_user_access(request.user):
             return _redirect_for_locked_path(request, learning_path)
@@ -86,6 +103,9 @@ class LearningPathStagesView(LoginRequiredMixin, DetailView):
 
 @login_required
 def enroll_in_learning_path(request, pk):
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
     learning_path = get_object_or_404(
         LearningPath.objects.filter(
             publish_status=LearningPath.PublishStatus.PUBLISHED
@@ -105,7 +125,7 @@ def enroll_in_learning_path(request, pk):
     return redirect("learning:learning_path_stages", pk=pk)
 
 
-class UserLearningProgressDetailView(LoginRequiredMixin, DetailView):
+class UserLearningProgressDetailView(SellerSiteAccessMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = UserLearningProgress
@@ -126,7 +146,7 @@ class UserLearningProgressDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class LearningStageDetailView(LoginRequiredMixin, DetailView):
+class LearningStageDetailView(SellerSiteAccessMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = LearningStage
@@ -179,7 +199,7 @@ class LearningStageDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class LearningStageQuestionsView(LoginRequiredMixin, DetailView):
+class LearningStageQuestionsView(SellerSiteAccessMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = LearningStage
@@ -237,6 +257,9 @@ class LearningStageQuestionsView(LoginRequiredMixin, DetailView):
 
 @login_required
 def complete_study(request, pk):
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
     user_stage_progress = get_object_or_404(
         UserStageProgress,
         pk=pk,
@@ -258,6 +281,9 @@ def complete_study(request, pk):
 
 @login_required
 def start_exam(request, pk):
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
     user_stage_progress = get_object_or_404(
         UserStageProgress,
         pk=pk,
@@ -287,7 +313,7 @@ def start_exam(request, pk):
     return redirect("learning:learning_stage_detail", pk=user_stage_progress.learning_stage.pk)
 
 
-class TakeExamView(LoginRequiredMixin, DetailView):
+class TakeExamView(SellerSiteAccessMixin, DetailView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = UserStageExam
@@ -313,6 +339,9 @@ class TakeExamView(LoginRequiredMixin, DetailView):
 
 @login_required
 def submit_answer(request, exam_pk, question_pk):
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
     exam = get_object_or_404(
         UserStageExam,
         pk=exam_pk,
@@ -341,6 +370,9 @@ def submit_answer(request, exam_pk, question_pk):
 
 @login_required
 def finish_exam(request, pk):
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
     exam = get_object_or_404(
         UserStageExam,
         pk=pk,
@@ -360,7 +392,7 @@ def finish_exam(request, pk):
     return redirect("learning:take_exam", pk=exam.pk)
 
 
-class RankCardsView(LoginRequiredMixin, ListView):
+class RankCardsView(SellerSiteAccessMixin, ListView):
     login_url = reverse_lazy("index")
     redirect_field_name = None
     model = Rank

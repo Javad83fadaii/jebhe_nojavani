@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>شارژ کیف پول</h1>
+        <p class="bazar-note">این صفحه به صورت شبیه‌سازی‌شده عمل می‌کند و مبلغ وارد شده را مستقیم به کیف پول شما اضافه می‌کند.</p>
+    </div>
+
+    <div class="bazar-form-card" style="max-width: 620px; margin: 0 auto;">
+        <div class="bazar-summary-grid">
+            <div class="bazar-card">
+                <strong>موجودی فعلی کیف پول</strong>
+                <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+            </div>
+            <div class="bazar-card">
+                <strong>مبلغ پیشنهادی</strong>
+                <div class="bazar-price">{{ suggested_amount|toman }} تومان</div>
+            </div>
+        </div>
+
+        <form method="post" style="margin-top: 1.5rem;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <div class="bazar-form-group">
+                <label for="{{ form.amount.id_for_label }}">مبلغ شارژ</label>
+                {{ form.amount }}
+                {% for error in form.amount.errors %}
+                    <div class="bazar-help-text" style="color: #ffb4ae;">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <button type="submit" class="bazar-btn">شارژ کیف پول</button>
+                <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

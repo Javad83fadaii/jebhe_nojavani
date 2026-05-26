@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'geography',
     'learning.apps.LearningConfig',
     'challenges',
+    'jebhe_bazar.apps.JebheBazarConfig',
 ]
 
 try:
@@ -80,6 +81,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'config.context_processors.user_points',
+                'config.context_processors.seller_ui',
             ],
         },
     },

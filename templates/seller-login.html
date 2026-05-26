@@ -81,6 +81,7 @@
 
             const phone_number = document.getElementById('phone_number').value.trim();
             const password = document.getElementById('password').value;
+            const nextUrl = urlParams.get('next');
 
             if (!/^09\d{9}$/.test(phone_number)) {
                 showMessage('شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.', 'error');
@@ -92,10 +93,15 @@
             submitBtn.textContent = 'در حال ورود...';
             submitBtn.disabled = true;
 
-            fetch('/api/accounts/seller/login/', {
+            const payload = { phone_number, password };
+            if (nextUrl) {
+                payload.next = nextUrl;
+            }
+
+            fetch('/api/accounts/login/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone_number, password })
+                body: JSON.stringify(payload)
             }).then(async res => {
                 const data = await res.json();
                 if (!res.ok) {
@@ -108,10 +114,10 @@
 
                 localStorage.setItem('access_token', data.access);
                 localStorage.setItem('refresh_token', data.refresh);
-                localStorage.setItem('user_type', 'seller');
+                localStorage.setItem('user_type', data.user_type || 'seller');
 
                 showMessage('ورود با موفقیت انجام شد. در حال انتقال...', 'success');
-                window.location.href = '/seller/profile/';
+                window.location.href = data.redirect_url || nextUrl || "{% url 'bazar:seller-dashboard' %}";
             }).catch(() => {
                 showMessage('خطا در ارتباط با سرور. دوباره تلاش کنید.', 'error');
                 submitBtn.textContent = originalText;

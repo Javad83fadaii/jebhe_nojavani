@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>استفاده از سکه</h1>
+        <p class="bazar-note">هر ۱ سکه برابر با ۱ تومان است. می‌توانی تا سقف مبلغ سبد خرید یا موجودی سکه خودت از آن استفاده کنی.</p>
+    </div>
+
+    <div class="bazar-grid">
+        <div class="bazar-card">
+            <h3>خلاصه سبد خرید</h3>
+            <div class="bazar-order-items" style="margin-top: 1rem;">
+                {% for item in cart_items %}
+                    <div class="bazar-order-item">
+                        <strong>{{ item.product.title }}</strong>
+                        <div class="bazar-note">تعداد: {{ item.quantity|toman }} | جمع: {{ item.item_total|toman }} تومان</div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="bazar-price" style="margin-top: 1rem;">جمع کل: {{ cart_total|toman }} تومان</div>
+        </div>
+
+        <div class="bazar-form-card">
+            <h3>فرم اعمال سکه</h3>
+            <p class="bazar-note">حداکثر سکه قابل استفاده: {{ available_coins|toman }}</p>
+            <form method="post" style="margin-top: 1rem;">
+                {% csrf_token %}
+                <div class="bazar-form-group">
+                    <label for="{{ form.coins_to_use.id_for_label }}">تعداد سکه مصرفی</label>
+                    {{ form.coins_to_use }}
+                    {% if form.coins_to_use.help_text %}
+                        <div class="bazar-help-text">{{ form.coins_to_use.help_text }}</div>
+                    {% endif %}
+                    {% for error in form.coins_to_use.errors %}
+                        <div class="bazar-help-text" style="color: #ffb4ae;">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="bazar-actions" style="margin-top: 1.5rem;">
+                    <button type="submit" class="bazar-btn">ثبت سکه</button>
+                    <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت به تسویه حساب</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

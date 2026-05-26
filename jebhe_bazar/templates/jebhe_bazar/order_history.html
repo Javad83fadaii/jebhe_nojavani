@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>سوابق سفارش</h1>
+        <p class="bazar-note">همه خریدهای ثبت‌شده شما در جبهه بازار در این صفحه نمایش داده می‌شود.</p>
+    </div>
+
+    {% if orders %}
+        <div class="bazar-orders-grid">
+            {% for order in orders %}
+                <article class="bazar-card">
+                    <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
+                        <strong>سفارش #{{ order.id|toman }}</strong>
+                        <span class="bazar-status {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
+                    </div>
+                    <div class="bazar-note" style="margin: 1rem 0;">ثبت در {{ order.created_at|jalali_datetime }}</div>
+                    <div class="bazar-order-items">
+                        {% for item in order.items.all %}
+                            <div class="bazar-order-item">
+                                <strong>{{ item.product.title }}</strong>
+                                <div class="bazar-note">تعداد: {{ item.quantity|toman }} | قیمت واحد: {{ item.unit_price|toman }} تومان</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="bazar-summary-grid" style="margin-top: 1rem;">
+                        <div class="bazar-card">
+                            <strong>جمع کل</strong>
+                            <div class="bazar-price">{{ order.total_amount|toman }} تومان</div>
+                        </div>
+                        <div class="bazar-card">
+                            <strong>سکه مصرفی</strong>
+                            <div class="bazar-price">{{ order.coins_used|toman }}</div>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bazar-empty-state">
+            <h3>هنوز سفارشی ثبت نشده است</h3>
+            <p class="bazar-note">بعد از اولین خرید، جزئیات سفارش‌ها در این صفحه نمایش داده می‌شود.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

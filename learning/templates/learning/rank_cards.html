@@ -182,17 +182,17 @@
             color: #A881FF;
         }
 
-        .rank-name {
+        .rank-card-name {
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
 
-        .rank-card.current .rank-name {
+        .rank-card.current .rank-card-name {
             color: #F5A623;
         }
 
-        .rank-card.completed .rank-name {
+        .rank-card.completed .rank-card-name {
             color: #A881FF;
         }
 
@@ -380,7 +380,7 @@
                         {% endif %}
                     {% endif %}
 
-                    <h3 class="rank-name">{{ data.rank.name }}</h3>
+                    <h3 class="rank-card-name">{{ data.rank.name }}</h3>
                     
                     <p class="rank-points-info">
                         ورود به این درجه از {{ data.required_points }} امتیاز

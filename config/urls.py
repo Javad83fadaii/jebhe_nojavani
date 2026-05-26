@@ -21,12 +21,15 @@ urlpatterns = [
     path('profile/edit/', views.profile_edit, name='profile_edit'),
     path('seller/register/', views.seller_register, name='seller_register'),
     path('seller/login/', views.seller_login, name='seller_login'),
+    path('seller/site/', views.seller_view_site, name='seller_view_site'),
+    path('seller/panel/', views.seller_view_panel, name='seller_view_panel'),
     path('seller/profile/', views.seller_profile, name='seller_profile'),
     path("api/progress/", views.user_progress_api, name="user-progress-api"),
     path("api/accounts/", include("accounts.urls")),
     path("api/geography/", include("geography.urls")),
     path("learning/", include("learning.urls")),
     path("challenges-system/", include("challenges.urls")),
+    path("bazar/", include("jebhe_bazar.urls")),
 ]
 
 if settings.DEBUG:

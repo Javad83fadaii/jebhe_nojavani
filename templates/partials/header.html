@@ -20,21 +20,33 @@
 
         <div class="nav-container-inner" id="nav-container-inner">
             <div class="nav-links">
-                <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
-                    <i class="fa-solid fa-house"></i> خانه
-                </a>
-                <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
-                    <i class="fa-solid fa-trophy"></i> چالش‌ها
-                </a>
-                <a href="{% url 'my_challenges' %}" class="nav-item" data-nav="my-challenges" data-requires-auth="true" data-guest-section="چالش‌های من">
-                    <i class="fa-solid fa-clipboard-list"></i> چالش‌های من
-                </a>
-                <a href="{% url 'learning:rank_cards' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
-                    <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
-                </a>
-                <a href="{% url 'shop' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
-                    <i class="fa-solid fa-store"></i> جبهه بازار
-                </a>
+                {% if request.user.is_authenticated and request.user.is_seller and seller_panel_mode %}
+                    <a href="{% url 'bazar:seller-dashboard' %}" class="nav-item" data-nav="seller-dashboard">
+                        <i class="fa-solid fa-gauge-high"></i> داشبورد فروشنده
+                    </a>
+                    <a href="{% url 'bazar:seller-product-list' %}" class="nav-item" data-nav="seller-products">
+                        <i class="fa-solid fa-boxes-stacked"></i> محصولات
+                    </a>
+                    <a href="{% url 'bazar:seller-order-list' %}" class="nav-item" data-nav="seller-orders">
+                        <i class="fa-solid fa-receipt"></i> سفارش‌ها
+                    </a>
+                {% else %}
+                    <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
+                        <i class="fa-solid fa-house"></i> خانه
+                    </a>
+                    <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
+                        <i class="fa-solid fa-trophy"></i> چالش‌ها
+                    </a>
+                    <a href="{% url 'my_challenges' %}" class="nav-item" data-nav="my-challenges" data-requires-auth="true" data-guest-section="چالش‌های من">
+                        <i class="fa-solid fa-clipboard-list"></i> چالش‌های من
+                    </a>
+                    <a href="{% url 'learning:rank_cards' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
+                        <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
+                    </a>
+                    <a href="{% url 'bazar:product-list' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
+                        <i class="fa-solid fa-store"></i> جبهه بازار
+                    </a>
+                {% endif %}
             </div>
 
             <div class="nav-actions">

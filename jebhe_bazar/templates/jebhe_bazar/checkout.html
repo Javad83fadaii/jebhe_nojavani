@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>تسویه حساب</h1>
+        <p class="bazar-note">ابتدا مقدار سکه مصرفی را مشخص کن، سپس پرداخت را نهایی کن.</p>
+    </div>
+
+    <div class="bazar-grid">
+        <div class="bazar-card">
+            <h3>خلاصه سفارش</h3>
+            <div class="bazar-order-items" style="margin-top: 1rem;">
+                {% for item in cart_items %}
+                    <div class="bazar-order-item">
+                        <strong>{{ item.product.title }}</strong>
+                        <div class="bazar-note">تعداد: {{ item.quantity|toman }} | مبلغ: {{ item.item_total|toman }} تومان</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bazar-card">
+            <h3>وضعیت پرداخت</h3>
+            <div class="bazar-summary-grid" style="margin-top: 1rem;">
+                <div class="bazar-card">
+                    <strong>جمع کل</strong>
+                    <div class="bazar-price">{{ cart_total|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>سکه قابل استفاده</strong>
+                    <div class="bazar-price">{{ available_coins|toman }}</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>سکه انتخاب‌شده</strong>
+                    <div class="bazar-price">{{ applied_coins|toman }}</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>موجودی کیف پول</strong>
+                    <div class="bazar-price">{{ wallet_balance|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>مبلغ باقی‌مانده</strong>
+                    <div class="bazar-price">{{ remaining_amount|toman }} تومان</div>
+                </div>
+            </div>
+
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <a href="{% url 'bazar:checkout-apply-coins' %}" class="bazar-secondary-btn">تنظیم سکه مصرفی</a>
+                <form method="post" action="{% url 'bazar:checkout-pay' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="bazar-btn">پرداخت نهایی</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

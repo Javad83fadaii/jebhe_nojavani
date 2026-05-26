@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    {% if status == "success" %}
+        <div class="bazar-empty-state">
+            <h1>پرداخت با موفقیت انجام شد</h1>
+            <p class="bazar-note">سفارش شما با شماره {{ order.id|toman }} ثبت شد و موجودی محصولات به‌روزرسانی شد.</p>
+            <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
+                <div class="bazar-card">
+                    <strong>مبلغ کل</strong>
+                    <div class="bazar-price">{{ order.total_amount|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>سکه مصرفی</strong>
+                    <div class="bazar-price">{{ order.coins_used|toman }}</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>کیف پول مصرفی</strong>
+                    <div class="bazar-price">{{ order.wallet_used|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>پرداخت آنلاین</strong>
+                    <div class="bazar-price">{{ order.online_paid|toman }} تومان</div>
+                </div>
+            </div>
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <a href="{% url 'bazar:order-history' %}" class="bazar-btn">مشاهده سفارش‌ها</a>
+                <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">بازگشت به بازار</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="bazar-empty-state" data-auto-redirect-url="{{ wallet_charge_url }}" data-auto-redirect-delay="2200">
+            <h1>اعتبار کیف پول شما کافی نیست</h1>
+            <p class="bazar-note">مبلغ کمبود: {{ shortage|toman }} تومان</p>
+            <p class="bazar-note">در حال انتقال به صفحه شارژ کیف پول هستی. اگر انتقال خودکار انجام نشد، از دکمه زیر استفاده کن.</p>
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <a href="{{ wallet_charge_url }}" class="bazar-btn">شارژ کیف پول</a>
+                <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت به تسویه حساب</a>
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

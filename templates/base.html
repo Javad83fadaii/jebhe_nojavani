@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page_title|default:"جبهه نوجوانی" }}</title>
+    <script>
+        document.documentElement.classList.add('js');
+    </script>
     
     <!-- فایل فونت‌های محلی -->
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
@@ -17,7 +20,7 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}" data-user-full-name="{% if request.user.is_authenticated %}{{ request.user.get_full_name }}{% endif %}">
+<body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}" data-seller-site-view="{% if seller_site_view %}true{% else %}false{% endif %}" data-user-full-name="{% if request.user.is_authenticated %}{{ request.user.get_full_name }}{% endif %}">
     
     {% include "partials/header.html" %}
 
@@ -29,7 +32,9 @@
         </ul>
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <main id="site-content">
+        {% block content %}{% endblock %}
+    </main>
 
     {% include "partials/footer.html" %}
 
@@ -56,11 +61,24 @@
     function updateNavBar() {
         const isAuthenticated = document.body.dataset.authenticated === 'true';
         const userType = document.body.dataset.userType || localStorage.getItem('user_type') || 'user';
+        const sellerSiteView = document.body.dataset.sellerSiteView === 'true';
         const authNav = document.getElementById('auth-nav-links');
         const pointsBadge = document.getElementById('points-badge');
         
         if (isAuthenticated) {
-            const profileUrl = userType === 'seller' ? "{% url 'seller_profile' %}" : "{% url 'profile' %}";
+            const profileUrl = userType === 'seller' ? "{% url 'bazar:seller-dashboard' %}" : "{% url 'profile' %}";
+            const profileLabel = userType === 'seller' ? 'پنل فروشنده' : 'پروفایل';
+            const sellerToggleHtml = userType !== 'seller'
+                ? ''
+                : (sellerSiteView
+                    ? `<a href="{% url 'seller_view_panel' %}" role="menuitem">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                            <span>بازگشت به پنل فروشنده</span>
+                        </a>`
+                    : `<a href="{% url 'seller_view_site' %}" role="menuitem">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>مشاهده سایت</span>
+                        </a>`);
             const userFullName = (document.body.dataset.userFullName || '').trim() || 'حساب کاربری';
             authNav.innerHTML = `
                 <div class="profile-dropdown" id="profile-dropdown">
@@ -72,8 +90,9 @@
                     <div class="profile-menu" id="profile-menu" role="menu">
                         <a href="${profileUrl}" role="menuitem">
                             <i class="fa-solid fa-id-card"></i>
-                            <span>پروفایل</span>
+                            <span>${profileLabel}</span>
                         </a>
+                        ${sellerToggleHtml}
                         <a href="#" id="logout-btn" class="profile-menu-logout" role="menuitem">
                             <i class="fa-solid fa-power-off"></i>
                             <span>خروج</span>
@@ -81,7 +100,9 @@
                     </div>
                 </div>
             `;
-            if (pointsBadge) pointsBadge.style.display = 'flex';
+            if (pointsBadge) {
+                pointsBadge.style.display = (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
+            }
 
             const dropdown = document.getElementById('profile-dropdown');
             const trigger = document.getElementById('profile-trigger');

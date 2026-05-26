@@ -3,6 +3,7 @@ from django.contrib.auth import logout as auth_logout
 from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from accounts.models import Rank
 from learning.models import LearningPath, LearningStage
@@ -15,6 +16,13 @@ def _redirect_guest_to_index(request):
         return redirect("index")
     return None
 
+
+def _redirect_seller_to_panel(request):
+    if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
+        return redirect("bazar:seller-dashboard")
+    return None
+
+
 def home(request):
     """
     نمایش صفحه خانه برای کاربران وارد شده
@@ -22,6 +30,9 @@ def home(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     user = request.user
 
@@ -77,6 +88,9 @@ def challenges(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     now = timezone.now()
     active_challenges = Challenge.objects.filter(
@@ -109,6 +123,9 @@ def challenge_detail(request, pk):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     challenge = get_object_or_404(Challenge, pk=pk, is_active=True)
     participation = None
@@ -130,6 +147,9 @@ def my_challenges(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     participations = (
         ChallengeParticipation.objects.filter(user=request.user)
@@ -166,21 +186,19 @@ def shop(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
-
-    return render(
-        request,
-        "shop.html",
-        {
-            "page_name": "shop",
-            "page_title": "فروشگاه | جبهه نوجوانی",
-        },
-    )
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
+    return redirect("bazar:product-list")
 
 
 def profile(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     return render(
         request,
@@ -194,6 +212,8 @@ def profile(request):
 
 def login(request):
     if request.user.is_authenticated:
+        if request.user.is_seller:
+            return redirect("bazar:seller-dashboard")
         return redirect("home")
 
     return render(
@@ -224,6 +244,9 @@ def profile_edit(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
 
     return render(
         request,
@@ -253,14 +276,7 @@ def seller_login(request):
     if request.user.is_authenticated:
         return redirect("home")
 
-    return render(
-        request,
-        "seller-login.html",
-        {
-            "page_name": "seller-login",
-            "page_title": "ورود فروشنده | جبهه نوجوانی",
-        },
-    )
+    return redirect(f"{reverse('login')}?next={reverse('bazar:seller-dashboard')}")
 
 
 def seller_profile(request):
@@ -268,14 +284,26 @@ def seller_profile(request):
     if guest_redirect:
         return guest_redirect
 
-    return render(
-        request,
-        "seller-profile.html",
-        {
-            "page_name": "seller-profile",
-            "page_title": "پروفایل فروشنده | جبهه نوجوانی",
-        },
-    )
+    if request.user.is_seller:
+        return redirect("bazar:seller-dashboard")
+    return redirect("profile")
+
+
+@login_required
+def seller_view_site(request):
+    if request.user.is_seller:
+        request.session["seller_site_view"] = True
+        request.session.modified = True
+    return redirect("home")
+
+
+@login_required
+def seller_view_panel(request):
+    if request.user.is_seller:
+        request.session["seller_site_view"] = False
+        request.session.modified = True
+    return redirect("bazar:seller-dashboard")
+
 
 def index_view(request):
     """
@@ -283,6 +311,8 @@ def index_view(request):
     و انتقال به صفحه خانه برای کاربران وارد شده
     """
     if request.user.is_authenticated:
+        if request.user.is_seller and not request.session.get("seller_site_view", False):
+            return redirect("bazar:seller-dashboard")
         return redirect("home")
         
     context = {

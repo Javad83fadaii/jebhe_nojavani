@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>سبد خرید</h1>
+        <p class="bazar-note">تعداد محصولات را مدیریت کن و سپس وارد مرحله تسویه حساب شو.</p>
+    </div>
+
+    {% if cart_items %}
+        <div class="bazar-table-card">
+            <table class="bazar-table">
+                <thead>
+                    <tr>
+                        <th>محصول</th>
+                        <th>قیمت واحد</th>
+                        <th>تعداد</th>
+                        <th>جمع</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.product.title }}</strong>
+                                <div class="bazar-note">{{ item.product.category.name }}</div>
+                            </td>
+                            <td>{{ item.product.final_price|toman }} تومان</td>
+                            <td>
+                                <form method="post" class="bazar-inline-actions">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    <input type="number" name="quantity" min="1" max="{{ item.product.stock }}" value="{{ item.quantity }}" class="bazar-input" style="max-width: 90px;">
+                                    <button type="submit" class="bazar-secondary-btn">بروزرسانی</button>
+                                </form>
+                            </td>
+                            <td>{{ item.item_total|toman }} تومان</td>
+                            <td>
+                                <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn">حذف</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
+            <div class="bazar-card">
+                <strong>جمع کل سبد</strong>
+                <div class="bazar-price">{{ cart_total|toman }} تومان</div>
+            </div>
+            <div class="bazar-card">
+                <strong>سکه‌های شما</strong>
+                <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
+            </div>
+            <div class="bazar-card">
+                <strong>کیف پول شما</strong>
+                <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+            </div>
+        </div>
+
+        <div class="bazar-actions" style="margin-top: 1.5rem;">
+            <a href="{% url 'bazar:checkout' %}" class="bazar-btn">پرداخت</a>
+            <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">ادامه خرید</a>
+        </div>
+    {% else %}
+        <div class="bazar-empty-state">
+            <h3>سبد خرید شما خالی است</h3>
+            <p class="bazar-note">برای شروع، یک محصول از بازار انتخاب کن و به سبد خرید اضافه کن.</p>
+            <a href="{% url 'bazar:product-list' %}" class="bazar-btn">مشاهده محصولات</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

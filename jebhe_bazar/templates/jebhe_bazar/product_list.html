@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>جبهه بازار</h1>
+        <p class="bazar-note">محصولات و خدمات را در دسته‌های کلی مثل رستوران، مراکز تفریحی و فروشگاه ببین، بین گزینه‌های ارزان‌تر یا گران‌تر مقایسه کن و سریع‌تر به پیشنهاد مناسب برسی.</p>
+    </div>
+
+    <div class="bazar-grid">
+        <aside class="bazar-card">
+            <h3>جستجو و فیلتر</h3>
+            <form method="get" class="bazar-list" style="margin-top: 1rem;">
+                {% if selected_top_category and not selected_category %}
+                    <input type="hidden" name="top" value="{{ selected_top_category.slug }}">
+                {% endif %}
+                <input type="text" name="q" value="{{ search_query }}" class="bazar-input" placeholder="جستجوی عنوان یا توضیح محصول">
+                <select name="sort" class="bazar-select">
+                    {% for sort_value, sort_label in sort_options %}
+                        <option value="{{ sort_value }}" {% if current_sort == sort_value %}selected{% endif %}>{{ sort_label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="bazar-inline-filters">
+                    <input type="number" name="min_price" value="{{ min_price }}" min="0" class="bazar-input" placeholder="حداقل قیمت">
+                    <input type="number" name="max_price" value="{{ max_price }}" min="0" class="bazar-input" placeholder="حداکثر قیمت">
+                </div>
+                <select name="kind" class="bazar-select">
+                    <option value="">همه نوع‌ها</option>
+                    <option value="product" {% if selected_kind == 'product' %}selected{% endif %}>فروشگاهی</option>
+                    <option value="ticket" {% if selected_kind == 'ticket' %}selected{% endif %}>تفریحی و بلیط</option>
+                </select>
+                <label class="bazar-check-row">
+                    <input type="checkbox" name="discount" value="1" {% if discount_only %}checked{% endif %}>
+                    <span>فقط تخفیف‌دارها</span>
+                </label>
+                <label class="bazar-check-row">
+                    <input type="checkbox" name="in_stock" value="1" {% if in_stock_only %}checked{% endif %}>
+                    <span>فقط موجودها</span>
+                </label>
+                <div class="bazar-actions">
+                    <button type="submit" class="bazar-btn">اعمال فیلتر</button>
+                    {% if selected_category %}
+                        <a href="{{ selected_category.get_absolute_url }}" class="bazar-secondary-btn">پاک کردن</a>
+                    {% else %}
+                        <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">پاک کردن</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div style="margin-top: 1.5rem;">
+                <h3 style="margin-bottom: 0.75rem;">دسته‌های کلی</h3>
+                <div class="bazar-chip-list">
+                    <a href="{% url 'bazar:product-list' %}" class="bazar-chip {% if not selected_top_category and not selected_category %}is-active{% endif %}">همه</a>
+                    {% for category in categories %}
+                        <a href="{% url 'bazar:product-list' %}?{% query_transform top=category.slug page=None %}" class="bazar-chip {% if selected_top_category and selected_top_category.pk == category.pk %}is-active{% endif %}">
+                            {{ category.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <h3 style="margin-bottom: 0.75rem;">زیر دسته‌ها</h3>
+                <div class="bazar-side-list">
+                    {% for category in categories %}
+                        {% if not selected_top_category or selected_top_category.pk == category.pk %}
+                            <a href="{{ category.get_absolute_url }}{% if request.GET %}?{% query_transform top=None page=None %}{% endif %}" class="{% if selected_category and selected_category.pk == category.pk %}is-active{% endif %}">
+                                {{ category.name }}
+                            </a>
+                            {% for child in category.children.all %}
+                                {% if child.is_active %}
+                                    <a href="{{ child.get_absolute_url }}{% if request.GET %}?{% query_transform top=None page=None %}{% endif %}" class="{% if selected_category and selected_category.pk == child.pk %}is-active{% endif %}" style="margin-right: 1rem;">
+                                        {{ child.name }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% empty %}
+                        <div class="bazar-list-item">هنوز دسته‌بندی فعالی ثبت نشده است.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+
+        <div>
+            <div class="bazar-summary-grid" style="margin-bottom: 1rem;">
+                <div class="bazar-card">
+                    <strong>کیف پول</strong>
+                    <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>سکه چالش</strong>
+                    <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>نتیجه‌ها</strong>
+                    <div class="bazar-price">{{ page_obj.paginator.count|toman }}</div>
+                    <div class="bazar-note">با {{ active_filters_count|toman }} فیلتر فعال</div>
+                </div>
+            </div>
+
+            {% if products %}
+                <div class="bazar-card" style="margin-bottom: 1rem;">
+                    <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>مرتب‌سازی فعلی:</strong>
+                            {% for sort_value, sort_label in sort_options %}
+                                {% if current_sort == sort_value %}{{ sort_label }}{% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="bazar-chip-list">
+                            {% if discount_only %}<span class="bazar-chip is-active">تخفیف‌دارها</span>{% endif %}
+                            {% if in_stock_only %}<span class="bazar-chip is-active">فقط موجودها</span>{% endif %}
+                            {% if selected_kind == 'ticket' %}<span class="bazar-chip is-active">تفریحی</span>{% endif %}
+                            {% if selected_kind == 'product' %}<span class="bazar-chip is-active">فروشگاهی</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bazar-products-grid">
+                    {% for product in products %}
+                        <article class="bazar-card bazar-product-card">
+                            <div class="bazar-product-image">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.title }}">
+                                {% else %}
+                                    <span class="bazar-placeholder">بدون تصویر</span>
+                                {% endif %}
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
+                                    <span class="bazar-chip">{{ product.category.name }}</span>
+                                    {% if product.discount_active and product.discount_percent %}
+                                        <span class="bazar-chip is-active">تخفیف {{ product.discount_percent|toman }}٪</span>
+                                    {% elif product.is_in_stock %}
+                                        <span class="bazar-chip">آماده خرید</span>
+                                    {% else %}
+                                        <span class="bazar-chip">ناموجود</span>
+                                    {% endif %}
+                                </div>
+                                <div class="bazar-inline-actions" style="margin-top: 0.6rem; justify-content: space-between; align-items: center;">
+                                    <span class="bazar-note">{{ product.seller.shop_name }}</span>
+                                    {% if product.is_ticket %}
+                                        <span class="bazar-chip">بلیط تفریحی</span>
+                                    {% endif %}
+                                </div>
+                                <h3 style="margin: 1rem 0 0.5rem;">{{ product.title }}</h3>
+                                <p class="bazar-note">{{ product.description|truncatechars:110 }}</p>
+                                <div class="bazar-price-row">
+                                    <div>
+                                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                                        {% if product.discount_active and product.discount_percent %}
+                                            <div class="bazar-old-price">{{ product.price|toman }} تومان</div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="bazar-chip">موجودی: {{ product.stock|toman }}</span>
+                                </div>
+                                <div class="bazar-actions">
+                                    <a href="{{ product.get_absolute_url }}" class="bazar-secondary-btn">مشاهده جزئیات</a>
+                                    <form method="post" action="{% url 'bazar:cart-add' product.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="bazar-btn">افزودن به سبد</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                    <div class="bazar-pagination">
+                        {% if page_obj.has_previous %}
+                            <a href="?{% query_transform page=page_obj.previous_page_number %}" class="bazar-secondary-btn">صفحه قبل</a>
+                        {% endif %}
+                        <span class="bazar-chip">صفحه {{ page_obj.number|toman }} از {{ page_obj.paginator.num_pages|toman }}</span>
+                        {% if page_obj.has_next %}
+                            <a href="?{% query_transform page=page_obj.next_page_number %}" class="bazar-secondary-btn">صفحه بعد</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="bazar-empty-state">
+                    <h3>محصولی پیدا نشد</h3>
+                    <p class="bazar-note">فیلترها را تغییر بده یا عبارت جستجو را ساده‌تر وارد کن.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

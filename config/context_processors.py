@@ -23,3 +23,12 @@ def user_points(request):
             "user_level_progress_percent": level_progress_percent,
         }
     return {}
+
+
+def seller_ui(request):
+    is_seller = bool(getattr(request.user, "is_authenticated", False) and getattr(request.user, "is_seller", False))
+    seller_site_view = bool(request.session.get("seller_site_view", False)) if is_seller else False
+    return {
+        "seller_site_view": seller_site_view,
+        "seller_panel_mode": is_seller and not seller_site_view,
+    }

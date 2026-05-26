@@ -87,6 +87,7 @@
             
             const phone_number = document.getElementById('phone_number').value.trim();
             const password = document.getElementById('password').value;
+            const nextUrl = urlParams.get('next');
             
             messageContainer.innerHTML = '';
             
@@ -100,10 +101,15 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ورود...';
             submitBtn.disabled = true;
             
+            const payload = { phone_number, password };
+            if (nextUrl) {
+                payload.next = nextUrl;
+            }
+
             fetch('/api/accounts/login/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone_number, password })
+                body: JSON.stringify(payload)
             }).then(async res => {
                 const data = await res.json();
                 if (!res.ok) {
@@ -116,10 +122,10 @@
 
                 localStorage.setItem('access_token', data.access);
                 localStorage.setItem('refresh_token', data.refresh);
-                localStorage.setItem('user_type', 'user');
+                localStorage.setItem('user_type', data.user_type || 'user');
 
                 showMessage('ورود با موفقیت انجام شد. در حال انتقال...', 'success');
-                window.location.href = urlParams.get('next') || "{% url 'home' %}";
+                window.location.href = data.redirect_url || nextUrl || "{% url 'home' %}";
             }).catch(() => {
                 showMessage('خطا در ارتباط با سرور. دوباره تلاش کنید.', 'error');
                 submitBtn.innerHTML = originalText;

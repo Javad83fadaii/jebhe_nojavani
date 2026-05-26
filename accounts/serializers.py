@@ -403,11 +403,15 @@ class UserLoginSerializer(serializers.Serializer):
         user = authenticate(request=self.context.get("request"), username=phone_number, password=password)
         if not user:
             raise serializers.ValidationError("شماره تلفن یا رمز عبور اشتباه است.")
-        if hasattr(user, "seller_profile"):
-            raise serializers.ValidationError("این حساب کاربری فروشنده است.")
+        seller_profile = getattr(user, "seller_profile", None)
+        if seller_profile and not seller_profile.verified:
+            raise PermissionDenied("حساب فروشنده شما هنوز تایید نشده است.")
+        if seller_profile and not seller_profile.is_active:
+            raise serializers.ValidationError("حساب فروشنده شما غیرفعال است.")
         if not user.is_active:
             raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
         attrs["user"] = user
+        attrs["user_type"] = "seller" if seller_profile else "user"
         return attrs
 
 

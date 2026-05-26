@@ -1,0 +1,355 @@
+.bazar-page {
+    width: min(1180px, calc(100% - 2rem));
+    margin: 2rem auto 4rem;
+}
+
+.bazar-hero,
+.bazar-card,
+.bazar-form-card,
+.bazar-empty-state,
+.bazar-table-card {
+    background: rgba(11, 17, 32, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(12px);
+}
+
+.bazar-hero,
+.bazar-card,
+.bazar-form-card,
+.bazar-empty-state,
+.bazar-table-card {
+    padding: 1.5rem;
+}
+
+.bazar-grid {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.bazar-products-grid,
+.bazar-stats-grid,
+.bazar-summary-grid,
+.bazar-orders-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.bazar-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.bazar-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.bazar-summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bazar-orders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.bazar-product-card {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.bazar-product-image,
+.bazar-detail-image {
+    width: 100%;
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bazar-product-image img,
+.bazar-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bazar-placeholder {
+    color: rgba(255, 255, 255, 0.54);
+    font-size: 0.95rem;
+}
+
+.bazar-chip,
+.bazar-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+
+.bazar-chip.is-active {
+    background: rgba(255, 203, 82, 0.18);
+    color: #f8d66d;
+    border: 1px solid rgba(255, 203, 82, 0.35);
+}
+
+.bazar-status.is-success {
+    background: rgba(76, 175, 80, 0.18);
+    color: #9df5a1;
+}
+
+.bazar-status.is-warning {
+    background: rgba(255, 193, 7, 0.18);
+    color: #ffe082;
+}
+
+.bazar-status.is-danger {
+    background: rgba(244, 67, 54, 0.18);
+    color: #ffb4ae;
+}
+
+.bazar-status.is-muted {
+    background: rgba(158, 158, 158, 0.18);
+    color: #d3d3d3;
+}
+
+.bazar-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+}
+
+.bazar-price {
+    color: #f8d66d;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.bazar-old-price {
+    color: rgba(255, 255, 255, 0.52);
+    text-decoration: line-through;
+}
+
+.bazar-actions,
+.bazar-inline-actions,
+.bazar-form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.bazar-inline-filters,
+.bazar-chip-list {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.bazar-btn,
+.bazar-link-btn,
+.bazar-danger-btn,
+.bazar-secondary-btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 0.85rem 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.bazar-btn:hover,
+.bazar-link-btn:hover,
+.bazar-danger-btn:hover,
+.bazar-secondary-btn:hover {
+    transform: translateY(-1px);
+    opacity: 0.94;
+}
+
+.bazar-btn,
+.bazar-link-btn {
+    background: linear-gradient(135deg, #ffcb52, #f2a900);
+    color: #151515;
+}
+
+.bazar-secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.bazar-danger-btn {
+    background: rgba(244, 67, 54, 0.18);
+    color: #ffb4ae;
+}
+
+.bazar-input,
+.bazar-select,
+.bazar-textarea {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: #fff;
+    outline: none;
+}
+
+.bazar-input::placeholder,
+.bazar-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.bazar-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.bazar-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.bazar-form-group label {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.bazar-help-text {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.85rem;
+}
+
+.bazar-side-list,
+.bazar-list,
+.bazar-order-items {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.bazar-check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.bazar-check-row input {
+    width: auto;
+}
+
+.bazar-side-list a,
+.bazar-list-item,
+.bazar-order-item {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    text-decoration: none;
+    color: #fff;
+}
+
+.bazar-side-list a.is-active {
+    border: 1px solid rgba(255, 203, 82, 0.4);
+    color: #f8d66d;
+}
+
+.bazar-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+}
+
+.bazar-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bazar-table th,
+.bazar-table td {
+    text-align: right;
+    padding: 0.9rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bazar-table th {
+    color: #f8d66d;
+    font-weight: 700;
+}
+
+.bazar-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.bazar-qr-box {
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.bazar-qr-box img {
+    max-width: 100%;
+    max-height: 220px;
+}
+
+.bazar-note {
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.9;
+}
+
+.messages {
+    width: min(1180px, calc(100% - 2rem));
+    margin: 1rem auto 0;
+    list-style: none;
+    padding: 0;
+}
+
+.messages li {
+    border-radius: 16px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.messages li.success {
+    background: rgba(76, 175, 80, 0.16);
+}
+
+.messages li.error {
+    background: rgba(244, 67, 54, 0.16);
+}
+
+@media (max-width: 980px) {
+    .bazar-grid,
+    .bazar-detail-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .bazar-page {
+        width: calc(100% - 1rem);
+        margin: 1rem auto 3rem;
+    }
+
+    .bazar-table-card {
+        overflow-x: auto;
+    }
+}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>محصولات فروشنده</h1>
+        <p class="bazar-note">فهرست محصولات فروشگاه {{ seller_profile.shop_name }} را مدیریت کن.</p>
+    </div>
+
+    <div class="bazar-actions" style="margin-bottom: 1.5rem;">
+        <a href="{% url 'bazar:seller-product-add' %}" class="bazar-btn">افزودن محصول</a>
+        <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-secondary-btn">بازگشت به داشبورد</a>
+    </div>
+
+    {% if products %}
+        <div class="bazar-products-grid">
+            {% for product in products %}
+                <article class="bazar-card">
+                    <h3>{{ product.title }}</h3>
+                    <div class="bazar-note">{{ product.category.name }}</div>
+                    <div class="bazar-price-row">
+                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                        <span class="bazar-chip">موجودی: {{ product.stock|toman }}</span>
+                    </div>
+                    <div class="bazar-inline-actions">
+                        {% if product.discount_active %}
+                            <span class="bazar-chip">تخفیف {{ product.discount_percent|toman }}٪</span>
+                        {% endif %}
+                        <span class="bazar-status {% if product.is_active %}is-success{% else %}is-muted{% endif %}">
+                            {% if product.is_active %}فعال{% else %}غیرفعال{% endif %}
+                        </span>
+                    </div>
+                    <div class="bazar-actions" style="margin-top: 1rem;">
+                        <a href="{% url 'bazar:seller-product-edit' product.pk %}" class="bazar-secondary-btn">ویرایش</a>
+                        <a href="{{ product.get_absolute_url }}" class="bazar-link-btn">مشاهده</a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bazar-empty-state">
+            <h3>هنوز محصولی ثبت نشده است</h3>
+            <p class="bazar-note">برای شروع فروش، اولین محصول خود را ثبت کن.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

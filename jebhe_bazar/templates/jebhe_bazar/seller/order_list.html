@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-hero">
+        <h1>سفارش‌های فروشنده</h1>
+        <p class="bazar-note">فقط سفارش‌هایی نمایش داده می‌شوند که حداقل یک محصول از فروشگاه شما در آن‌ها وجود داشته باشد.</p>
+    </div>
+
+    {% if orders %}
+        <div class="bazar-orders-grid">
+            {% for order in orders %}
+                <article class="bazar-card">
+                    <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
+                        <strong>سفارش #{{ order.id|toman }}</strong>
+                        <span class="bazar-status {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
+                    </div>
+                    <div class="bazar-note" style="margin: 1rem 0;">خریدار: {{ order.user.get_full_name|default:order.user.phone_number }} | تاریخ: {{ order.created_at|jalali_datetime }}</div>
+                    <div class="bazar-order-items">
+                        {% for item in order.items.all %}
+                            {% if item.product.seller_id == seller_profile.id %}
+                                <div class="bazar-order-item">
+                                    <strong>{{ item.product.title }}</strong>
+                                    <div class="bazar-note">تعداد: {{ item.quantity|toman }} | قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bazar-empty-state">
+            <h3>هنوز سفارشی برای محصولات شما ثبت نشده است</h3>
+            <p class="bazar-note">پس از اولین خرید، جزئیات سفارش‌ها در این صفحه قابل مشاهده خواهد بود.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}

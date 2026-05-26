@@ -1494,6 +1494,71 @@ input[type="radio"] {
 }
 
 /* =========================================
+   Global Reveal Motion
+   ========================================= */
+html.js body.site-motion-ready .site-reveal {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0) scale(0.985);
+    filter: blur(8px);
+    transition:
+        opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform, filter;
+    animation: none !important;
+}
+
+html.js body.site-motion-ready .site-reveal.site-reveal--visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+}
+
+html.js body.site-motion-ready .site-reveal:is(
+    .hero-content,
+    .challenge-hero,
+    .learning-hero,
+    .stage-hero,
+    .bazar-hero,
+    .profile-header,
+    .progress-hero,
+    .exam-hero
+) {
+    transform: translate3d(0, 44px, 0) scale(0.99);
+}
+
+html.js body.site-motion-ready .site-reveal:is(
+    .glass-card,
+    .challenge-card,
+    .learning-path-card,
+    .stage-card,
+    .bazar-card,
+    .progress-stage-item,
+    .exam-question,
+    .question-item,
+    .stat-card,
+    .hero-stat,
+    .challenge-stat-card,
+    .timeline-item,
+    .badge-item,
+    .leaderboard-item
+) {
+    transform: translate3d(0, 38px, 0) scale(0.975);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.js body.site-motion-ready .site-reveal,
+    html.js body.site-motion-ready .site-reveal.site-reveal--visible {
+        opacity: 1;
+        transform: none;
+        filter: none;
+        transition: none;
+        animation: none !important;
+    }
+}
+
+/* =========================================
    Responsive Design
    ========================================= */
 @media (max-width: 768px) {

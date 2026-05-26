@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from django.contrib.auth import login as auth_login
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -43,11 +45,28 @@ class UserLoginView(APIView):
         serializer = UserLoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
+        user_type = serializer.validated_data.get("user_type", "user")
         auth_login(request, user)
 
         refresh = RefreshToken.for_user(user)
+        next_url = request.data.get("next") or request.query_params.get("next") or ""
+        if user_type == "seller":
+            redirect_url = reverse("bazar:seller-dashboard")
+        elif next_url and url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            redirect_url = next_url
+        else:
+            redirect_url = reverse("home")
         return Response(
-            {"refresh": str(refresh), "access": str(refresh.access_token)},
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_type": user_type,
+                "redirect_url": redirect_url,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -101,7 +120,12 @@ class SellerLoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         return Response(
-            {"refresh": str(refresh), "access": str(refresh.access_token)},
+            {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user_type": "seller",
+                "redirect_url": reverse("bazar:seller-dashboard"),
+            },
             status=status.HTTP_200_OK,
         )
 

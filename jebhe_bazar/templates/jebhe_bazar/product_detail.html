@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="bazar-page">
+    <div class="bazar-detail-layout">
+        <div class="bazar-card">
+            <div class="bazar-detail-image">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.title }}">
+                {% else %}
+                    <span class="bazar-placeholder">برای این محصول تصویری ثبت نشده است.</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bazar-card">
+            <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
+                <span class="bazar-chip">{{ product.category.name }}</span>
+                {% if product.discount_active and product.discount_percent %}
+                    <span class="bazar-chip">تخفیف {{ product.discount_percent|toman }}٪</span>
+                {% endif %}
+            </div>
+
+            <h1 style="margin: 1rem 0;">{{ product.title }}</h1>
+            <p class="bazar-note">{{ product.description|linebreaksbr }}</p>
+
+            <div class="bazar-summary-grid" style="margin: 1.5rem 0;">
+                <div class="bazar-card">
+                    <strong>قیمت نهایی</strong>
+                    <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>موجودی</strong>
+                    <div class="bazar-price">{{ product.stock|toman }}</div>
+                </div>
+            </div>
+
+            <div class="bazar-list">
+                <div class="bazar-list-item"><strong>فروشنده:</strong> {{ product.seller.shop_name }}</div>
+                <div class="bazar-list-item"><strong>آدرس فروشگاه:</strong> {{ product.seller.shop_address }}</div>
+                <div class="bazar-list-item"><strong>شماره تماس:</strong> {{ product.seller.shop_phone_number|default:"ثبت نشده" }}</div>
+                {% if product.is_ticket %}
+                    <div class="bazar-list-item"><strong>نوع محصول:</strong> بلیط تفریحی</div>
+                {% endif %}
+            </div>
+
+            <form method="post" action="{% url 'bazar:cart-add' product.id %}" style="margin-top: 1.5rem;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'bazar:cart' %}">
+                <div class="bazar-inline-actions">
+                    <input type="number" name="quantity" min="1" max="{{ product.stock }}" value="1" class="bazar-input" style="max-width: 120px;">
+                    <button type="submit" class="bazar-btn" {% if not product.is_in_stock %}disabled{% endif %}>افزودن به سبد خرید</button>
+                    <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">بازگشت به بازار</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h2 style="margin-bottom: 1rem;">محصولات مرتبط</h2>
+        <div class="bazar-products-grid">
+            {% for related in related_products %}
+                <article class="bazar-card">
+                    <h3>{{ related.title }}</h3>
+                    <p class="bazar-note">{{ related.description|truncatechars:80 }}</p>
+                    <div class="bazar-price">{{ related.final_price|toman }} تومان</div>
+                    <a href="{{ related.get_absolute_url }}" class="bazar-link-btn" style="margin-top: 1rem; display: inline-flex;">مشاهده</a>
+                </article>
+            {% empty %}
+                <div class="bazar-empty-state">
+                    <p class="bazar-note">محصول مرتبط دیگری در این دسته‌بندی ثبت نشده است.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'jebhe_bazar/js/bazar.js' %}"></script>
+{% endblock %}
