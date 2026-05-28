@@ -6,36 +6,65 @@
 {% endblock %}
 
 {% block content %}
-<section class="bazar-page">
-    <div class="bazar-hero">
-        <h1>محصولات فروشنده</h1>
-        <p class="bazar-note">فهرست محصولات فروشگاه {{ seller_profile.shop_name }} را مدیریت کن.</p>
+<section class="bazar-page bazar-seller-page">
+    <div class="bazar-hero bazar-hero-split">
+        <div class="bazar-hero-content">
+            <h1>محصولات فروشنده</h1>
+            <p class="bazar-note">فهرست محصولات فروشگاه {{ seller_profile.shop_name }} را مدیریت کن.</p>
+        </div>
+        <div class="bazar-chip-list">
+            <span class="bazar-chip bazar-chip-highlight">تعداد محصولات: {{ products|length }}</span>
+            <span class="bazar-chip">فروشگاه: {{ seller_profile.shop_name }}</span>
+        </div>
     </div>
 
-    <div class="bazar-actions" style="margin-bottom: 1.5rem;">
-        <a href="{% url 'bazar:seller-product-add' %}" class="bazar-btn">افزودن محصول</a>
-        <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-secondary-btn">بازگشت به داشبورد</a>
+    <div class="bazar-panel-tabs">
+        <a href="{% url 'bazar:seller-product-list' %}" class="bazar-panel-tab is-active">محصولات</a>
+        <a href="{% url 'bazar:seller-order-list' %}" class="bazar-panel-tab">سفارش‌ها</a>
+        <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-panel-tab">داشبورد</a>
+    </div>
+
+    <div class="bazar-toolbar">
+        <div class="bazar-toolbar-info">
+            <h2>مدیریت محصولات</h2>
+            <p class="bazar-note">اینجا می‌توانی محصولات را اضافه، ویرایش و وضعیت فعال بودن آن‌ها را سریع‌تر مدیریت کنی.</p>
+        </div>
+        <div class="bazar-actions">
+            <a href="{% url 'bazar:seller-product-add' %}" class="bazar-btn">افزودن محصول</a>
+            <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-secondary-btn">بازگشت به داشبورد</a>
+        </div>
     </div>
 
     {% if products %}
         <div class="bazar-products-grid">
             {% for product in products %}
-                <article class="bazar-card">
-                    <h3>{{ product.title }}</h3>
-                    <div class="bazar-note">{{ product.category.name }}</div>
-                    <div class="bazar-price-row">
-                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
-                        <span class="bazar-chip">موجودی: {{ product.stock|toman }}</span>
-                    </div>
-                    <div class="bazar-inline-actions">
-                        {% if product.discount_active %}
-                            <span class="bazar-chip">تخفیف {{ product.discount_percent|toman }}٪</span>
-                        {% endif %}
+                <article class="bazar-card bazar-product-manage-card">
+                    <div class="bazar-card-head">
+                        <div>
+                            <h3>{{ product.title }}</h3>
+                            <div class="bazar-note">{{ product.category.name }}</div>
+                        </div>
                         <span class="bazar-status {% if product.is_active %}is-success{% else %}is-muted{% endif %}">
                             {% if product.is_active %}فعال{% else %}غیرفعال{% endif %}
                         </span>
                     </div>
-                    <div class="bazar-actions" style="margin-top: 1rem;">
+                    <div class="bazar-meta-list">
+                        <div class="bazar-meta-item">
+                            <span>موجودی</span>
+                            <strong>{{ product.stock }}</strong>
+                        </div>
+                        {% if product.discount_active %}
+                            <div class="bazar-meta-item">
+                                <span>تخفیف</span>
+                                <strong>{{ product.discount_percent }}٪</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="bazar-price-row">
+                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                        <span class="bazar-chip">دسته‌بندی: {{ product.category.name }}</span>
+                    </div>
+                    <div class="bazar-actions">
                         <a href="{% url 'bazar:seller-product-edit' product.pk %}" class="bazar-secondary-btn">ویرایش</a>
                         <a href="{{ product.get_absolute_url }}" class="bazar-link-btn">مشاهده</a>
                     </div>
@@ -46,6 +75,9 @@
         <div class="bazar-empty-state">
             <h3>هنوز محصولی ثبت نشده است</h3>
             <p class="bazar-note">برای شروع فروش، اولین محصول خود را ثبت کن.</p>
+            <div class="bazar-actions">
+                <a href="{% url 'bazar:seller-product-add' %}" class="bazar-btn">ثبت اولین محصول</a>
+            </div>
         </div>
     {% endif %}
 </section>

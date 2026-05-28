@@ -6,44 +6,77 @@
 {% endblock %}
 
 {% block content %}
-<section class="bazar-page">
-    <div class="bazar-hero">
-        <h1>داشبورد فروشنده</h1>
-        <p class="bazar-note">وضعیت فروش، درآمد و کمیسیون فروشگاه {{ seller_profile.shop_name }} را از اینجا مدیریت کن.</p>
+<section class="bazar-page bazar-seller-page">
+    <div class="bazar-hero bazar-hero-split">
+        <div class="bazar-hero-content">
+            <h1>داشبورد فروشنده</h1>
+            <p class="bazar-note">وضعیت فروش، درآمد و کمیسیون فروشگاه {{ seller_profile.shop_name }} را از اینجا مدیریت کن.</p>
+        </div>
+        <div class="bazar-chip-list">
+            <span class="bazar-chip bazar-chip-highlight">فروشگاه: {{ seller_profile.shop_name }}</span>
+            <span class="bazar-chip">سفارش‌ها: {{ seller_orders_count }}</span>
+        </div>
     </div>
 
-    <div class="bazar-stats-grid">
-        <div class="bazar-card">
-            <strong>تعداد فروش</strong>
+    <div class="bazar-panel-tabs">
+        <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-panel-tab is-active">داشبورد</a>
+        <a href="{% url 'bazar:seller-product-list' %}" class="bazar-panel-tab">محصولات</a>
+        <a href="{% url 'bazar:seller-order-list' %}" class="bazar-panel-tab">سفارش‌ها</a>
+    </div>
+
+    <div class="bazar-toolbar">
+        <div class="bazar-toolbar-info">
+            <h2>نمای کلی عملکرد فروشگاه</h2>
+            <p class="bazar-note">از این بخش به آمارهای مهم، مسیرهای سریع و آخرین فعالیت‌های فروشگاه دسترسی داری.</p>
+        </div>
+        <div class="bazar-actions">
+            <a href="{% url 'bazar:seller-product-add' %}" class="bazar-btn">افزودن محصول جدید</a>
+            <a href="{% url 'bazar:seller-order-list' %}" class="bazar-secondary-btn">مشاهده سفارش‌ها</a>
+        </div>
+    </div>
+
+    <div class="bazar-stats-grid bazar-dashboard-stats">
+        <div class="bazar-card bazar-stat-card">
+            <span class="bazar-stat-label">تعداد فروش</span>
             <div class="bazar-price">{{ total_sales|toman }}</div>
         </div>
-        <div class="bazar-card">
-            <strong>درآمد کل</strong>
+        <div class="bazar-card bazar-stat-card">
+            <span class="bazar-stat-label">درآمد کل</span>
             <div class="bazar-price">{{ total_revenue|toman }} تومان</div>
         </div>
-        <div class="bazar-card">
-            <strong>کمیسیون ثبت‌شده</strong>
+        <div class="bazar-card bazar-stat-card">
+            <span class="bazar-stat-label">کمیسیون ثبت‌شده</span>
             <div class="bazar-price">{{ commission_paid|toman }} تومان</div>
         </div>
-        <div class="bazar-card">
-            <strong>تعداد سفارش</strong>
+        <div class="bazar-card bazar-stat-card">
+            <span class="bazar-stat-label">تعداد سفارش</span>
             <div class="bazar-price">{{ seller_orders_count|toman }}</div>
         </div>
     </div>
 
-    <div class="bazar-grid" style="margin-top: 1.5rem;">
-        <div class="bazar-card">
-            <h3>دسترسی سریع</h3>
-            <div class="bazar-side-list" style="margin-top: 1rem;">
+    <div class="bazar-dashboard-grid">
+        <div class="bazar-card bazar-section-card">
+            <div class="bazar-card-head">
+                <div>
+                    <h3>دسترسی سریع</h3>
+                    <p class="bazar-note">پرکاربردترین بخش‌های پنل را سریع باز کن.</p>
+                </div>
+            </div>
+            <div class="bazar-side-list">
                 <a href="{% url 'bazar:seller-product-list' %}" class="is-active">مدیریت محصولات</a>
                 <a href="{% url 'bazar:seller-product-add' %}">افزودن محصول جدید</a>
                 <a href="{% url 'bazar:seller-order-list' %}">مشاهده سفارش‌ها</a>
             </div>
         </div>
 
-        <div class="bazar-card">
-            <h3>QR Code فروشگاه</h3>
-            <div class="bazar-qr-box" style="margin-top: 1rem;">
+        <div class="bazar-card bazar-section-card">
+            <div class="bazar-card-head">
+                <div>
+                    <h3>QR Code فروشگاه</h3>
+                    <p class="bazar-note">برای دسترسی سریع به صفحه فروشگاه از این کد استفاده کن.</p>
+                </div>
+            </div>
+            <div class="bazar-qr-box">
                 {% if qr_code %}
                     <img src="{{ qr_code.url }}" alt="QR Code">
                 {% else %}
@@ -53,13 +86,18 @@
         </div>
     </div>
 
-    <div class="bazar-card" style="margin-top: 1.5rem;">
-        <h3>آخرین آیتم‌های فروخته‌شده</h3>
-        <div class="bazar-order-items" style="margin-top: 1rem;">
+    <div class="bazar-card bazar-section-card">
+        <div class="bazar-card-head">
+            <div>
+                <h3>آخرین آیتم‌های فروخته‌شده</h3>
+                <p class="bazar-note">نمایی سریع از تازه‌ترین خریدهای ثبت‌شده برای محصولاتت.</p>
+            </div>
+        </div>
+        <div class="bazar-order-items">
             {% for item in recent_items %}
                 <div class="bazar-order-item">
                     <strong>{{ item.product.title }}</strong>
-                    <div class="bazar-note">خریدار: {{ item.order.user.get_full_name|default:item.order.user.phone_number }} | تعداد: {{ item.quantity|toman }} | مبلغ: {{ item.line_total|toman }} تومان</div>
+                    <div class="bazar-note">خریدار: {{ item.order.user.get_full_name|default:item.order.user.phone_number }} | تعداد: {{ item.quantity }} | مبلغ: {{ item.line_total|toman }} تومان</div>
                 </div>
             {% empty %}
                 <div class="bazar-order-item">هنوز فروشی برای این فروشگاه ثبت نشده است.</div>

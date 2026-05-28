@@ -6,31 +6,50 @@
 {% endblock %}
 
 {% block content %}
-<section class="bazar-page">
-    <div class="bazar-hero">
-        <h1>{{ form_title }}</h1>
-        <p class="bazar-note">مشخصات محصول، موجودی و وضعیت تخفیف را از این صفحه مدیریت کن.</p>
+<section class="bazar-page bazar-seller-page">
+    <div class="bazar-hero bazar-hero-split">
+        <div class="bazar-hero-content">
+            <h1>{{ form_title }}</h1>
+            <p class="bazar-note">مشخصات محصول، موجودی و وضعیت تخفیف را از این صفحه مدیریت کن.</p>
+        </div>
+        <div class="bazar-actions">
+            <a href="{% url 'bazar:seller-product-list' %}" class="bazar-secondary-btn">بازگشت به محصولات</a>
+            <a href="{% url 'bazar:seller-order-list' %}" class="bazar-link-btn">مشاهده سفارش‌ها</a>
+        </div>
     </div>
 
     <div class="bazar-form-card">
+        <div class="bazar-form-header">
+            <div>
+                <h2>اطلاعات محصول</h2>
+                <p class="bazar-note">فیلدهای اصلی را کامل کن تا محصول با ظاهر منظم‌تری در فروشگاه نمایش داده شود.</p>
+            </div>
+        </div>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="bazar-form-grid">
                 {% for field in form %}
-                    <div class="bazar-form-group">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
+                    <div class="bazar-form-group{% if field.name == 'description' or field.name == 'image' %} is-full{% endif %}{% if field.field.widget.input_type == 'checkbox' %} is-checkbox{% endif %}">
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                            <label for="{{ field.id_for_label }}" class="bazar-check-row">
+                                {{ field }}
+                                <span>{{ field.label }}</span>
+                            </label>
+                        {% else %}
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                        {% endif %}
                         {% if field.help_text %}
                             <div class="bazar-help-text">{{ field.help_text }}</div>
                         {% endif %}
                         {% for error in field.errors %}
-                            <div class="bazar-help-text" style="color: #ffb4ae;">{{ error }}</div>
+                            <div class="bazar-help-text bazar-help-text-error">{{ error }}</div>
                         {% endfor %}
                     </div>
                 {% endfor %}
             </div>
 
-            <div class="bazar-actions" style="margin-top: 1.5rem;">
+            <div class="bazar-actions is-end">
                 <button type="submit" class="bazar-btn">ذخیره محصول</button>
                 <a href="{% url 'bazar:seller-product-list' %}" class="bazar-secondary-btn">بازگشت</a>
                 {% if object %}

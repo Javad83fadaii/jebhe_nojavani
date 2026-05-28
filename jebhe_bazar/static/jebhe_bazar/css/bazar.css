@@ -1,6 +1,21 @@
 .bazar-page {
     width: min(1180px, calc(100% - 2rem));
     margin: 2rem auto 4rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.bazar-seller-page {
+    margin-top: 6rem;
+    gap: 2.25rem;
+}
+
+.bazar-seller-page .bazar-panel-tabs {
+    margin-top: 0.75rem;
+}
+
+.bazar-page > * {
+    min-width: 0;
 }
 
 .bazar-hero,
@@ -23,6 +38,71 @@
     padding: 1.5rem;
 }
 
+.bazar-hero {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.bazar-hero h1,
+.bazar-toolbar-info h2,
+.bazar-form-header h2,
+.bazar-card h3,
+.bazar-empty-state h3 {
+    margin: 0;
+}
+
+.bazar-hero-split,
+.bazar-toolbar,
+.bazar-order-header,
+.bazar-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.bazar-hero-content,
+.bazar-toolbar-info {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.bazar-toolbar {
+    background: rgba(11, 17, 32, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.bazar-panel-tabs {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.bazar-panel-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1.1rem;
+    border-radius: 14px;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.bazar-panel-tab:hover,
+.bazar-panel-tab.is-active {
+    transform: translateY(-1px);
+    background: rgba(255, 203, 82, 0.12);
+    border-color: rgba(255, 203, 82, 0.4);
+    color: #f8d66d;
+}
+
 .bazar-grid {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
@@ -35,7 +115,7 @@
 .bazar-summary-grid,
 .bazar-orders-grid {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .bazar-products-grid {
@@ -46,12 +126,76 @@
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.bazar-dashboard-stats {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .bazar-summary-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .bazar-orders-grid {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.bazar-product-manage-card,
+.bazar-order-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.bazar-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.bazar-section-card,
+.bazar-stat-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.bazar-stat-card {
+    min-height: 152px;
+    align-content: space-between;
+}
+
+.bazar-stat-label {
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.bazar-product-manage-card .bazar-actions,
+.bazar-order-card .bazar-actions {
+    margin-top: auto;
+}
+
+.bazar-meta-list,
+.bazar-order-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.bazar-meta-item {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.bazar-meta-item span {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.84rem;
+}
+
+.bazar-meta-item strong {
+    color: #fff;
+    font-size: 0.98rem;
 }
 
 .bazar-product-card {
@@ -94,6 +238,12 @@
     font-size: 0.85rem;
     background: rgba(255, 255, 255, 0.07);
     color: #fff;
+}
+
+.bazar-chip-highlight {
+    background: rgba(255, 203, 82, 0.16);
+    color: #f8d66d;
+    border: 1px solid rgba(255, 203, 82, 0.3);
 }
 
 .bazar-chip.is-active {
@@ -147,6 +297,12 @@
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.bazar-actions.is-end {
+    justify-content: flex-end;
+    margin-top: 1.5rem;
 }
 
 .bazar-inline-filters,
@@ -213,13 +369,27 @@
 .bazar-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
+    gap: 1.1rem;
 }
 
 .bazar-form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+
+.bazar-form-group.is-full {
+    grid-column: 1 / -1;
+}
+
+.bazar-form-group.is-checkbox {
+    justify-content: center;
+}
+
+.bazar-form-header {
+    display: grid;
+    gap: 0.45rem;
+    margin-bottom: 1.25rem;
 }
 
 .bazar-form-group label {
@@ -231,6 +401,10 @@
     font-size: 0.85rem;
 }
 
+.bazar-help-text-error {
+    color: #ffb4ae;
+}
+
 .bazar-side-list,
 .bazar-list,
 .bazar-order-items {
@@ -238,15 +412,25 @@
     gap: 0.75rem;
 }
 
+.bazar-side-list {
+    margin-top: 0.25rem;
+}
+
 .bazar-check-row {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     color: rgba(255, 255, 255, 0.86);
+    min-height: 52px;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
 }
 
 .bazar-check-row input {
     width: auto;
+    accent-color: #f2a900;
 }
 
 .bazar-side-list a,
@@ -257,6 +441,11 @@
     padding: 0.9rem 1rem;
     text-decoration: none;
     color: #fff;
+}
+
+.bazar-order-item {
+    display: grid;
+    gap: 0.35rem;
 }
 
 .bazar-side-list a.is-active {
@@ -314,6 +503,11 @@
     line-height: 1.9;
 }
 
+.bazar-empty-state {
+    display: grid;
+    gap: 0.75rem;
+}
+
 .messages {
     width: min(1180px, calc(100% - 2rem));
     margin: 1rem auto 0;
@@ -338,8 +532,14 @@
 
 @media (max-width: 980px) {
     .bazar-grid,
-    .bazar-detail-layout {
+    .bazar-detail-layout,
+    .bazar-dashboard-grid {
         grid-template-columns: 1fr;
+    }
+
+    .bazar-price-row {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }
 
@@ -349,7 +549,38 @@
         margin: 1rem auto 3rem;
     }
 
+    .bazar-seller-page {
+        margin-top: 3rem;
+        gap: 1.75rem;
+    }
+
+    .bazar-seller-page .bazar-panel-tabs {
+        margin-top: 0.35rem;
+    }
+
+    .bazar-hero,
+    .bazar-card,
+    .bazar-form-card,
+    .bazar-empty-state,
+    .bazar-table-card,
+    .bazar-toolbar {
+        padding: 1.1rem;
+    }
+
     .bazar-table-card {
         overflow-x: auto;
+    }
+
+    .bazar-actions.is-end {
+        justify-content: stretch;
+    }
+
+    .bazar-btn,
+    .bazar-link-btn,
+    .bazar-danger-btn,
+    .bazar-secondary-btn,
+    .bazar-panel-tab {
+        width: 100%;
+        justify-content: center;
     }
 }

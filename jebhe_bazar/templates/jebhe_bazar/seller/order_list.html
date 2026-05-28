@@ -6,27 +6,59 @@
 {% endblock %}
 
 {% block content %}
-<section class="bazar-page">
-    <div class="bazar-hero">
-        <h1>سفارش‌های فروشنده</h1>
-        <p class="bazar-note">فقط سفارش‌هایی نمایش داده می‌شوند که حداقل یک محصول از فروشگاه شما در آن‌ها وجود داشته باشد.</p>
+<section class="bazar-page bazar-seller-page">
+    <div class="bazar-hero bazar-hero-split">
+        <div class="bazar-hero-content">
+            <h1>سفارش‌های فروشنده</h1>
+            <p class="bazar-note">فقط سفارش‌هایی نمایش داده می‌شوند که حداقل یک محصول از فروشگاه شما در آن‌ها وجود داشته باشد.</p>
+        </div>
+        <div class="bazar-chip-list">
+            <span class="bazar-chip bazar-chip-highlight">تعداد سفارش: {{ orders|length }}</span>
+            <span class="bazar-chip">فروشگاه: {{ seller_profile.shop_name }}</span>
+        </div>
+    </div>
+
+    <div class="bazar-panel-tabs">
+        <a href="{% url 'bazar:seller-product-list' %}" class="bazar-panel-tab">محصولات</a>
+        <a href="{% url 'bazar:seller-order-list' %}" class="bazar-panel-tab is-active">سفارش‌ها</a>
+        <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-panel-tab">داشبورد</a>
+    </div>
+
+    <div class="bazar-toolbar">
+        <div class="bazar-toolbar-info">
+            <h2>پیگیری سفارش‌ها</h2>
+            <p class="bazar-note">جزئیات هر سفارش، وضعیت فعلی و آیتم‌های مربوط به فروشگاهت را در یک نمای مرتب ببین.</p>
+        </div>
+        <div class="bazar-actions">
+            <a href="{% url 'bazar:seller-product-list' %}" class="bazar-secondary-btn">مدیریت محصولات</a>
+            <a href="{% url 'bazar:seller-dashboard' %}" class="bazar-link-btn">بازگشت به داشبورد</a>
+        </div>
     </div>
 
     {% if orders %}
         <div class="bazar-orders-grid">
             {% for order in orders %}
-                <article class="bazar-card">
-                    <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
-                        <strong>سفارش #{{ order.id|toman }}</strong>
+                <article class="bazar-card bazar-order-card">
+                    <div class="bazar-order-header">
+                        <strong>سفارش #{{ order.id }}</strong>
                         <span class="bazar-status {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
                     </div>
-                    <div class="bazar-note" style="margin: 1rem 0;">خریدار: {{ order.user.get_full_name|default:order.user.phone_number }} | تاریخ: {{ order.created_at|jalali_datetime }}</div>
+                    <div class="bazar-order-meta">
+                        <div class="bazar-meta-item">
+                            <span>خریدار</span>
+                            <strong>{{ order.user.get_full_name|default:order.user.phone_number }}</strong>
+                        </div>
+                        <div class="bazar-meta-item">
+                            <span>تاریخ ثبت</span>
+                            <strong>{{ order.created_at|jalali_datetime }}</strong>
+                        </div>
+                    </div>
                     <div class="bazar-order-items">
                         {% for item in order.items.all %}
                             {% if item.product.seller_id == seller_profile.id %}
                                 <div class="bazar-order-item">
                                     <strong>{{ item.product.title }}</strong>
-                                    <div class="bazar-note">تعداد: {{ item.quantity|toman }} | قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان</div>
+                                    <div class="bazar-note">تعداد: {{ item.quantity }} | قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان</div>
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -38,6 +70,9 @@
         <div class="bazar-empty-state">
             <h3>هنوز سفارشی برای محصولات شما ثبت نشده است</h3>
             <p class="bazar-note">پس از اولین خرید، جزئیات سفارش‌ها در این صفحه قابل مشاهده خواهد بود.</p>
+            <div class="bazar-actions">
+                <a href="{% url 'bazar:seller-product-list' %}" class="bazar-btn">مشاهده محصولات</a>
+            </div>
         </div>
     {% endif %}
 </section>
