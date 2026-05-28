@@ -1,6 +1,7 @@
 .footer {
-    background: rgba(10, 7, 22, 0.72);
-    backdrop-filter: blur(20px);
+    background: rgba(10, 7, 22, 0.88);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     padding: 4rem 5% 1.5rem;
     margin-top: 5rem;
@@ -41,7 +42,7 @@
 
 .footer-section p {
     color: var(--gray-light);
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .footer-section a {
@@ -50,7 +51,7 @@
     display: block;
     margin-bottom: 0.8rem;
     transition: var(--transition);
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .footer-section a:hover {

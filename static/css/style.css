@@ -10,11 +10,11 @@
     --gray-medium: #E0E0E0;
     
     /* تنظیمات حرفه‌ای افکت شیشه‌ای */
-    --glass-bg: linear-gradient(135deg, rgba(30, 22, 60, 0.78), rgba(12, 9, 28, 0.55));
+    --glass-bg: linear-gradient(135deg, rgba(30, 22, 60, 0.88), rgba(12, 9, 28, 0.72));
     --glass-border-top: rgba(255, 255, 255, 0.22);
     --glass-border-bottom: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 14px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    --glass-blur: blur(16px);
+    --glass-blur: none;
     
     --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.3);
@@ -38,6 +38,54 @@ body {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+p,
+li,
+label,
+input,
+select,
+textarea,
+button {
+    color: rgba(255, 255, 255, 0.94);
+}
+
+.glass-card,
+.competition-card,
+.question-item,
+.points-card,
+.btn-secondary,
+.filter-tab,
+.points-badge,
+.card-badge,
+.score-animation,
+.challenge-modal-overlay,
+.nav-links {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+:where(.section-intro-new, .feature-description-new, .subtitle, .footer-bottom) {
+    color: rgba(255, 255, 255, 0.88) !important;
+    opacity: 1 !important;
+}
+
+.text-crisp {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+    text-shadow: none !important;
+    color: rgba(255, 255, 255, 0.98) !important;
+}
+
+.glass-card,
+.competition-card,
+.question-item,
+.points-card {
+    text-shadow: none;
 }
 
 body::before,
@@ -164,8 +212,8 @@ body::after {
 
 .points-badge {
     background: rgba(108, 63, 197, 0.3);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     padding: 0.5rem 1rem;
     border-radius: 25px;
     display: flex;
@@ -279,7 +327,8 @@ body::after {
 
 .btn-secondary {
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border-top);
     color: var(--white);
     box-shadow: var(--shadow-sm);
@@ -530,7 +579,8 @@ body::after {
     top: 15px;
     right: 15px;
     background: rgba(245, 166, 35, 0.9);
-    backdrop-filter: blur(5px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     color: var(--dark-bg);
     padding: 0.4rem 1rem;
     border-radius: 20px;
@@ -592,8 +642,8 @@ body::after {
 .filter-tab {
     padding: 0.6rem 1.8rem;
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border-top);
     border-radius: 30px;
     cursor: pointer;
@@ -884,7 +934,8 @@ input[type="radio"] {
     left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(245, 166, 35, 0.9);
-    backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     color: var(--dark-bg);
     padding: 3rem 4rem;
     border-radius: 25px;
@@ -910,7 +961,7 @@ input[type="radio"] {
 
 .learning-section-subtitle {
     color: var(--gray-light);
-    opacity: 0.85;
+    opacity: 1;
     max-width: 700px;
 }
 
@@ -1330,7 +1381,8 @@ input[type="radio"] {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.72);
-    backdrop-filter: blur(10px);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     opacity: 0;
     visibility: hidden;
     transition: 0.3s ease;
@@ -1498,21 +1550,19 @@ input[type="radio"] {
    ========================================= */
 html.js body.site-motion-ready .site-reveal {
     opacity: 0;
-    transform: translate3d(0, 34px, 0) scale(0.985);
-    filter: blur(8px);
+    transform: translateY(34px) scale(0.985);
     transition:
         opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-        filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     transition-delay: var(--reveal-delay, 0ms);
-    will-change: opacity, transform, filter;
+    will-change: opacity, transform;
     animation: none !important;
 }
 
 html.js body.site-motion-ready .site-reveal.site-reveal--visible {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
+    transform: none;
+    filter: none;
 }
 
 html.js body.site-motion-ready .site-reveal:is(
@@ -1525,7 +1575,7 @@ html.js body.site-motion-ready .site-reveal:is(
     .progress-hero,
     .exam-hero
 ) {
-    transform: translate3d(0, 44px, 0) scale(0.99);
+    transform: translateY(44px) scale(0.99);
 }
 
 html.js body.site-motion-ready .site-reveal:is(
@@ -1544,7 +1594,7 @@ html.js body.site-motion-ready .site-reveal:is(
     .badge-item,
     .leaderboard-item
 ) {
-    transform: translate3d(0, 38px, 0) scale(0.975);
+    transform: translateY(38px) scale(0.975);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1573,7 +1623,8 @@ html.js body.site-motion-ready .site-reveal:is(
         left: 0;
         right: 0;
         background: rgba(11, 11, 26, 0.95);
-        backdrop-filter: blur(15px);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
         flex-direction: column;
         padding: 2rem 1rem;
         border-bottom: 1px solid rgba(255,255,255,0.1);

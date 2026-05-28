@@ -11,6 +11,28 @@ from challenges.models import Challenge, ChallengeParticipation
 from django.utils import timezone
 
 
+def _group_user_challenge_participations(user):
+    participations = (
+        ChallengeParticipation.objects.filter(user=user)
+        .select_related("challenge")
+        .order_by("-participated_at")
+    )
+
+    active_participations = []
+    pending_participations = []
+    past_participations = []
+    for participation in participations:
+        if participation.status == ChallengeParticipation.Status.SUBMITTED:
+            pending_participations.append(participation)
+            continue
+        if participation.challenge.is_currently_active:
+            active_participations.append(participation)
+        else:
+            past_participations.append(participation)
+
+    return active_participations, pending_participations, past_participations
+
+
 def _redirect_guest_to_index(request):
     if not request.user.is_authenticated:
         return redirect("index")
@@ -100,12 +122,20 @@ def challenges(request):
     )
     
     user_participations = set()
+    active_participations = []
+    pending_participations = []
+    past_participations = []
     if request.user.is_authenticated:
         user_participations = set(
             ChallengeParticipation.objects.filter(
             user=request.user
             ).values_list('challenge_id', flat=True)
         )
+        (
+            active_participations,
+            pending_participations,
+            past_participations,
+        ) = _group_user_challenge_participations(request.user)
 
     return render(
         request,
@@ -115,6 +145,9 @@ def challenges(request):
             "page_title": "چالش‌ها | جبهه نوجوانی",
             "active_challenges": active_challenges,
             "user_participations": user_participations,
+            "active_participations": active_participations,
+            "pending_participations": pending_participations,
+            "past_participations": past_participations,
         },
     )
 
@@ -151,35 +184,7 @@ def my_challenges(request):
     if seller_redirect:
         return seller_redirect
 
-    participations = (
-        ChallengeParticipation.objects.filter(user=request.user)
-        .select_related("challenge")
-        .order_by("-participated_at")
-    )
-
-    active_participations = []
-    pending_participations = []
-    past_participations = []
-    for participation in participations:
-        if participation.status == ChallengeParticipation.Status.SUBMITTED:
-            pending_participations.append(participation)
-            continue
-        if participation.challenge.is_currently_active:
-            active_participations.append(participation)
-        else:
-            past_participations.append(participation)
-
-    return render(
-        request,
-        "challenges/my_challenges.html",
-        {
-            "page_name": "challenges",
-            "page_title": "چالش‌های من | جبهه نوجوانی",
-            "active_participations": active_participations,
-            "pending_participations": pending_participations,
-            "past_participations": past_participations,
-        },
-    )
+    return redirect("challenges")
 
 
 def shop(request):
