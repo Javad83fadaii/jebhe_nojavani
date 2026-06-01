@@ -2,7 +2,6 @@ from django.db import models, transaction
 from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from django.db.models import F
 
 class Challenge(models.Model):
     class SubmissionType(models.TextChoices):
@@ -17,7 +16,6 @@ class Challenge(models.Model):
     start_date = models.DateTimeField(verbose_name="تاریخ شروع")
     end_date = models.DateTimeField(verbose_name="تاریخ پایان")
     coin_reward = models.PositiveIntegerField(verbose_name="مقدار سکه")
-    points_reward = models.PositiveIntegerField(default=0, verbose_name="مقدار امتیاز")
     submission_type = models.CharField(
         max_length=20,
         choices=SubmissionType.choices,
@@ -59,7 +57,6 @@ class ChallengeParticipation(models.Model):
     is_completed = models.BooleanField(default=False, verbose_name="تایید و ثبت نهایی")
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="تاریخ تکمیل")
     coins_received = models.PositiveIntegerField(default=0, verbose_name="سکه دریافتی")
-    points_received = models.PositiveIntegerField(default=0, verbose_name="امتیاز دریافتی")
     reward_awarded = models.BooleanField(default=False, verbose_name="پاداش پرداخت شده")
     evidence = models.FileField(upload_to='challenge_evidence/', null=True, blank=True, verbose_name="فایل ارسالی")
 
@@ -115,25 +112,11 @@ class ChallengeParticipation(models.Model):
             raise ValidationError("ابتدا باید ارسال کاربر ثبت شده باشد تا بتوان آن را تایید کرد.")
 
         coins = int(self.challenge.coin_reward or 0)
-        points = int(self.challenge.points_reward or 0)
         now = timezone.now()
 
         with transaction.atomic():
             if coins > 0:
                 self.user.add_coins(coins, f"پاداش چالش: {self.challenge.title}", challenge=self.challenge)
-
-            if points > 0:
-                from accounts.models import Rank
-
-                self.user.__class__.objects.filter(pk=self.user_id).update(
-                    total_points=F("total_points") + points,
-                    updated_at=now,
-                )
-                self.user.refresh_from_db(fields=["total_points"])
-                self.user.__class__.objects.filter(pk=self.user_id).update(
-                    current_rank=Rank.get_rank_for_points(self.user.total_points),
-                    updated_at=now,
-                )
 
             self.status = self.Status.APPROVED
             self.reviewed_at = now
@@ -141,7 +124,6 @@ class ChallengeParticipation(models.Model):
             self.completed_at = now
             self.reward_awarded = True
             self.coins_received = coins
-            self.points_received = points
             self.save(
                 update_fields=[
                     "status",
@@ -150,7 +132,6 @@ class ChallengeParticipation(models.Model):
                     "completed_at",
                     "reward_awarded",
                     "coins_received",
-                    "points_received",
                 ]
             )
 

@@ -432,9 +432,6 @@
                                 <span class="learning-path-badge">
                                     <i class="fa-solid fa-coins"></i>
                                     {{ challenge.coin_reward }} سکه
-                                    {% if challenge.points_reward %}
-                                        / {{ challenge.points_reward }} امتیاز
-                                    {% endif %}
                                 </span>
                                 <div class="challenge-countdown countdown-timer" data-endtime="{{ challenge.end_date|date:'c' }}">
                                     <span class="challenge-countdown__label">زمان باقی‌مانده:</span>
@@ -565,7 +562,7 @@
                                         </span>
                                         <span class="challenge-status-chip">
                                             <i class="fa-solid fa-coins"></i>
-                                            پاداش: {{ participation.challenge.coin_reward }} سکه{% if participation.challenge.points_reward %} / {{ participation.challenge.points_reward }} امتیاز{% endif %}
+                                            پاداش: {{ participation.challenge.coin_reward }} سکه
                                         </span>
                                     </div>
                                 </div>
@@ -662,7 +659,7 @@
                                         {% if participation.status == 'approved' %}
                                             <span class="challenge-status-chip challenge-status-chip--success">
                                                 <i class="fa-solid fa-gift"></i>
-                                                دریافت: {% if participation.coins_received %}{{ participation.coins_received }} سکه{% endif %}{% if participation.points_received %} / {{ participation.points_received }} امتیاز{% endif %}
+                                                دریافت: {% if participation.coins_received %}{{ participation.coins_received }} سکه{% endif %}
                                             </span>
                                         {% endif %}
                                     </div>

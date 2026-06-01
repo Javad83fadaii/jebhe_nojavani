@@ -9,7 +9,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
         model = Challenge
         fields = [
             'id', 'title', 'description', 'image', 
-            'start_date', 'end_date', 'coin_reward', 'points_reward',
+            'start_date', 'end_date', 'coin_reward',
             'submission_type',
             'is_active', 'is_active_now', 'created_at'
         ]
@@ -24,7 +24,7 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
             'status', 'submitted_at', 'reviewed_at',
             'submission_text', 'attended', 'evidence',
             'is_completed', 'completed_at',
-            'coins_received', 'points_received', 'reward_awarded',
+            'coins_received', 'reward_awarded',
         ]
         read_only_fields = [
             'participated_at',
@@ -34,7 +34,6 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
             'is_completed',
             'completed_at',
             'coins_received',
-            'points_received',
             'reward_awarded',
         ]
 

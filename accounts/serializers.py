@@ -415,6 +415,77 @@ class UserLoginSerializer(serializers.Serializer):
         return attrs
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(
+        error_messages={
+            "blank": "شماره تلفن الزامی است.",
+            "required": "شماره تلفن الزامی است.",
+        }
+    )
+
+    def validate_phone_number(self, value: str) -> str:
+        normalized_value = _normalize_digits(value) or ""
+        if not re.fullmatch(r"09\d{9}", normalized_value):
+            raise serializers.ValidationError("شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.")
+        if not User.objects.filter(phone_number=normalized_value).exists():
+            raise serializers.ValidationError("کاربری با این شماره تلفن یافت نشد.")
+        return normalized_value
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(
+        error_messages={
+            "blank": "شماره تلفن الزامی است.",
+            "required": "شماره تلفن الزامی است.",
+        }
+    )
+    code = serializers.CharField(
+        min_length=4,
+        max_length=6,
+        error_messages={
+            "blank": "کد تایید الزامی است.",
+            "required": "کد تایید الزامی است.",
+        },
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "blank": "رمز عبور جدید الزامی است.",
+            "required": "رمز عبور جدید الزامی است.",
+            "min_length": "رمز عبور جدید باید حداقل ۸ کاراکتر داشته باشد.",
+        },
+    )
+    new_password_confirm = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "blank": "تکرار رمز عبور جدید الزامی است.",
+            "required": "تکرار رمز عبور جدید الزامی است.",
+            "min_length": "تکرار رمز عبور جدید باید حداقل ۸ کاراکتر داشته باشد.",
+        },
+    )
+
+    def validate_phone_number(self, value: str) -> str:
+        normalized_value = _normalize_digits(value) or ""
+        if not re.fullmatch(r"09\d{9}", normalized_value):
+            raise serializers.ValidationError("شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.")
+        if not User.objects.filter(phone_number=normalized_value).exists():
+            raise serializers.ValidationError("کاربری با این شماره تلفن یافت نشد.")
+        return normalized_value
+
+    def validate_code(self, value: str) -> str:
+        normalized_value = _normalize_digits(value) or ""
+        if not re.fullmatch(r"\d{4,6}", normalized_value):
+            raise serializers.ValidationError("کد تایید باید فقط شامل اعداد باشد.")
+        return normalized_value
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["new_password_confirm"]:
+            raise serializers.ValidationError({"new_password_confirm": "رمز عبور و تکرار آن باید یکسان باشند."})
+        return attrs
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     total_points = serializers.IntegerField(read_only=True)
     challenge_coins = serializers.IntegerField(read_only=True)

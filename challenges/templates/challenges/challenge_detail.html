@@ -12,7 +12,7 @@
         <div class="glass-card" style="margin-bottom: 2rem;">
             <h2 style="color: var(--primary-gold); margin-bottom: 1rem;">جزئیات چالش</h2>
             <p style="margin-bottom: 0.5rem;"><strong>نوع چالش:</strong> {{ challenge.get_submission_type_display }}</p>
-            <p style="margin-bottom: 0.5rem;"><strong>پاداش:</strong> {{ challenge.coin_reward }} سکه{% if challenge.points_reward %} / {{ challenge.points_reward }} امتیاز{% endif %}</p>
+            <p style="margin-bottom: 0.5rem;"><strong>پاداش:</strong> {{ challenge.coin_reward }} سکه</p>
             <p style="margin-bottom: 0.5rem;"><strong>شروع:</strong> {{ challenge.start_date|jalali_date }}</p>
             <p style="margin-bottom: 1rem;"><strong>پایان:</strong> {{ challenge.end_date|jalali_date }}</p>
         </div>
@@ -66,7 +66,6 @@
                     <p style="color: var(--gray-light); margin: 0;">
                         ارسال شما تایید شد.
                         {% if participation.coins_received %} {{ participation.coins_received }} سکه{% endif %}
-                        {% if participation.points_received %} / {{ participation.points_received }} امتیاز{% endif %}
                         به حساب شما اضافه شد.
                     </p>
                 {% elif participation.status == 'rejected' %}

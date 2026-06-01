@@ -3,6 +3,43 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'jebhe_bazar/css/bazar.css' %}">
+<style>
+    /* اصلاحات اختصاصی برای قالب تاریک و حذف لایه مات */
+    
+    /* 1. حذف کامل ماتی، شفافیت و فیلترها از کل کارت و اجزای آن */
+    .bazar-card, .bazar-card * {
+        opacity: 1 !important;
+        filter: none !important;
+        backdrop-filter: none !important;
+        text-shadow: none !important; /* حذف سایه‌هایی که باعث تاری متن می‌شوند */
+    }
+
+    /* 2. تنظیمات پایه رندر فونت برای شارپ شدن متن */
+    .bazar-page {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* 3. سفید و واضح کردن تمام متن‌ها (به جای خاکستری یا نیمه‌شفاف) */
+    .bazar-note, .bazar-list-item, h1, h2, h3, strong, .bazar-card p, .bazar-chip {
+        color: #ffffff !important; 
+        font-weight: 700 !important; /* ضخیم‌تر کردن برای خوانایی بهتر */
+    }
+
+    /* 4. رنگ زرد/طلایی واضح برای قیمت‌ها (مشابه عکس) */
+    .bazar-price {
+        color: #fbd72b !important; 
+        font-weight: 900 !important;
+        font-size: 1.1rem;
+    }
+    
+    /* 5. اطمینان از اینکه پس‌زمینه کارت رنگ سالید دارد و شیشه‌ای/مات نیست */
+    .bazar-card {
+        background-color: #1a1e29 !important; /* یک رنگ سرمه‌ای/مشکی تیره و ثابت */
+        border: 1px solid #2a2f3f !important; /* حاشیه ظریف برای تفکیک بهتر */
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -36,7 +73,7 @@
                 </div>
                 <div class="bazar-card">
                     <strong>موجودی</strong>
-                    <div class="bazar-price">{{ product.stock|toman }}</div>
+                    <div class="bazar-price" style="color: #ffffff !important;">{{ product.stock|toman }}</div>
                 </div>
             </div>
 

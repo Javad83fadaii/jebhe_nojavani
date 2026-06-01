@@ -232,7 +232,7 @@
                                     </span>
                                     <span class="chip">
                                         <i class="fa-solid fa-coins"></i>
-                                        پاداش: {{ participation.challenge.coin_reward }} سکه{% if participation.challenge.points_reward %} / {{ participation.challenge.points_reward }} امتیاز{% endif %}
+                                        پاداش: {{ participation.challenge.coin_reward }} سکه
                                     </span>
                                 </div>
                             </div>
@@ -346,7 +346,7 @@
                                     {% if participation.status == 'approved' %}
                                         <span class="chip chip--success">
                                             <i class="fa-solid fa-gift"></i>
-                                            دریافت: {% if participation.coins_received %}{{ participation.coins_received }} سکه{% endif %}{% if participation.points_received %} / {{ participation.points_received }} امتیاز{% endif %}
+                                            دریافت: {% if participation.coins_received %}{{ participation.coins_received }} سکه{% endif %}
                                         </span>
                                     {% endif %}
                                 </div>

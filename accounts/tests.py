@@ -121,6 +121,22 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["seller_shop_name"], "فروشگاه جدید")
 
+        res = self.client.get("/api/accounts/profile/me/", HTTP_AUTHORIZATION=f"Bearer {access}")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["phone_number"], "09111111111")
+        self.assertEqual(res.data["city"], "تهران")
+        self.assertEqual(res.data["province"], "تهران")
+
+        res = self.client.patch(
+            "/api/accounts/profile/me/",
+            {"city": "قم", "province": "قم"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {access}",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["city"], "قم")
+        self.assertEqual(res.data["province"], "قم")
+
     def test_user_registration_rejects_mismatched_mosque_and_school(self):
         other_mosque = Mosque.objects.create(
             name="مسجد قم",
@@ -234,6 +250,46 @@ class AccountsAPITestCase(TestCase):
         self.assertIn("birth_date", res.data)
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
+
+    def test_password_reset_flow_uses_session_code_and_updates_password(self):
+        user = User.objects.create_user(
+            phone_number="09123334444",
+            password="OldStrongPass123!",
+            first_name="کاربر",
+            last_name="نمونه",
+        )
+
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("development_code", res.data)
+        self.assertEqual(res.data["phone_number"], user.phone_number)
+
+        verification_code = res.data["development_code"]
+        new_password = "NewStrongPass123!"
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {
+                "phone_number": user.phone_number,
+                "code": verification_code,
+                "new_password": new_password,
+                "new_password_confirm": new_password,
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("access", res.data)
+        self.assertIn("refresh", res.data)
+
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"phone_number": user.phone_number, "password": new_password},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200)
 
         too_new_payload = {
             "phone_number": "09120000002",

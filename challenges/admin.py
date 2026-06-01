@@ -14,7 +14,6 @@ class ChallengeParticipationInline(admin.TabularInline):
         "completed_at",
         "reward_awarded",
         "coins_received",
-        "points_received",
     )
     can_delete = False
     fields = (
@@ -28,7 +27,6 @@ class ChallengeParticipationInline(admin.TabularInline):
         "evidence",
         "reward_awarded",
         "coins_received",
-        "points_received",
     )
 
 @admin.register(Challenge)
@@ -37,7 +35,6 @@ class ChallengeAdmin(admin.ModelAdmin):
         "title",
         "submission_type",
         "coin_reward",
-        "points_reward",
         "start_date",
         "end_date",
         "is_active",
@@ -66,7 +63,6 @@ class ChallengeParticipationAdmin(admin.ModelAdmin):
         "reviewed_at",
         "reward_awarded",
         "coins_received",
-        "points_received",
     )
     list_filter = (
         "challenge",
@@ -78,12 +74,42 @@ class ChallengeParticipationAdmin(admin.ModelAdmin):
         "challenge__submission_type",
     )
     search_fields = ("user__phone_number", "user__first_name", "user__last_name", "challenge__title")
-    readonly_fields = ("participated_at", "submitted_at", "reviewed_at", "completed_at", "coins_received", "points_received", "reward_awarded")
+    readonly_fields = ("participated_at", "submitted_at", "reviewed_at", "completed_at", "coins_received", "reward_awarded")
     actions = ("approve_and_award_selected", "reject_selected")
 
     @admin.display(description="نوع", ordering="challenge__submission_type")
     def challenge_submission_type(self, obj):
         return obj.challenge.get_submission_type_display()
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            super().save_model(request, obj, form, change)
+            return
+
+        previous = ChallengeParticipation.objects.get(pk=obj.pk)
+        requested_status = obj.status
+
+        if requested_status == ChallengeParticipation.Status.APPROVED and previous.status != ChallengeParticipation.Status.APPROVED:
+            obj.status = previous.status
+            super().save_model(request, obj, form, change)
+            try:
+                obj.approve_and_award()
+                messages.success(request, "ارسال کاربر تایید شد و سکه به حساب او اضافه شد.")
+            except ValidationError as e:
+                messages.error(request, str(e))
+            return
+
+        if requested_status == ChallengeParticipation.Status.REJECTED and previous.status != ChallengeParticipation.Status.REJECTED:
+            obj.status = previous.status
+            super().save_model(request, obj, form, change)
+            try:
+                obj.reject()
+                messages.success(request, "ارسال کاربر رد شد.")
+            except ValidationError as e:
+                messages.error(request, str(e))
+            return
+
+        super().save_model(request, obj, form, change)
 
     @admin.action(description="تایید و پرداخت پاداش (بعد از پایان چالش)")
     def approve_and_award_selected(self, request, queryset):

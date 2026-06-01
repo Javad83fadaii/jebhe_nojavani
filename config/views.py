@@ -201,9 +201,6 @@ def profile(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
-    seller_redirect = _redirect_seller_to_panel(request)
-    if seller_redirect:
-        return seller_redirect
 
     return render(
         request,
@@ -231,6 +228,38 @@ def login(request):
     )
 
 
+def forgot_password(request):
+    if request.user.is_authenticated:
+        if request.user.is_seller:
+            return redirect("bazar:seller-dashboard")
+        return redirect("home")
+
+    return render(
+        request,
+        "forgot_password.html",
+        {
+            "page_name": "forgot-password",
+            "page_title": "بازیابی رمز عبور | جبهه نوجوانی",
+        },
+    )
+
+
+def password_reset_confirm(request):
+    if request.user.is_authenticated:
+        if request.user.is_seller:
+            return redirect("bazar:seller-dashboard")
+        return redirect("home")
+
+    return render(
+        request,
+        "reset_password_confirm.html",
+        {
+            "page_name": "password-reset-confirm",
+            "page_title": "تعیین رمز عبور جدید | جبهه نوجوانی",
+        },
+    )
+
+
 def register(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -249,9 +278,6 @@ def profile_edit(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
-    seller_redirect = _redirect_seller_to_panel(request)
-    if seller_redirect:
-        return seller_redirect
 
     return render(
         request,
@@ -288,9 +314,6 @@ def seller_profile(request):
     guest_redirect = _redirect_guest_to_index(request)
     if guest_redirect:
         return guest_redirect
-
-    if request.user.is_seller:
-        return redirect("bazar:seller-dashboard")
     return redirect("profile")
 
 
