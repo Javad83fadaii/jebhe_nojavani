@@ -58,7 +58,12 @@ function updatePointsDisplay() {
 function initMobileMenu() {
     const menuToggle = document.querySelector('.menu-toggle');
     const navLinks = document.querySelector('.nav-links');
+    const modernMobileDrawer = document.getElementById('nav-container-inner');
     
+    if (modernMobileDrawer) {
+        return;
+    }
+
     if (menuToggle && navLinks) {
         menuToggle.addEventListener('click', () => {
             navLinks.classList.toggle('active');

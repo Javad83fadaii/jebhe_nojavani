@@ -108,6 +108,7 @@ body {
     background-position: center;
     background-attachment: fixed;
     min-height: 90vh;
+    min-height: 90dvh;
     display: flex;
     align-items: center;
     padding: 100px 0 60px;
@@ -551,6 +552,12 @@ body {
 }
 
 @media (max-width: 768px) {
+    .hero-section-new {
+        background-attachment: scroll;
+        min-height: auto;
+        padding: 96px 0 40px;
+    }
+
     .hero-title-new { font-size: 2.2rem; }
     .btn { padding: 12px 24px; font-size: 0.95rem; }
     .hero-buttons { flex-direction: column; width: 100%; max-width: 300px; margin: 0 auto; }
@@ -558,6 +565,9 @@ body {
     .final-cta-title-new { font-size: 1.8rem; }
     .cta-glass-container { padding: 40px 20px; }
     .ranks-grid { grid-template-columns: repeat(2, 1fr); } /* ۲ ستون برای تبلت کوچک و موبایل بزرگ */
+    .hero-video-frame {
+        max-height: none;
+    }
 }
 
 @media (max-width: 480px) {

@@ -169,13 +169,13 @@
         modalTitle.textContent = `بخش ${sectionName} پس از ورود در دسترس است`;
         modalText.textContent = `برای استفاده از بخش ${sectionName}، ابتدا وارد حساب کاربری خود شوید. اگر هنوز حساب ندارید، می‌توانید از همین‌جا ثبت‌نام کنید.`;
         modalBackdrop.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        lockPageScroll('guest-modal');
     }
 
     function closeGuestModal() {
         const modalBackdrop = document.getElementById('site-modal-backdrop');
         modalBackdrop.classList.remove('active');
-        document.body.style.overflow = '';
+        unlockPageScroll('guest-modal');
     }
 
     function setupGuestNavGuards() {
@@ -188,6 +188,7 @@
         protectedLinks.forEach(link => {
             link.addEventListener('click', function(event) {
                 event.preventDefault();
+                setMobileMenuState(false);
                 openGuestModal(this.dataset.guestSection || 'این بخش');
             });
         });
@@ -263,30 +264,114 @@
         }
     });
 
+    let scrollLockY = 0;
+    const scrollLockReasons = new Set();
+
+    function syncPageScrollLock() {
+        const body = document.body;
+        const shouldLock = scrollLockReasons.size > 0;
+
+        if (shouldLock) {
+            if (body.dataset.scrollLocked === 'true') {
+                return;
+            }
+
+            scrollLockY = window.scrollY || window.pageYOffset || 0;
+            body.dataset.scrollLocked = 'true';
+            body.style.position = 'fixed';
+            body.style.top = `-${scrollLockY}px`;
+            body.style.left = '0';
+            body.style.right = '0';
+            body.style.width = '100%';
+            body.style.overflow = 'hidden';
+            return;
+        }
+
+        if (body.dataset.scrollLocked !== 'true') {
+            return;
+        }
+
+        const restoreY = Math.abs(parseInt(body.style.top || '0', 10)) || scrollLockY;
+        body.dataset.scrollLocked = 'false';
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        body.style.overflow = '';
+        window.scrollTo(0, restoreY);
+    }
+
+    function lockPageScroll(reason) {
+        scrollLockReasons.add(reason);
+        syncPageScrollLock();
+    }
+
+    function unlockPageScroll(reason) {
+        scrollLockReasons.delete(reason);
+        syncPageScrollLock();
+    }
+
     // مدیریت منوی موبایل
     const menuToggle = document.getElementById('menu-toggle');
     const navContainerInner = document.getElementById('nav-container-inner');
-    
+
+    function setMobileMenuState(isOpen) {
+        if (!menuToggle || !navContainerInner) {
+            return;
+        }
+
+        menuToggle.classList.toggle('active', isOpen);
+        navContainerInner.classList.toggle('active', isOpen);
+        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        document.body.classList.toggle('mobile-menu-open', isOpen);
+
+        if (isOpen) {
+            lockPageScroll('mobile-menu');
+        } else {
+            unlockPageScroll('mobile-menu');
+        }
+    }
+
     if (menuToggle) {
+        menuToggle.setAttribute('aria-expanded', 'false');
+
         menuToggle.addEventListener('click', function() {
-            this.classList.toggle('active');
-            navContainerInner.classList.toggle('active');
+            const willOpen = !navContainerInner.classList.contains('active');
+            setMobileMenuState(willOpen);
         });
 
-        // بستن منو با کلیک روی لینک‌ها
-        const links = navContainerInner.querySelectorAll('a');
-        links.forEach(link => {
-            link.addEventListener('click', () => {
-                menuToggle.classList.remove('active');
-                navContainerInner.classList.remove('active');
-            });
+        navContainerInner.addEventListener('click', function(event) {
+            if (!event.target.closest('a')) {
+                return;
+            }
+            setMobileMenuState(false);
         });
 
-        // بستن منو با کلیک خارج از آن
         document.addEventListener('click', function(e) {
-            if (!navContainerInner.contains(e.target) && !menuToggle.contains(e.target) && !document.getElementById('navbar').contains(e.target)) {
-                menuToggle.classList.remove('active');
-                navContainerInner.classList.remove('active');
+            const navbarEl = document.getElementById('navbar');
+            if (!navContainerInner.classList.contains('active')) {
+                return;
+            }
+            if (menuToggle.contains(e.target) || navContainerInner.contains(e.target)) {
+                return;
+            }
+            if (navbarEl && navbarEl.contains(e.target)) {
+                return;
+            }
+            setMobileMenuState(false);
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                setMobileMenuState(false);
+                closeGuestModal();
+            }
+        });
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 850) {
+                setMobileMenuState(false);
             }
         });
     }
@@ -296,6 +381,10 @@
     const navbar = document.getElementById('navbar');
     
     window.addEventListener('scroll', function() {
+        if (!navbar) {
+            return;
+        }
+
         let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
         // تغییر استایل به حالت چسبیده
@@ -303,6 +392,12 @@
             navbar.classList.add('scrolled');
         } else {
             navbar.classList.remove('scrolled');
+        }
+
+        if (scrollLockReasons.size > 0) {
+            navbar.classList.remove('hide-nav');
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            return;
         }
         
         // مخفی شدن هدر فقط هنگام اسکرول به پایین

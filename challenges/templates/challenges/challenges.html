@@ -76,7 +76,7 @@
 
     .challenge-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
         gap: 2rem;
     }
 
@@ -185,6 +185,37 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.8rem;
+    }
+
+    @media (max-width: 768px) {
+        .challenge-hero {
+            padding: 1.5rem 1rem;
+        }
+
+        .challenge-hero__stats,
+        .challenge-card__header,
+        .challenge-actions-grid {
+            grid-template-columns: 1fr;
+            flex-direction: column;
+        }
+
+        .challenge-stat-card,
+        .challenge-countdown {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .challenge-card__header,
+        .challenge-actions {
+            align-items: stretch;
+        }
+
+        .challenge-modal {
+            width: min(94vw, 450px);
+            max-height: calc(100dvh - 2rem);
+            overflow-y: auto;
+            padding: 1.5rem 1rem;
+        }
     }
 
     .challenge-action-btn {
@@ -812,13 +843,17 @@
             function openModal() {
                 modal.classList.add('is-open');
                 overlay.classList.add('is-open');
-                document.body.style.overflow = 'hidden';
+                if (typeof lockPageScroll === 'function') {
+                    lockPageScroll('challenge-modal');
+                }
             }
 
             function closeModal(shouldReload = false) {
                 modal.classList.remove('is-open');
                 overlay.classList.remove('is-open');
-                document.body.style.overflow = '';
+                if (typeof unlockPageScroll === 'function') {
+                    unlockPageScroll('challenge-modal');
+                }
                 if (challengeForm) {
                     challengeForm.reset();
                     fileNameDisplay.textContent = 'برای انتخاب فایل کلیک کنید';

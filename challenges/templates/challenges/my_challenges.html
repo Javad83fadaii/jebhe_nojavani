@@ -76,7 +76,7 @@
 
     .challenge-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
         gap: 1.5rem;
     }
 
@@ -173,6 +173,23 @@
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .challenge-hero,
+        .challenge-card__header,
+        .challenge-card__actions {
+            align-items: stretch;
+        }
+
+        .challenge-hero {
+            padding: 1.5rem 1rem;
+        }
+
+        .chip,
+        .btn-link {
+            white-space: normal;
+        }
     }
 </style>
 

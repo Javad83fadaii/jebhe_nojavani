@@ -142,7 +142,7 @@
 }
 
 .bazar-orders-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
 }
 
 .bazar-product-manage-card,
@@ -608,6 +608,16 @@
 
     .bazar-table-card {
         overflow-x: auto;
+    }
+
+    .bazar-products-grid,
+    .bazar-orders-grid,
+    .bazar-stats-grid,
+    .bazar-summary-grid,
+    .bazar-form-grid,
+    .bazar-meta-list,
+    .bazar-order-meta {
+        grid-template-columns: 1fr;
     }
 
     .bazar-actions.is-end {
