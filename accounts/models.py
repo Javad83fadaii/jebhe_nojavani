@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 from decimal import Decimal
+from secrets import token_hex
 from typing import Any, Iterable
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -560,3 +563,120 @@ class Seller(TimestampedModel):
             "sales_count": self.sales_count,
             "total_revenue": self.total_revenue,
         }
+
+
+class PasswordResetRequest(TimestampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "در انتظار"
+        USED = "used", "استفاده شده"
+        FAILED = "failed", "ناموفق"
+
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="password_reset_requests")
+    phone_number = models.CharField(max_length=11, db_index=True)
+    code = models.CharField(max_length=6)
+    code_salt = models.CharField(max_length=32)
+    code_hash = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
+    requested_at = models.DateTimeField(default=timezone.now, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    provider = models.CharField(max_length=30, default="kavenegar")
+    provider_message_id = models.CharField(max_length=64, null=True, blank=True)
+    provider_response = models.JSONField(null=True, blank=True)
+    send_error = models.TextField(blank=True, default="")
+    send_attempted_at = models.DateTimeField(null=True, blank=True)
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ("-requested_at", "-created_at")
+        indexes = [
+            models.Index(fields=["phone_number", "status", "expires_at"], name="prr_phone_status_exp_idx"),
+        ]
+        verbose_name = "درخواست بازیابی رمز"
+        verbose_name_plural = "درخواست‌های بازیابی رمز"
+
+    def __str__(self) -> str:
+        return f"{self.phone_number} - {self.status}"
+
+    def _provider_return(self) -> dict[str, Any]:
+        if isinstance(self.provider_response, dict):
+            return_section = self.provider_response.get("return")
+            if isinstance(return_section, dict):
+                return return_section
+        return {}
+
+    @property
+    def provider_status_code(self) -> int | None:
+        status_code = self._provider_return().get("status")
+        try:
+            return int(status_code)
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def provider_status_message(self) -> str:
+        message = self._provider_return().get("message")
+        return str(message).strip() if message else ""
+
+    @property
+    def send_status_label(self) -> str:
+        if self.status == self.Status.FAILED:
+            return "ارسال ناموفق"
+        if self.send_attempted_at and (
+            self.provider_message_id
+            or self.provider_status_code == 200
+            or (isinstance(self.provider_response, dict) and self.provider_response.get("dummy") is True)
+        ):
+            return "ارسال موفق"
+        if self.send_attempted_at:
+            return "در حال بررسی"
+        return "ارسال نشده"
+
+    @property
+    def is_expired(self) -> bool:
+        return bool(self.expires_at and timezone.now() >= self.expires_at)
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == self.Status.PENDING and not self.is_expired
+
+    @property
+    def expiration_status_label(self) -> str:
+        if self.status == self.Status.USED:
+            return "مصرف شده"
+        if self.status == self.Status.FAILED:
+            return "نامعتبر"
+        if self.is_expired:
+            return "منقضی شده"
+        return "فعال"
+
+    @property
+    def resolved_send_error(self) -> str:
+        if self.send_error:
+            return self.send_error.strip()
+
+        if isinstance(self.provider_response, dict):
+            direct_error = self.provider_response.get("error")
+            if direct_error:
+                return str(direct_error).strip()
+
+        if self.status == self.Status.FAILED and self.provider_status_message:
+            return self.provider_status_message
+
+        return ""
+
+    def set_code(self, code: str) -> None:
+        code = str(code).strip()
+        self.code = code
+        self.code_salt = token_hex(16)
+        payload = f"{self.code_salt}:{code}".encode("utf-8")
+        self.code_hash = hashlib.sha256(payload).hexdigest()
+
+    def check_code(self, code: str) -> bool:
+        code = str(code).strip()
+        payload = f"{self.code_salt}:{code}".encode("utf-8")
+        candidate = hashlib.sha256(payload).hexdigest()
+        return hmac.compare_digest(candidate, self.code_hash)

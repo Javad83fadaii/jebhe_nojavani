@@ -1,9 +1,13 @@
+import json
+
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.db.models import Q
+from django.utils import timezone
+from django.utils.html import format_html
 
-from accounts.models import CoinToWalletTransfer, CoinTransaction, ExamRecord, Rank, Seller, User
+from accounts.models import CoinToWalletTransfer, CoinTransaction, ExamRecord, PasswordResetRequest, Rank, Seller, User
 from geography.models import City, Mosque, Province, School
 
 
@@ -357,3 +361,157 @@ class SellerAdmin(admin.ModelAdmin):
     readonly_fields = ("rating", "sales_count", "total_revenue", "registered_at", "verified_at", "created_at", "updated_at")
     autocomplete_fields = ("user",)
     actions = [verify_sellers]
+
+
+class PasswordResetRequestDeliveryFilter(admin.SimpleListFilter):
+    title = "وضعیت ارسال"
+    parameter_name = "delivery_status"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("sent", "ارسال موفق"),
+            ("failed", "ارسال ناموفق"),
+            ("not_sent", "ارسال نشده"),
+        )
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "sent":
+            return queryset.exclude(status=PasswordResetRequest.Status.FAILED).filter(send_attempted_at__isnull=False)
+        if value == "failed":
+            return queryset.filter(status=PasswordResetRequest.Status.FAILED)
+        if value == "not_sent":
+            return queryset.filter(send_attempted_at__isnull=True)
+        return queryset
+
+
+class PasswordResetRequestExpirationFilter(admin.SimpleListFilter):
+    title = "وضعیت انقضا"
+    parameter_name = "expiration_status"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("active", "فعال"),
+            ("expired", "منقضی شده"),
+            ("used", "مصرف شده"),
+            ("failed", "نامعتبر"),
+        )
+
+    def queryset(self, request, queryset):
+        now = timezone.now()
+        value = self.value()
+        if value == "active":
+            return queryset.filter(status=PasswordResetRequest.Status.PENDING, expires_at__gt=now)
+        if value == "expired":
+            return queryset.filter(status=PasswordResetRequest.Status.PENDING, expires_at__lte=now)
+        if value == "used":
+            return queryset.filter(status=PasswordResetRequest.Status.USED)
+        if value == "failed":
+            return queryset.filter(status=PasswordResetRequest.Status.FAILED)
+        return queryset
+
+
+@admin.register(PasswordResetRequest)
+class PasswordResetRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "phone_number",
+        "user",
+        "status",
+        "send_status_display",
+        "expiration_status_display",
+        "requested_at",
+        "send_attempted_at",
+        "expires_at",
+        "used_at",
+        "provider",
+        "provider_message_id",
+        "short_send_error",
+    )
+    list_filter = (
+        "status",
+        PasswordResetRequestDeliveryFilter,
+        PasswordResetRequestExpirationFilter,
+        "provider",
+        "requested_at",
+        "expires_at",
+        "used_at",
+    )
+    search_fields = (
+        "phone_number",
+        "provider_message_id",
+        "send_error",
+        "user__phone_number",
+        "user__first_name",
+        "user__last_name",
+    )
+    readonly_fields = (
+        "user",
+        "phone_number",
+        "status",
+        "send_status_display",
+        "expiration_status_display",
+        "requested_at",
+        "expires_at",
+        "used_at",
+        "provider",
+        "provider_message_id",
+        "provider_status_display",
+        "send_error_display",
+        "send_attempted_at",
+        "provider_response_pretty",
+        "ip_address",
+        "user_agent",
+        "created_at",
+        "updated_at",
+    )
+    list_select_related = ("user",)
+    date_hierarchy = "requested_at"
+    ordering = ("-requested_at", "-created_at")
+
+    fieldsets = (
+        ("اطلاعات درخواست", {"fields": ("user", "phone_number", "status", "send_status_display", "expiration_status_display")}),
+        ("زمان‌بندی", {"fields": ("requested_at", "send_attempted_at", "expires_at", "used_at")}),
+        ("وضعیت ارسال", {"fields": ("provider", "provider_message_id", "provider_status_display", "send_error_display")}),
+        ("جزئیات فنی", {"fields": ("provider_response_pretty", "ip_address", "user_agent"), "classes": ("collapse",)}),
+        ("سیستمی", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description="وضعیت ارسال")
+    def send_status_display(self, obj):
+        return obj.send_status_label
+
+    @admin.display(description="وضعیت انقضا")
+    def expiration_status_display(self, obj):
+        return obj.expiration_status_label
+
+    @admin.display(description="کد/پیام درگاه")
+    def provider_status_display(self, obj):
+        parts = []
+        if obj.provider_status_code is not None:
+            parts.append(str(obj.provider_status_code))
+        if obj.provider_status_message:
+            parts.append(obj.provider_status_message)
+        return " - ".join(parts) or "-"
+
+    @admin.display(description="خطای ارسال")
+    def send_error_display(self, obj):
+        return obj.resolved_send_error or "-"
+
+    @admin.display(description="خلاصه خطا")
+    def short_send_error(self, obj):
+        error = obj.resolved_send_error
+        if not error:
+            return "-"
+        if len(error) <= 50:
+            return error
+        return f"{error[:47]}..."
+
+    @admin.display(description="پاسخ کامل درگاه")
+    def provider_response_pretty(self, obj):
+        if not obj.provider_response:
+            return "-"
+        pretty_json = json.dumps(obj.provider_response, ensure_ascii=False, indent=2)
+        return format_html("<pre style='margin:0; white-space:pre-wrap;'>{}</pre>", pretty_json)

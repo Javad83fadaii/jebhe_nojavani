@@ -1,11 +1,13 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from datetime import date
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
-from accounts.models import User
+from accounts.models import PasswordResetRequest, User
 from geography.models import City, Mosque, Province, School
 
 
+@override_settings(SMS_BACKEND="dummy")
 class AccountsAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -251,7 +253,7 @@ class AccountsAPITestCase(TestCase):
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
 
-    def test_password_reset_flow_uses_session_code_and_updates_password(self):
+    def test_password_reset_flow_creates_db_request_and_updates_password(self):
         user = User.objects.create_user(
             phone_number="09123334444",
             password="OldStrongPass123!",
@@ -265,10 +267,11 @@ class AccountsAPITestCase(TestCase):
             format="json",
         )
         self.assertEqual(res.status_code, 200)
-        self.assertIn("development_code", res.data)
         self.assertEqual(res.data["phone_number"], user.phone_number)
 
-        verification_code = res.data["development_code"]
+        reset_request = PasswordResetRequest.objects.filter(phone_number=user.phone_number).order_by("-requested_at").first()
+        self.assertIsNotNone(reset_request)
+        verification_code = reset_request.code
         new_password = "NewStrongPass123!"
         res = self.client.post(
             "/api/accounts/password-reset/confirm/",
@@ -291,6 +294,13 @@ class AccountsAPITestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
 
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 429)
+
         too_new_payload = {
             "phone_number": "09120000002",
             "first_name": "جدید",
@@ -303,3 +313,29 @@ class AccountsAPITestCase(TestCase):
         self.assertIn("birth_date", res.data)
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
+
+    @patch("accounts.views.send_password_reset_code", side_effect=RuntimeError("Kavenegar connection error: timeout"))
+    def test_password_reset_request_stores_real_send_error(self, mocked_send):
+        user = User.objects.create_user(
+            phone_number="09124445555",
+            password="StrongPass123!",
+            first_name="خطا",
+            last_name="نمونه",
+        )
+
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(res.status_code, 503)
+
+        reset_request = PasswordResetRequest.objects.filter(phone_number=user.phone_number).order_by("-requested_at").first()
+        self.assertIsNotNone(reset_request)
+        self.assertEqual(reset_request.status, PasswordResetRequest.Status.FAILED)
+        self.assertEqual(reset_request.send_error, "Kavenegar connection error: timeout")
+        self.assertEqual(reset_request.resolved_send_error, "Kavenegar connection error: timeout")
+        self.assertEqual(reset_request.send_status_label, "ارسال ناموفق")
+        self.assertEqual(reset_request.expiration_status_label, "نامعتبر")
+        self.assertEqual(reset_request.provider_response["error"], "Kavenegar connection error: timeout")
+        mocked_send.assert_called_once()

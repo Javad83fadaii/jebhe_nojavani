@@ -18,6 +18,24 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_env_file(file_path: Path) -> None:
+    if not file_path.exists():
+        return
+
+    for raw_line in file_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip("'").strip('"')
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_env_file(BASE_DIR / ".env")
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -27,7 +45,9 @@ SECRET_KEY = 'django-insecure-9mvq-=#_)34*b85##dcu83vj8g6cvt@4df3rm$o+36un(59s$n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()]
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
 
 
 # Application definition
@@ -159,3 +179,13 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+SMS_BACKEND = os.environ.get("SMS_BACKEND", "dummy" if DEBUG else "kavenegar")
+KAVENEGAR_API_KEY = os.environ.get("KAVENEGAR_API_KEY", "")
+KAVENEGAR_SENDER = os.environ.get("KAVENEGAR_SENDER", "")
+KAVENEGAR_VERIFY_TEMPLATE = os.environ.get("KAVENEGAR_VERIFY_TEMPLATE", "")
+KAVENEGAR_VERIFY_TYPE = os.environ.get("KAVENEGAR_VERIFY_TYPE", "sms")
+PASSWORD_RESET_SMS_TEXT = os.environ.get(
+    "PASSWORD_RESET_SMS_TEXT",
+    "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۲ دقیقه معتبر است.",
+)

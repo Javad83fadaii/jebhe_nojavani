@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import time
+from datetime import timedelta
 from secrets import randbelow
 
 from django.contrib.auth import login as auth_login
+from django.utils import timezone
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework import status, viewsets
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from accounts.models import Seller, User
+from accounts.models import PasswordResetRequest, Seller, User
 from accounts.serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -24,25 +25,32 @@ from accounts.serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
 )
+from accounts.services.sms import send_password_reset_code
 
-PASSWORD_RESET_SESSION_KEY = "password_reset_flow"
-PASSWORD_RESET_CODE_TTL_SECONDS = 5 * 60
-
-
-def _clear_password_reset_session(request) -> None:
-    if PASSWORD_RESET_SESSION_KEY in request.session:
-        del request.session[PASSWORD_RESET_SESSION_KEY]
-        request.session.modified = True
+PASSWORD_RESET_CODE_TTL_SECONDS = 2 * 60
 
 
-def _get_password_reset_session(request):
-    session_data = request.session.get(PASSWORD_RESET_SESSION_KEY) or {}
-    requested_at = float(session_data.get("requested_at") or 0)
-    is_expired = (time.time() - requested_at) > PASSWORD_RESET_CODE_TTL_SECONDS
-    if session_data and is_expired:
-        _clear_password_reset_session(request)
-        return None
-    return session_data or None
+def _get_client_ip(request) -> str | None:
+    forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    return forwarded or request.META.get("REMOTE_ADDR") or None
+
+
+def _extract_provider_error(raw: dict | None) -> str:
+    if not isinstance(raw, dict):
+        return ""
+
+    direct_error = raw.get("error")
+    if direct_error:
+        return str(direct_error).strip()
+
+    return_section = raw.get("return")
+    if isinstance(return_section, dict):
+        message = return_section.get("message")
+        status_code = return_section.get("status")
+        if message and str(status_code or "") != "200":
+            return str(message).strip()
+
+    return ""
 
 
 class UserRegistrationView(APIView):
@@ -103,22 +111,105 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
 
         phone_number = serializer.validated_data["phone_number"]
+        now = timezone.now()
+
+        active_request = (
+            PasswordResetRequest.objects.filter(phone_number=phone_number, expires_at__gt=now)
+            .order_by("-requested_at")
+            .first()
+        )
+        if active_request:
+            retry_after = int(max((active_request.expires_at - now).total_seconds(), 0))
+            return Response(
+                {
+                    "detail": "برای دریافت کد جدید باید کمی صبر کنید.",
+                    "retry_after_seconds": retry_after,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         verification_code = f"{100000 + randbelow(900000)}"
-        request.session[PASSWORD_RESET_SESSION_KEY] = {
-            "phone_number": phone_number,
-            "code": verification_code,
-            "requested_at": time.time(),
-        }
-        request.session.modified = True
+        expires_at = now + timedelta(seconds=PASSWORD_RESET_CODE_TTL_SECONDS)
+
+        user = User.objects.filter(phone_number=phone_number).first()
+        reset_request = PasswordResetRequest(
+            user=user,
+            phone_number=phone_number,
+            requested_at=now,
+            expires_at=expires_at,
+            ip_address=_get_client_ip(request),
+            user_agent=str(request.META.get("HTTP_USER_AGENT") or "")[:2048],
+        )
+        reset_request.set_code(verification_code)
+        reset_request.save()
+
+        try:
+            sms_result = send_password_reset_code(phone_number=phone_number, code=verification_code)
+            reset_request.provider = sms_result.provider
+            reset_request.send_attempted_at = timezone.now()
+            reset_request.provider_message_id = sms_result.message_id
+            reset_request.provider_response = sms_result.raw
+        except Exception as exc:
+            reset_request.status = PasswordResetRequest.Status.FAILED
+            reset_request.provider = "unknown"
+            reset_request.send_attempted_at = timezone.now()
+            reset_request.send_error = str(exc).strip()
+            reset_request.provider_response = {
+                "ok": False,
+                "error": str(exc).strip(),
+                "error_type": exc.__class__.__name__,
+            }
+            reset_request.save(
+                update_fields=[
+                    "status",
+                    "provider",
+                    "provider_response",
+                    "send_error",
+                    "send_attempted_at",
+                    "updated_at",
+                ]
+            )
+            return Response(
+                {"detail": "سرویس پیامک در دسترس نیست. دوباره تلاش کنید."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        if not sms_result.ok:
+            reset_request.status = PasswordResetRequest.Status.FAILED
+            reset_request.send_error = _extract_provider_error(sms_result.raw) or "ارسال پیامک ناموفق بود."
+            reset_request.save(
+                update_fields=[
+                    "status",
+                    "provider",
+                    "provider_message_id",
+                    "provider_response",
+                    "send_error",
+                    "send_attempted_at",
+                    "updated_at",
+                ]
+            )
+            return Response(
+                {"detail": "ارسال پیامک ناموفق بود. دوباره تلاش کنید."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        reset_request.save(
+            update_fields=[
+                "provider",
+                "provider_message_id",
+                "provider_response",
+                "send_error",
+                "send_attempted_at",
+                "updated_at",
+            ]
+        )
 
         confirm_url = f"{reverse('password_reset_confirm')}?phone={phone_number}"
         return Response(
             {
-                "detail": "کد بازیابی موقت ایجاد شد. بعداً این کد از طریق پنل پیامکی برای کاربر ارسال می‌شود.",
+                "detail": "کد بازیابی ارسال شد.",
                 "phone_number": phone_number,
-                "development_code": verification_code,
                 "expires_in_seconds": PASSWORD_RESET_CODE_TTL_SECONDS,
-                "sms_provider_connected": False,
                 "redirect_url": confirm_url,
             },
             status=status.HTTP_200_OK,
@@ -132,23 +223,19 @@ class PasswordResetConfirmView(APIView):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        session_data = _get_password_reset_session(request)
-        if not session_data:
+        phone_number = serializer.validated_data["phone_number"]
+        verification_code = serializer.validated_data["code"]
+
+        reset_request = (
+            PasswordResetRequest.objects.filter(phone_number=phone_number).order_by("-requested_at").first()
+        )
+        if not reset_request or reset_request.is_expired or reset_request.status != PasswordResetRequest.Status.PENDING:
             return Response(
                 {"detail": "درخواست بازیابی معتبر نیست یا زمان آن منقضی شده است. دوباره تلاش کنید."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        phone_number = serializer.validated_data["phone_number"]
-        verification_code = serializer.validated_data["code"]
-
-        if session_data.get("phone_number") != phone_number:
-            return Response(
-                {"phone_number": ["شماره تلفن با درخواست بازیابی ثبت‌شده مطابقت ندارد."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if session_data.get("code") != verification_code:
+        if not reset_request.check_code(verification_code):
             return Response(
                 {"code": ["کد تایید وارد شده صحیح نیست."]},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -157,7 +244,9 @@ class PasswordResetConfirmView(APIView):
         user = User.objects.get(phone_number=phone_number)
         user.set_password(serializer.validated_data["new_password"])
         user.save(update_fields=["password", "updated_at"])
-        _clear_password_reset_session(request)
+        reset_request.status = PasswordResetRequest.Status.USED
+        reset_request.used_at = timezone.now()
+        reset_request.save(update_fields=["status", "used_at", "updated_at"])
 
         auth_login(request, user)
         refresh = RefreshToken.for_user(user)
