@@ -116,14 +116,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql', # تغییر به موتور PostgreSQL
-        'NAME': 'dbN',                    # نام دیتابیسی که در HeidiSQL ساختید
-        'USER': 'darkoob.org',           # نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
-        'PASSWORD': '',                            # رمز عبور (خالی بگذارید)
-        'HOST': '127.0.0.1', # '127.0.0.1',                     # آدرس لوکال هاست
+        'NAME': 'postgres',                             # نام دیتابیسی که در HeidiSQL ساختید
+        'USER': 'root',                     # نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
+        'PASSWORD': 'pN1syJR3sSRAo1JPnUi0rW0p',                            # رمز عبور (خالی بگذارید)
+        'HOST': 'jebhe2',                       # آدرس لوکال هاست
         'PORT': '5432',                            # پورت پیش‌فرض PostgreSQL
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -180,11 +179,13 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-SMS_BACKEND = os.environ.get("SMS_BACKEND", "dummy" if DEBUG else "kavenegar")
-KAVENEGAR_API_KEY = os.environ.get("KAVENEGAR_API_KEY", "")
-KAVENEGAR_SENDER = os.environ.get("KAVENEGAR_SENDER", "")
-KAVENEGAR_VERIFY_TEMPLATE = os.environ.get("KAVENEGAR_VERIFY_TEMPLATE", "")
-KAVENEGAR_VERIFY_TYPE = os.environ.get("KAVENEGAR_VERIFY_TYPE", "sms")
+SMS_BACKEND = os.environ.get("SMS_BACKEND", "dummy" if DEBUG else "smsir")
+SMSIR_API_KEY = os.environ.get("SMSIR_API_KEY", "")
+SMSIR_BASE_URL = os.environ.get("SMSIR_BASE_URL", "https://api.sms.ir/v1")
+SMSIR_LINE_NUMBER = os.environ.get("SMSIR_LINE_NUMBER", "")
+SMSIR_TEMPLATE_ID = os.environ.get("SMSIR_TEMPLATE_ID", "")
+SMSIR_VERIFY_PARAMETER_NAME = os.environ.get("SMSIR_VERIFY_PARAMETER_NAME", "Code")
+SMSIR_TIMEOUT_SECONDS = os.environ.get("SMSIR_TIMEOUT_SECONDS", "15")
 PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "PASSWORD_RESET_SMS_TEXT",
     "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۲ دقیقه معتبر است.",

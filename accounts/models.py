@@ -581,7 +581,7 @@ class PasswordResetRequest(TimestampedModel):
     expires_at = models.DateTimeField(db_index=True)
     used_at = models.DateTimeField(null=True, blank=True)
 
-    provider = models.CharField(max_length=30, default="kavenegar")
+    provider = models.CharField(max_length=30, default="smsir")
     provider_message_id = models.CharField(max_length=64, null=True, blank=True)
     provider_response = models.JSONField(null=True, blank=True)
     send_error = models.TextField(blank=True, default="")
@@ -601,8 +601,16 @@ class PasswordResetRequest(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.phone_number} - {self.status}"
 
-    def _provider_return(self) -> dict[str, Any]:
+    def _provider_status(self) -> dict[str, Any]:
         if isinstance(self.provider_response, dict):
+            status = self.provider_response.get("status")
+            message = self.provider_response.get("message")
+            if status is not None or message:
+                return {
+                    "status": status,
+                    "message": message,
+                }
+
             return_section = self.provider_response.get("return")
             if isinstance(return_section, dict):
                 return return_section
@@ -610,7 +618,7 @@ class PasswordResetRequest(TimestampedModel):
 
     @property
     def provider_status_code(self) -> int | None:
-        status_code = self._provider_return().get("status")
+        status_code = self._provider_status().get("status")
         try:
             return int(status_code)
         except (TypeError, ValueError):
@@ -618,7 +626,7 @@ class PasswordResetRequest(TimestampedModel):
 
     @property
     def provider_status_message(self) -> str:
-        message = self._provider_return().get("message")
+        message = self._provider_status().get("message")
         return str(message).strip() if message else ""
 
     @property
@@ -627,7 +635,7 @@ class PasswordResetRequest(TimestampedModel):
             return "ارسال ناموفق"
         if self.send_attempted_at and (
             self.provider_message_id
-            or self.provider_status_code == 200
+            or self.provider_status_code in {1, 200}
             or (isinstance(self.provider_response, dict) and self.provider_response.get("dummy") is True)
         ):
             return "ارسال موفق"

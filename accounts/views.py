@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from secrets import randbelow
 
 from django.contrib.auth import login as auth_login
@@ -28,11 +29,19 @@ from accounts.serializers import (
 from accounts.services.sms import send_password_reset_code
 
 PASSWORD_RESET_CODE_TTL_SECONDS = 2 * 60
+logger = logging.getLogger(__name__)
 
 
 def _get_client_ip(request) -> str | None:
     forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
     return forwarded or request.META.get("REMOTE_ADDR") or None
+
+
+def _mask_phone_number(phone_number: str) -> str:
+    normalized = str(phone_number or "").strip()
+    if len(normalized) < 4:
+        return normalized
+    return f"{normalized[:3]}****{normalized[-4:]}"
 
 
 def _extract_provider_error(raw: dict | None) -> str:
@@ -42,6 +51,15 @@ def _extract_provider_error(raw: dict | None) -> str:
     direct_error = raw.get("error")
     if direct_error:
         return str(direct_error).strip()
+
+    status_code = raw.get("status")
+    message = raw.get("message")
+    try:
+        if message and int(status_code) != 1:
+            return str(message).strip()
+    except (TypeError, ValueError):
+        if message:
+            return str(message).strip()
 
     return_section = raw.get("return")
     if isinstance(return_section, dict):
@@ -150,6 +168,14 @@ class PasswordResetRequestView(APIView):
             reset_request.provider_message_id = sms_result.message_id
             reset_request.provider_response = sms_result.raw
         except Exception as exc:
+            logger.exception(
+                "Password reset SMS send crashed",
+                extra={
+                    "phone_number_masked": _mask_phone_number(phone_number),
+                    "request_id": reset_request.pk,
+                    "client_ip": reset_request.ip_address,
+                },
+            )
             reset_request.status = PasswordResetRequest.Status.FAILED
             reset_request.provider = "unknown"
             reset_request.send_attempted_at = timezone.now()
@@ -175,8 +201,20 @@ class PasswordResetRequestView(APIView):
             )
 
         if not sms_result.ok:
+            provider_error = _extract_provider_error(sms_result.raw) or "ارسال پیامک ناموفق بود."
+            logger.warning(
+                "Password reset SMS send returned unsuccessful result",
+                extra={
+                    "phone_number_masked": _mask_phone_number(phone_number),
+                    "request_id": reset_request.pk,
+                    "provider": sms_result.provider,
+                    "provider_message_id": sms_result.message_id,
+                    "provider_error": provider_error,
+                    "provider_response": sms_result.raw,
+                },
+            )
             reset_request.status = PasswordResetRequest.Status.FAILED
-            reset_request.send_error = _extract_provider_error(sms_result.raw) or "ارسال پیامک ناموفق بود."
+            reset_request.send_error = provider_error
             reset_request.save(
                 update_fields=[
                     "status",
