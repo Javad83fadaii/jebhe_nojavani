@@ -67,3 +67,37 @@
     color: var(--gray-medium);
     font-size: 0.9rem;
 }
+
+@media (max-width: 768px) {
+    .footer {
+        padding: 3rem 1rem 1.25rem;
+        margin-top: 4rem;
+    }
+
+    .footer-content {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+}
+
+@media (max-width: 425px) {
+    .footer {
+        padding: 2.5rem 0.9rem 1rem;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .footer-section h3 {
+        font-size: 1.15rem;
+        margin-bottom: 1rem;
+    }
+
+    .footer-bottom {
+        padding-top: 1.5rem;
+        font-size: 0.85rem;
+    }
+}

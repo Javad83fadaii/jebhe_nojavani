@@ -488,4 +488,65 @@
     .progress-page .progress-stage-btn {
         width: 100%;
     }
+
+    .exam-page .exam-meta-chip,
+    .progress-page .progress-meta-chip,
+    .progress-page .progress-stat,
+    .progress-page .progress-stage-item__info {
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 425px) {
+    .exam-page,
+    .progress-page {
+        width: calc(100% - 1.25rem);
+        padding-top: 1rem;
+        padding-bottom: 4rem;
+    }
+
+    .exam-page .exam-hero,
+    .progress-page .progress-hero,
+    .exam-page .exam-question,
+    .progress-page .progress-stage-item,
+    .exam-page .exam-empty,
+    .progress-page .progress-empty {
+        padding: 1rem;
+        border-radius: 20px;
+    }
+
+    .exam-page .exam-hero__title,
+    .progress-page .progress-hero__title {
+        font-size: 1.65rem;
+    }
+
+    .exam-page .exam-meta-chip,
+    .progress-page .progress-meta-chip,
+    .progress-page .progress-stat {
+        padding: 0.9rem;
+        border-radius: 18px;
+    }
+
+    .exam-page .exam-question__number,
+    .progress-page .progress-stage-item__number {
+        min-width: 44px;
+        height: 44px;
+        padding: 0 0.8rem;
+        border-radius: 14px;
+    }
+}
+
+@media (max-width: 320px) {
+    .exam-page,
+    .progress-page {
+        width: calc(100% - 1rem);
+    }
+
+    .exam-page .exam-hero,
+    .progress-page .progress-hero,
+    .exam-page .exam-question,
+    .progress-page .progress-stage-item {
+        padding: 0.9rem;
+    }
 }

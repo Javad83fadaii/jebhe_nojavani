@@ -1,0 +1,310 @@
+@media (max-width: 768px) {
+    .auth-container {
+        min-height: calc(100vh - 180px) !important;
+        padding: 1.5rem 1rem !important;
+    }
+
+    .auth-card,
+    .auth-container > .glass-card,
+    .profile-edit-container > .glass-card {
+        padding: 1.5rem !important;
+        border-radius: 18px !important;
+    }
+
+    .profile-edit-container {
+        padding: 2rem 1rem !important;
+    }
+
+    #seller-info {
+        grid-template-columns: 1fr !important;
+    }
+
+    #seller-register-form > div[style*="grid-template-columns: 1fr 1fr"],
+    #profile-form > div[style*="grid-template-columns: 1fr 1fr"],
+    #password-fields > div[style*="grid-template-columns: 1fr 1fr"] {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.85rem !important;
+    }
+
+    .profile-edit-container > .glass-card > form > div[style*="display: flex; gap: 1rem; margin-top: 2rem"],
+    #delete-modal div[style*="display: flex; gap: 1rem"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.85rem !important;
+    }
+
+    #avatar-selector {
+        grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)) !important;
+        gap: 0.75rem !important;
+    }
+
+    #avatar-selector .avatar-option {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1;
+        margin: 0 auto;
+    }
+
+    .hero-section-new {
+        min-height: auto;
+    }
+
+    .hero-text-content {
+        padding: 1.4rem !important;
+    }
+
+    .feature-card-new,
+    .rank-card,
+    .cta-glass-container {
+        border-radius: 22px;
+    }
+
+    .challenge-page .tabs {
+        width: 100%;
+    }
+
+    .learning-page .learning-hero {
+        padding: 1.6rem !important;
+        border-radius: 24px !important;
+    }
+
+    .learning-page .hero-title {
+        font-size: 2rem !important;
+        line-height: 1.35;
+    }
+}
+
+@media (max-width: 425px) {
+    .auth-container {
+        min-height: calc(100vh - 150px) !important;
+        padding: 1rem 0.75rem !important;
+    }
+
+    .auth-card,
+    .auth-container > .glass-card,
+    .profile-edit-container > .glass-card {
+        padding: 1.1rem !important;
+        border-radius: 16px !important;
+    }
+
+    .card-header {
+        margin-bottom: 1.4rem !important;
+    }
+
+    .card-header h1,
+    .auth-container h1[style*="font-size: 2rem"],
+    .profile-edit-container h1[style*="font-size: 2rem"] {
+        font-size: 1.45rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .subtitle,
+    .card-header p,
+    .login-prompt,
+    .next-step-title {
+        font-size: 0.9rem !important;
+    }
+
+    .grid-2 {
+        gap: 0 !important;
+    }
+
+    .date-input-group {
+        flex-direction: column;
+        gap: 0.6rem !important;
+    }
+
+    .date-picker-btn,
+    .date-clear-btn {
+        width: 100%;
+        min-width: 0 !important;
+    }
+
+    .profile-edit-container {
+        padding: 1rem 0.75rem !important;
+    }
+
+    .profile-edit-container .avatar-preview {
+        width: 96px !important;
+        height: 96px !important;
+    }
+
+    .profile-edit-container .avatar-image {
+        font-size: 3rem !important;
+    }
+
+    #delete-modal .glass-card {
+        width: calc(100vw - 20px) !important;
+        padding: 1.1rem !important;
+    }
+
+    .hero-section-new {
+        padding: 84px 0 32px !important;
+    }
+
+    .hero-grid {
+        gap: 1.1rem !important;
+    }
+
+    .hero-text-content {
+        padding: 1rem !important;
+    }
+
+    .hero-title-new {
+        font-size: 1.8rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .hero-slogan-new {
+        font-size: 1.18rem !important;
+        line-height: 1.75 !important;
+    }
+
+    .hero-slogan-sub-new,
+    .hero-subtitle-new,
+    .section-intro-new,
+    .final-cta-subtitle-new {
+        font-size: 0.95rem !important;
+        line-height: 1.85 !important;
+    }
+
+    .section-title-new,
+    .final-cta-title-new {
+        font-size: 1.55rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .hero-video-card {
+        margin-top: 1rem !important;
+        gap: 0.9rem !important;
+    }
+
+    .hero-video-frame {
+        border-radius: 18px !important;
+    }
+
+    .features-grid-new {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .feature-card-new,
+    .rank-card {
+        padding: 1.1rem !important;
+    }
+
+    .cta-glass-container {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .btn-cta-final-new {
+        width: 100%;
+        padding: 0.95rem 1rem !important;
+        text-align: center;
+    }
+
+    .challenge-page .tabs {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+    }
+
+    .challenge-page .tab-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .challenge-page .meta-row,
+    .challenge-page .challenge-meta-row,
+    .challenge-page .challenge-card__actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .learning-page {
+        width: calc(100% - 1rem) !important;
+    }
+
+    .learning-page .learning-hero {
+        padding: 1.15rem !important;
+        border-radius: 20px !important;
+    }
+
+    .learning-page .hero-title {
+        font-size: 1.7rem !important;
+    }
+
+    .learning-page .hero-description {
+        font-size: 0.95rem !important;
+        line-height: 1.8 !important;
+    }
+
+    .learning-page .hero-stats {
+        gap: 0.75rem !important;
+    }
+
+    .learning-page .hero-stat,
+    .learning-page .progress-box {
+        width: 100% !important;
+    }
+
+    .profile-stats[style*="margin-right: auto"] {
+        margin-right: 0 !important;
+        width: 100%;
+    }
+}
+
+@media (max-width: 375px) {
+    .auth-container {
+        padding: 0.85rem 0.6rem !important;
+    }
+
+    .auth-card,
+    .auth-container > .glass-card,
+    .profile-edit-container > .glass-card {
+        padding: 0.95rem !important;
+    }
+
+    .hero-title-new {
+        font-size: 1.65rem !important;
+    }
+
+    .hero-slogan-new {
+        font-size: 1.05rem !important;
+    }
+
+    .section-title-new,
+    .final-cta-title-new {
+        font-size: 1.4rem !important;
+    }
+
+    .feature-card-new,
+    .rank-card,
+    .challenge-page .challenge-card,
+    .learning-page .stage-card {
+        border-radius: 18px !important;
+    }
+
+    #avatar-selector {
+        grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)) !important;
+    }
+}
+
+@media (max-width: 320px) {
+    .hero-title-new {
+        font-size: 1.5rem !important;
+    }
+
+    .section-title-new,
+    .final-cta-title-new,
+    .learning-page .hero-title {
+        font-size: 1.28rem !important;
+    }
+
+    .btn,
+    .btn-cta-final-new,
+    .tab-btn {
+        font-size: 0.92rem !important;
+    }
+}

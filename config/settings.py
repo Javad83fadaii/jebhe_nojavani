@@ -118,8 +118,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql', # تغییر به موتور PostgreSQL
         'NAME': 'postgres',                             # نام دیتابیسی که در HeidiSQL ساختید
         'USER': 'root',                     # نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
-        'PASSWORD': 'pN1syJR3sSRAo1JPnUi0rW0p',                            # رمز عبور (خالی بگذارید)
-        'HOST': 'jebhe2',                       # آدرس لوکال هاست
+        'PASSWORD': 'pN1syJR3sSRAo1JPnUi0rW0p',                            # pN1syJR3sSRAo1JPnUi0rW0pرمز عبور (خالی بگذارید)
+        'HOST': 'jebhe2',                       # آدرس لوکال هاست jebhe2
         'PORT': '5432',                            # پورت پیش‌فرض PostgreSQL
     }
 }

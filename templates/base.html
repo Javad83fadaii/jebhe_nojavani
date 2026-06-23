@@ -8,6 +8,12 @@
     <script>
         document.documentElement.classList.add('js');
     </script>
+
+    <link rel="apple-touch-icon" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     
     <!-- فایل فونت‌های محلی -->
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
@@ -19,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/footer.css' %}">
     
     {% block extra_head %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'css/page-responsive.css' %}">
 </head>
 <body data-page="{{ page_name|default:'' }}" data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-user-type="{% if request.user.is_authenticated and request.user.is_seller %}seller{% else %}user{% endif %}" data-seller-site-view="{% if seller_site_view %}true{% else %}false{% endif %}" data-user-full-name="{% if request.user.is_authenticated %}{{ request.user.get_full_name }}{% endif %}" data-is-admin="{% if request.user.is_authenticated and request.user.is_staff %}true{% else %}false{% endif %}">
     
