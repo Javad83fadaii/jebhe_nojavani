@@ -116,10 +116,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql', # تغییر به موتور PostgreSQL
-        'NAME': 'postgres',                             # نام دیتابیسی که در HeidiSQL ساختید
-        'USER': 'root',                     # نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
-        'PASSWORD': 'pN1syJR3sSRAo1JPnUi0rW0p',                            # pN1syJR3sSRAo1JPnUi0rW0pرمز عبور (خالی بگذارید)
-        'HOST': 'jebhe2',                       # آدرس لوکال هاست jebhe2
+        'NAME': 'dbN',                             # نام دیتابیسی که در HeidiSQL ساختید
+        'USER': 'darkoob.org',                     # root نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
+        'PASSWORD': '',                          # pN1syJR3sSRAo1JPnUi0rW0pرمز عبور (خالی بگذارید)
+        'HOST': '127.0.0.1',                       # آدرس لوکال هاست jebhe2
         'PORT': '5432',                            # پورت پیش‌فرض PostgreSQL
     }
 }

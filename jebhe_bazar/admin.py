@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction
+from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
 
 
 @admin.register(Category)
@@ -80,3 +80,21 @@ class TransactionAdmin(admin.ModelAdmin):
     list_filter = ("transaction_type", "created_at")
     search_fields = ("user__phone_number", "user__first_name", "user__last_name", "description")
     autocomplete_fields = ("user", "order")
+
+
+@admin.register(WalletChargeRequest)
+class WalletChargeRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "requested_amount",
+        "requested_coins",
+        "granted_coins",
+        "status",
+        "created_at",
+        "reviewed_at",
+        "completed_at",
+    )
+    list_filter = ("status", "created_at", "reviewed_at", "completed_at")
+    search_fields = ("user__phone_number", "user__first_name", "user__last_name", "admin_note", "payment_reference")
+    readonly_fields = ("requested_coins", "coins_granted_at", "created_at", "updated_at", "reviewed_at", "completed_at")
+    autocomplete_fields = ("user",)

@@ -3,9 +3,9 @@ from decimal import Decimal
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from accounts.models import Seller, User
+from accounts.models import CoinTransaction, Seller, User
 
-from .models import Cart, CartItem, Category, Order, Product, Transaction
+from .models import Cart, CartItem, Category, Order, Product, Transaction, WalletChargeRequest
 from .views import CHECKOUT_COINS_SESSION_KEY
 
 
@@ -53,8 +53,7 @@ class CheckoutFlowTests(TestCase):
             password="StrongPass123!",
             first_name="علی",
             last_name="خریدار",
-            challenge_coins=20000,
-            wallet_balance=Decimal("60000"),
+            challenge_coins=60000,
         )
         self.seller_user = User.objects.create_user(
             phone_number="09125556666",
@@ -83,9 +82,9 @@ class CheckoutFlowTests(TestCase):
         CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
         self.client.force_login(self.user)
 
-    def test_pay_view_completes_order_with_wallet_and_coins(self):
+    def test_pay_view_completes_order_with_only_coins(self):
         session = self.client.session
-        session[CHECKOUT_COINS_SESSION_KEY] = 20000
+        session[CHECKOUT_COINS_SESSION_KEY] = 45000
         session.save()
 
         response = self.client.post(reverse("bazar:checkout-pay"))
@@ -98,31 +97,77 @@ class CheckoutFlowTests(TestCase):
         self.product.refresh_from_db()
 
         self.assertEqual(order.total_amount, 45000)
-        self.assertEqual(order.coins_used, 20000)
-        self.assertEqual(order.wallet_used, 25000)
+        self.assertEqual(order.coins_used, 45000)
+        self.assertEqual(order.wallet_used, 0)
         self.assertEqual(order.online_paid, 0)
         self.assertEqual(order.status, Order.Status.PAID)
-        self.assertEqual(self.user.challenge_coins, 0)
-        self.assertEqual(int(self.user.wallet_balance), 35000)
+        self.assertEqual(self.user.challenge_coins, 15000)
         self.assertEqual(self.product.stock, 3)
         self.assertEqual(self.cart.items.count(), 0)
         self.assertEqual(Transaction.objects.filter(transaction_type=Transaction.TransactionType.PURCHASE).count(), 1)
         self.assertEqual(Transaction.objects.filter(transaction_type=Transaction.TransactionType.COMMISSION).count(), 1)
 
-    def test_pay_view_shows_shortage_when_wallet_is_not_enough(self):
-        self.user.wallet_balance = Decimal("10000")
-        self.user.save(update_fields=["wallet_balance"])
+    def test_pay_view_shows_shortage_when_coins_are_not_enough(self):
+        self.user.challenge_coins = 10000
+        self.user.save(update_fields=["challenge_coins"])
 
         session = self.client.session
         session[CHECKOUT_COINS_SESSION_KEY] = 5000
         session.save()
 
-        response = self.client.get(reverse("bazar:checkout-pay"))
+        response = self.client.post(reverse("bazar:checkout-pay"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "اعتبار کیف پول شما کافی نیست")
-        self.assertContains(response, "۳۰,۰۰۰")
+        self.assertContains(response, "اعتبار سکه شما برای این سفارش کافی نیست")
+        self.assertContains(response, "۴۰,۰۰۰")
         self.assertEqual(Order.objects.count(), 0)
+
+
+class WalletChargeRequestTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            phone_number="09128889999",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="درخواست",
+            challenge_coins=1000,
+        )
+        self.client.force_login(self.user)
+
+    def test_wallet_charge_view_creates_manual_request(self):
+        response = self.client.post(reverse("bazar:wallet-charge"), {"amount": 25000})
+
+        self.assertRedirects(response, reverse("bazar:wallet-charge"))
+        self.assertEqual(WalletChargeRequest.objects.count(), 1)
+
+        charge_request = WalletChargeRequest.objects.get()
+        self.assertEqual(charge_request.user, self.user)
+        self.assertEqual(charge_request.requested_amount, 25000)
+        self.assertEqual(charge_request.requested_coins, 25000)
+        self.assertEqual(charge_request.status, WalletChargeRequest.Status.PENDING)
+
+    def test_completing_request_grants_coins_once(self):
+        charge_request = WalletChargeRequest.objects.create(
+            user=self.user,
+            requested_amount=15000,
+            requested_coins=15000,
+        )
+
+        charge_request.status = WalletChargeRequest.Status.COMPLETED
+        charge_request.granted_coins = 12000
+        charge_request.save()
+        charge_request.save()
+
+        self.user.refresh_from_db()
+        charge_request.refresh_from_db()
+
+        self.assertEqual(self.user.challenge_coins, 13000)
+        self.assertIsNotNone(charge_request.coins_granted_at)
+        self.assertEqual(
+            CoinTransaction.objects.filter(challenge=f"bazar-charge-request-{charge_request.pk}").count(),
+            1,
+        )
 
 
 class ProductListFilteringTests(TestCase):

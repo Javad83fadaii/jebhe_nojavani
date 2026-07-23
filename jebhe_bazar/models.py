@@ -3,12 +3,15 @@ from __future__ import annotations
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.text import slugify
 
-from accounts.models import CoinTransaction, Seller
+from accounts.models import CoinTransaction, Seller, User
 
 
 def _build_unique_slug(instance: models.Model, source_value: str, slug_field: str = "slug") -> str:
@@ -257,6 +260,108 @@ class Transaction(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} | {self.get_transaction_type_display()} | {self.amount}"
+
+
+class WalletChargeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "در انتظار بررسی"
+        REVIEWING = "reviewing", "در حال بررسی"
+        CARD_SENT = "card_sent", "شماره کارت ارسال شد"
+        COMPLETED = "completed", "سکه واریز شد"
+        REJECTED = "rejected", "رد شده"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bazar_charge_requests",
+        verbose_name="کاربر",
+    )
+    requested_amount = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="مبلغ درخواستی (تومان)",
+    )
+    requested_coins = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="سکه درخواستی",
+    )
+    granted_coins = models.PositiveIntegerField(default=0, verbose_name="سکه واریزی")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name="وضعیت",
+    )
+    admin_card_number = models.CharField(max_length=64, blank=True, verbose_name="شماره کارت اعلامی")
+    admin_note = models.TextField(blank=True, verbose_name="یادداشت ادمین")
+    payment_reference = models.CharField(max_length=120, blank=True, verbose_name="شناسه یا توضیح پرداخت")
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان بررسی")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان واریز سکه")
+    coins_granted_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ثبت سکه")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "درخواست افزایش اعتبار بازار"
+        verbose_name_plural = "درخواست‌های افزایش اعتبار بازار"
+
+    def __str__(self) -> str:
+        return f"{self.user} - {self.requested_amount} تومان"
+
+    def clean(self):
+        if self.requested_amount <= 0:
+            raise ValidationError({"requested_amount": "مبلغ درخواستی باید بیشتر از صفر باشد."})
+        if self.requested_coins <= 0:
+            raise ValidationError({"requested_coins": "تعداد سکه درخواستی باید بیشتر از صفر باشد."})
+        if self.granted_coins < 0:
+            raise ValidationError({"granted_coins": "تعداد سکه واریزی نمی‌تواند منفی باشد."})
+        if self.status == self.Status.COMPLETED and (self.granted_coins or self.requested_coins) <= 0:
+            raise ValidationError({"granted_coins": "برای تکمیل درخواست باید تعداد سکه مشخص باشد."})
+
+    def save(self, *args, **kwargs):
+        previous_status = None
+        if self.pk:
+            previous_status = type(self).objects.filter(pk=self.pk).values_list("status", flat=True).first()
+
+        if not self.requested_coins:
+            self.requested_coins = self.requested_amount
+        if self.status == self.Status.COMPLETED and self.granted_coins <= 0:
+            self.granted_coins = self.requested_coins
+        if self.status in {self.Status.REVIEWING, self.Status.CARD_SENT, self.Status.COMPLETED, self.Status.REJECTED}:
+            self.reviewed_at = self.reviewed_at or timezone.now()
+        if self.status == self.Status.COMPLETED:
+            self.completed_at = self.completed_at or timezone.now()
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+        if self.status != self.Status.COMPLETED or self.coins_granted_at is not None:
+            return
+        if previous_status == self.Status.COMPLETED:
+            return
+
+        granted_at = timezone.now()
+        with transaction.atomic():
+            updated = (
+                type(self)
+                .objects.select_for_update()
+                .filter(pk=self.pk, coins_granted_at__isnull=True)
+                .update(coins_granted_at=granted_at)
+            )
+            if not updated:
+                return
+
+            User.objects.filter(pk=self.user_id).update(challenge_coins=F("challenge_coins") + self.granted_coins)
+            CoinTransaction.objects.create(
+                user=self.user,
+                amount=self.granted_coins,
+                transaction_type=CoinTransaction.TransactionType.REWARD,
+                description=f"واریز {self.granted_coins} سکه بابت درخواست افزایش اعتبار بازار #{self.pk}",
+                challenge=f"bazar-charge-request-{self.pk}",
+                transaction_date=granted_at,
+            )
+
+        self.coins_granted_at = granted_at
 
 
 def record_coin_spend(user, amount: int, description: str):

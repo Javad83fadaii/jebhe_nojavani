@@ -60,8 +60,8 @@ class CoinApplyForm(StyledFormMixin, forms.Form):
         return value
 
 
-class WalletChargeForm(StyledFormMixin, forms.Form):
-    amount = forms.IntegerField(min_value=1, label="مبلغ شارژ (تومان)")
+class WalletChargeRequestForm(StyledFormMixin, forms.Form):
+    amount = forms.IntegerField(min_value=1, label="مبلغ درخواستی (تومان)")
 
     def __init__(self, *args, suggested_amount: int = 0, **kwargs):
         super().__init__(*args, **kwargs)

@@ -41,21 +41,36 @@
                     <div class="bazar-price">{{ applied_coins|toman }}</div>
                 </div>
                 <div class="bazar-card">
-                    <strong>موجودی کیف پول</strong>
-                    <div class="bazar-price">{{ wallet_balance|toman }} تومان</div>
-                </div>
-                <div class="bazar-card">
                     <strong>مبلغ باقی‌مانده</strong>
-                    <div class="bazar-price">{{ remaining_amount|toman }} تومان</div>
+                    <div class="bazar-price">{{ remaining_amount|toman }} سکه</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <h3 style="margin-bottom: 0.75rem;">روش‌های پرداخت</h3>
+                <div class="bazar-summary-grid">
+                    <div class="bazar-card bazar-payment-method is-active">
+                        <strong>پرداخت با سکه</strong>
+                        <p class="bazar-note">فقط زمانی قابل انجام است که کل مبلغ سفارش با سکه پوشش داده شود.</p>
+                    </div>
+                    <div class="bazar-card bazar-payment-method is-disabled" title="فعلا در دسترس نیست" data-disabled-label="فعلا در دسترس نیست">
+                        <strong>درگاه پرداخت</strong>
+                        <p class="bazar-note">این روش فعلا غیرفعال است و امکان پرداخت از طریق درگاه وجود ندارد.</p>
+                    </div>
                 </div>
             </div>
 
             <div class="bazar-actions" style="margin-top: 1.5rem;">
                 <a href="{% url 'bazar:checkout-apply-coins' %}" class="bazar-secondary-btn">تنظیم سکه مصرفی</a>
-                <form method="post" action="{% url 'bazar:checkout-pay' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="bazar-btn">پرداخت نهایی</button>
-                </form>
+                <a href="{% url 'bazar:wallet-charge' %}?amount={{ remaining_amount }}" class="bazar-secondary-btn">درخواست افزایش اعتبار</a>
+                {% if remaining_amount == 0 %}
+                    <form method="post" action="{% url 'bazar:checkout-pay' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="bazar-btn">پرداخت نهایی با سکه</button>
+                    </form>
+                {% else %}
+                    <button type="button" class="bazar-btn bazar-btn-disabled" disabled title="ابتدا باید سکه کافی داشته باشید">پرداخت نهایی با سکه</button>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -60,8 +60,9 @@
                 <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
             </div>
             <div class="bazar-card">
-                <strong>کیف پول شما</strong>
-                <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+                <strong>افزایش اعتبار</strong>
+                <div class="bazar-note">برای دریافت سکه بیشتر، درخواست ثبت کن.</div>
+                <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn" style="margin-top: 0.75rem;">ثبت درخواست</a>
             </div>
         </div>
 

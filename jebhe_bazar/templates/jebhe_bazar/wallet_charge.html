@@ -8,15 +8,15 @@
 {% block content %}
 <section class="bazar-page">
     <div class="bazar-hero">
-        <h1>شارژ کیف پول</h1>
-        <p class="bazar-note">این صفحه به صورت شبیه‌سازی‌شده عمل می‌کند و مبلغ وارد شده را مستقیم به کیف پول شما اضافه می‌کند.</p>
+        <h1>درخواست افزایش اعتبار</h1>
+        <p class="bazar-note">درگاه پرداخت فعلا غیرفعال است. مبلغ موردنظر را ثبت کن تا درخواستت بررسی شود، شماره کارت برایت ارسال شود و بعد از تایید پرداخت، سکه به حسابت اضافه شود.</p>
     </div>
 
     <div class="bazar-form-card" style="max-width: 620px; margin: 0 auto;">
         <div class="bazar-summary-grid">
             <div class="bazar-card">
-                <strong>موجودی فعلی کیف پول</strong>
-                <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+                <strong>سکه فعلی شما</strong>
+                <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
             </div>
             <div class="bazar-card">
                 <strong>مبلغ پیشنهادی</strong>
@@ -26,20 +26,56 @@
 
         <form method="post" style="margin-top: 1.5rem;">
             {% csrf_token %}
-            <input type="hidden" name="next" value="{{ next_url }}">
             <div class="bazar-form-group">
-                <label for="{{ form.amount.id_for_label }}">مبلغ شارژ</label>
+                <label for="{{ form.amount.id_for_label }}">مبلغ درخواستی</label>
                 {{ form.amount }}
                 {% for error in form.amount.errors %}
                     <div class="bazar-help-text" style="color: #ffb4ae;">{{ error }}</div>
                 {% endfor %}
+                <div class="bazar-help-text">به ازای هر تومان، یک سکه برای درخواست شما ثبت می‌شود.</div>
             </div>
             <div class="bazar-actions" style="margin-top: 1.5rem;">
-                <button type="submit" class="bazar-btn">شارژ کیف پول</button>
+                <button type="submit" class="bazar-btn">ثبت درخواست</button>
                 <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت</a>
             </div>
         </form>
     </div>
+
+    {% if recent_requests %}
+        <div class="bazar-card" style="max-width: 920px; margin: 0 auto;">
+            <h3>درخواست‌های اخیر شما</h3>
+            <div class="bazar-order-items" style="margin-top: 1rem;">
+                {% for charge_request in recent_requests %}
+                    <div class="bazar-order-item">
+                        <div class="bazar-card-head">
+                            <strong>{{ charge_request.requested_amount|toman }} تومان</strong>
+                            {% if charge_request.status == "completed" %}
+                                <span class="bazar-status is-success">سکه واریز شد</span>
+                            {% elif charge_request.status == "rejected" %}
+                                <span class="bazar-status is-danger">رد شده</span>
+                            {% elif charge_request.status == "card_sent" %}
+                                <span class="bazar-status is-warning">شماره کارت ارسال شد</span>
+                            {% elif charge_request.status == "reviewing" %}
+                                <span class="bazar-status is-warning">در حال بررسی</span>
+                            {% else %}
+                                <span class="bazar-status is-muted">در انتظار بررسی</span>
+                            {% endif %}
+                        </div>
+                        <div class="bazar-note">سکه درخواستی: {{ charge_request.requested_coins|toman }}</div>
+                        {% if charge_request.admin_card_number %}
+                            <div class="bazar-note">شماره کارت اعلامی: {{ charge_request.admin_card_number }}</div>
+                        {% endif %}
+                        {% if charge_request.admin_note %}
+                            <div class="bazar-note">توضیح: {{ charge_request.admin_note }}</div>
+                        {% endif %}
+                        {% if charge_request.status == "completed" %}
+                            <div class="bazar-note">سکه واریزی: {{ charge_request.granted_coins|toman }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 </section>
 {% endblock %}
 

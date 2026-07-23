@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -17,13 +16,11 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from accounts.models import Seller, User
 
-from .forms import CartQuantityForm, CoinApplyForm, ProductForm, WalletChargeForm
-from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, record_coin_spend
+from .forms import CartQuantityForm, CoinApplyForm, ProductForm, WalletChargeRequestForm
+from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest, record_coin_spend
 
 
 CHECKOUT_COINS_SESSION_KEY = "bazar_checkout_coins"
-CHECKOUT_WALLET_BEFORE_KEY = "bazar_checkout_wallet_before"
-LAST_CHARGE_AMOUNT_KEY = "bazar_last_charge_amount"
 
 
 def _get_cart(request_user: User) -> Cart:
@@ -53,8 +50,7 @@ def _get_applied_coins(request: HttpRequest, user: User, cart_total: int) -> int
 
 
 def _clear_checkout_session(request: HttpRequest):
-    for key in (CHECKOUT_COINS_SESSION_KEY, CHECKOUT_WALLET_BEFORE_KEY, LAST_CHARGE_AMOUNT_KEY):
-        request.session.pop(key, None)
+    request.session.pop(CHECKOUT_COINS_SESSION_KEY, None)
 
 
 def _redirect_seller_to_panel(request: HttpRequest):
@@ -84,7 +80,6 @@ def _build_checkout_context(request: HttpRequest) -> dict:
         "available_coins": available_coins,
         "applied_coins": applied_coins,
         "remaining_amount": max(cart_total - applied_coins, 0),
-        "wallet_balance": int(request.user.wallet_balance or 0),
     }
 
 
@@ -398,7 +393,7 @@ def apply_coins_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-@require_http_methods(["GET", "POST"])
+@require_POST
 def pay_view(request: HttpRequest) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:
@@ -432,50 +427,28 @@ def pay_view(request: HttpRequest) -> HttpResponse:
         cart_total = sum(item.item_total for item in cart_items)
         coins_used = min(_get_applied_coins(request, user, cart_total), int(user.challenge_coins or 0), cart_total)
         remaining_amount = max(cart_total - coins_used, 0)
-        current_wallet_balance = int(user.wallet_balance or 0)
-
-        if current_wallet_balance < remaining_amount:
-            shortage = remaining_amount - current_wallet_balance
-            request.session[CHECKOUT_WALLET_BEFORE_KEY] = current_wallet_balance
-            charge_query = urlencode(
-                {
-                    "next": reverse("bazar:checkout-pay"),
-                    "amount": shortage,
-                }
-            )
-            wallet_charge_url = f"{reverse('bazar:wallet-charge')}?{charge_query}"
+        if remaining_amount > 0:
             context = {
-                "status": "insufficient",
-                "shortage": shortage,
-                "wallet_charge_url": wallet_charge_url,
+                "status": "insufficient_coins",
+                "shortage": remaining_amount,
+                "charge_request_url": f"{reverse('bazar:wallet-charge')}?amount={remaining_amount}",
                 "page_name": "bazar",
-                "page_title": "عدم کفایت کیف پول | جبهه بازار",
+                "page_title": "عدم کفایت سکه | جبهه بازار",
             }
             return render(request, "jebhe_bazar/payment.html", context)
-
-        wallet_balance_before_charge = int(request.session.get(CHECKOUT_WALLET_BEFORE_KEY, current_wallet_balance) or 0)
-        wallet_used = min(wallet_balance_before_charge, remaining_amount)
-        online_paid = max(remaining_amount - wallet_used, 0)
-        last_charge_amount = int(request.session.get(LAST_CHARGE_AMOUNT_KEY, 0) or 0)
-        if online_paid == 0 and last_charge_amount > 0 and remaining_amount > wallet_balance_before_charge:
-            online_paid = min(last_charge_amount, remaining_amount)
-            wallet_used = max(remaining_amount - online_paid, 0)
 
         if coins_used > 0:
             user.challenge_coins -= coins_used
             record_coin_spend(user, coins_used, f"استفاده از {coins_used} سکه برای خرید از جبهه بازار")
 
-        if remaining_amount > 0:
-            user.wallet_balance = Decimal(int(user.wallet_balance) - remaining_amount)
-
-        user.save(update_fields=["challenge_coins", "wallet_balance"])
+        user.save(update_fields=["challenge_coins"])
 
         order = Order.objects.create(
             user=user,
             total_amount=cart_total,
             coins_used=coins_used,
-            wallet_used=wallet_used,
-            online_paid=online_paid,
+            wallet_used=0,
+            online_paid=0,
             status=Order.Status.PAID,
         )
 
@@ -486,7 +459,7 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             transaction_type=Transaction.TransactionType.PURCHASE,
             description=(
                 f"پرداخت سفارش #{order.pk}. "
-                f"سکه مصرفی: {coins_used} تومان، کیف پول: {wallet_used} تومان، پرداخت آنلاین: {online_paid} تومان."
+                f"سکه مصرفی: {coins_used} تومان."
             ),
         )
 
@@ -538,35 +511,28 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
     if seller_redirect:
         return seller_redirect
     suggested_amount = int(request.GET.get("amount", 0) or 0)
-    next_url = request.GET.get("next") or reverse("bazar:checkout")
+    recent_requests = WalletChargeRequest.objects.filter(user=request.user).order_by("-created_at")[:5]
 
     if request.method == "POST":
-        form = WalletChargeForm(request.POST, suggested_amount=suggested_amount)
-        next_url = request.POST.get("next") or next_url
+        form = WalletChargeRequestForm(request.POST, suggested_amount=suggested_amount)
         if form.is_valid():
             amount = form.cleaned_data["amount"]
-            user = User.objects.get(pk=request.user.pk)
-            user.wallet_balance = Decimal(int(user.wallet_balance or 0) + amount)
-            user.save(update_fields=["wallet_balance"])
-
-            Transaction.objects.create(
-                user=user,
-                amount=amount,
-                transaction_type=Transaction.TransactionType.CHARGE,
-                description="شارژ کیف پول از درگاه شبیه‌سازی شده جبهه بازار",
+            WalletChargeRequest.objects.create(
+                user=request.user,
+                requested_amount=amount,
+                requested_coins=amount,
             )
-            request.session[LAST_CHARGE_AMOUNT_KEY] = amount
-            messages.success(request, "کیف پول شما با موفقیت شارژ شد.")
-            return redirect(next_url)
+            messages.success(request, "درخواست افزایش اعتبار ثبت شد و پس از بررسی، شماره کارت برای شما ارسال می‌شود.")
+            return redirect("bazar:wallet-charge")
     else:
-        form = WalletChargeForm(suggested_amount=suggested_amount)
+        form = WalletChargeRequestForm(suggested_amount=suggested_amount)
 
     context = {
         "form": form,
         "suggested_amount": suggested_amount,
-        "next_url": next_url,
+        "recent_requests": recent_requests,
         "page_name": "bazar",
-        "page_title": "شارژ کیف پول | جبهه بازار",
+        "page_title": "درخواست افزایش اعتبار | جبهه بازار",
     }
     return render(request, "jebhe_bazar/wallet_charge.html", context)
 

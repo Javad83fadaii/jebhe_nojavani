@@ -9,7 +9,7 @@
 <section class="bazar-page">
     {% if status == "success" %}
         <div class="bazar-empty-state">
-            <h1>پرداخت با موفقیت انجام شد</h1>
+            <h1>پرداخت با سکه با موفقیت انجام شد</h1>
             <p class="bazar-note">سفارش شما با شماره {{ order.id|toman }} ثبت شد و موجودی محصولات به‌روزرسانی شد.</p>
             <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
                 <div class="bazar-card">
@@ -35,12 +35,12 @@
             </div>
         </div>
     {% else %}
-        <div class="bazar-empty-state" data-auto-redirect-url="{{ wallet_charge_url }}" data-auto-redirect-delay="2200">
-            <h1>اعتبار کیف پول شما کافی نیست</h1>
-            <p class="bazar-note">مبلغ کمبود: {{ shortage|toman }} تومان</p>
-            <p class="bazar-note">در حال انتقال به صفحه شارژ کیف پول هستی. اگر انتقال خودکار انجام نشد، از دکمه زیر استفاده کن.</p>
+        <div class="bazar-empty-state">
+            <h1>اعتبار سکه شما برای این سفارش کافی نیست</h1>
+            <p class="bazar-note">کسری سکه: {{ shortage|toman }} سکه</p>
+            <p class="bazar-note">درگاه پرداخت فعلا غیرفعال است. برای افزایش اعتبار، درخواست ثبت کن تا پس از بررسی شماره کارت برای شما ارسال شود و بعد از تایید پرداخت، سکه به حسابتان اضافه شود.</p>
             <div class="bazar-actions" style="margin-top: 1.5rem;">
-                <a href="{{ wallet_charge_url }}" class="bazar-btn">شارژ کیف پول</a>
+                <a href="{{ charge_request_url }}" class="bazar-btn">ثبت درخواست افزایش اعتبار</a>
                 <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت به تسویه حساب</a>
             </div>
         </div>
