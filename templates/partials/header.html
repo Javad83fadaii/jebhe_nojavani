@@ -1,4 +1,4 @@
-{% load static %}
+{% load static bazar_tags %}
 <nav class="navbar" id="navbar">
     <div class="navbar-container">
         <a href="{% if request.user.is_authenticated %}{% url 'home' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
@@ -47,6 +47,15 @@
             </div>
 
             <div class="nav-actions">
+                {% if request.user.is_authenticated and not seller_panel_mode %}
+                    <a href="{% url 'bazar:cart' %}" class="btn-nav btn-login cart-nav-link" data-nav="cart">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span>سبد خرید</span>
+                        {% if cart_has_items %}
+                            <span class="cart-nav-badge">{{ cart_total_quantity|toman }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
                 <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:100 }}" data-total-points="{{ user_total_points|default:0 }}">
                     <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
                         <i class="fa-regular fa-star star-outline"></i>

@@ -102,6 +102,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'config.context_processors.user_points',
                 'config.context_processors.seller_ui',
+                'config.context_processors.cart_ui',
             ],
         },
     },

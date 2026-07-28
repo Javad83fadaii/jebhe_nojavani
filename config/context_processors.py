@@ -32,3 +32,20 @@ def seller_ui(request):
         "seller_site_view": seller_site_view,
         "seller_panel_mode": is_seller and not seller_site_view,
     }
+
+
+def cart_ui(request):
+    if not getattr(request.user, "is_authenticated", False):
+        return {
+            "cart_total_quantity": 0,
+            "cart_has_items": False,
+        }
+
+    from jebhe_bazar.models import Cart
+
+    cart_totals = Cart.objects.filter(user=request.user).aggregate(total_quantity=Sum("items__quantity"))
+    total_quantity = int(cart_totals["total_quantity"] or 0)
+    return {
+        "cart_total_quantity": total_quantity,
+        "cart_has_items": total_quantity > 0,
+    }

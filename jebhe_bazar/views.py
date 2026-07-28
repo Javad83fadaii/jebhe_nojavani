@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Case, Count, ExpressionWrapper, F, IntegerField, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -21,6 +21,7 @@ from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transac
 
 
 CHECKOUT_COINS_SESSION_KEY = "bazar_checkout_coins"
+_PERSIAN_DIGITS_TRANSLATION = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 
 
 def _get_cart(request_user: User) -> Cart:
@@ -38,6 +39,32 @@ def _get_cart_total(cart: Cart) -> int:
 
 def _get_available_coins(user: User, cart_total: int) -> int:
     return min(int(user.challenge_coins or 0), int(cart_total))
+
+
+def _format_toman(value: int) -> str:
+    return f"{int(value):,}".translate(_PERSIAN_DIGITS_TRANSLATION)
+
+
+def _build_cart_item_response(cart: Cart, item: CartItem, message: str, *, status: int = 200) -> JsonResponse:
+    cart_total = _get_cart_total(cart)
+    payload = {
+        "message": message,
+        "item_id": item.pk,
+        "quantity": item.quantity,
+        "quantity_display": _format_toman(item.quantity),
+        "stock": item.product.stock,
+        "item_total": item.item_total,
+        "item_total_display": _format_toman(item.item_total),
+        "unit_price": item.product.final_price,
+        "unit_price_display": _format_toman(item.product.final_price),
+        "cart_total": cart_total,
+        "cart_total_display": _format_toman(cart_total),
+        "cart_total_quantity": cart.total_quantity,
+        "cart_total_quantity_display": _format_toman(cart.total_quantity),
+        "can_increment": item.quantity < item.product.stock,
+        "can_decrement": item.quantity > 1,
+    }
+    return JsonResponse(payload, status=status)
 
 
 def _get_applied_coins(request: HttpRequest, user: User, cart_total: int) -> int:
@@ -298,6 +325,34 @@ def cart_view(request: HttpRequest) -> HttpResponse:
         "quantity_form": CartQuantityForm(),
     }
     return render(request, "jebhe_bazar/cart.html", context)
+
+
+@login_required
+@require_POST
+def update_cart_item_quantity(request: HttpRequest, item_id: int) -> JsonResponse:
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return JsonResponse({"message": "دسترسی به سبد خرید از این بخش ممکن نیست."}, status=403)
+
+    cart = _get_cart(request.user)
+    item = get_object_or_404(
+        CartItem.objects.select_related("product"),
+        pk=item_id,
+        cart=cart,
+    )
+    form = CartQuantityForm(request.POST)
+
+    if not form.is_valid():
+        return _build_cart_item_response(cart, item, "مقدار وارد شده معتبر نیست.", status=400)
+
+    new_quantity = form.cleaned_data["quantity"]
+    if new_quantity > item.product.stock:
+        return _build_cart_item_response(cart, item, "تعداد انتخابی بیشتر از موجودی محصول است.", status=400)
+
+    item.quantity = new_quantity
+    item.save(update_fields=["quantity"])
+    item.refresh_from_db()
+    return _build_cart_item_response(cart, item, "سبد خرید بروزرسانی شد.")
 
 
 @login_required

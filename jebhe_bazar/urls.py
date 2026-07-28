@@ -9,6 +9,7 @@ urlpatterns = [
     re_path(r"^category/(?P<slug>[-\w]+)/$", views.ProductListView.as_view(), name="category-products"),
     re_path(r"^product/(?P<slug>[-\w]+)/$", views.ProductDetailView.as_view(), name="product-detail"),
     path("cart/", views.cart_view, name="cart"),
+    path("cart/item/<int:item_id>/quantity/", views.update_cart_item_quantity, name="cart-update-quantity"),
     path("cart/add/<int:product_id>/", views.add_to_cart, name="cart-add"),
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="cart-remove"),
     path("checkout/", views.checkout_view, name="checkout"),

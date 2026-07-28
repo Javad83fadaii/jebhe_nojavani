@@ -45,6 +45,84 @@ class BazarModelTests(TestCase):
         self.assertEqual(str(buyer), "خریدار تست")
 
 
+class CartInteractionTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            phone_number="09121112222",
+            password="StrongPass123!",
+            first_name="مینا",
+            last_name="خریدار",
+        )
+        self.seller_user = User.objects.create_user(
+            phone_number="09123335555",
+            password="StrongPass123!",
+            first_name="سارا",
+            last_name="فروشنده",
+        )
+        self.seller = Seller.objects.create(
+            user=self.seller_user,
+            shop_name="فروشگاه سبد",
+            shop_address="تهران",
+            platform_commission_percent=Decimal("10.00"),
+        )
+        self.category = Category.objects.create(name="محصولات سبد")
+        self.product = Product.objects.create(
+            seller=self.seller,
+            category=self.category,
+            title="محصول سبدی",
+            description="توضیحات تست",
+            price=120000,
+            stock=4,
+            discount_percent=25,
+            discount_active=True,
+        )
+        self.cart = Cart.objects.create(user=self.user)
+        self.cart_item = CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
+        self.client.force_login(self.user)
+
+    def test_update_cart_item_quantity_returns_updated_totals(self):
+        response = self.client.post(
+            reverse("bazar:cart-update-quantity", args=[self.cart_item.pk]),
+            {"quantity": 3},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.cart_item.refresh_from_db()
+
+        data = response.json()
+        self.assertEqual(self.cart_item.quantity, 3)
+        self.assertEqual(data["quantity"], 3)
+        self.assertEqual(data["item_total"], self.product.final_price * 3)
+        self.assertEqual(data["cart_total"], self.product.final_price * 3)
+        self.assertEqual(data["cart_total_quantity"], 3)
+        self.assertTrue(data["can_increment"])
+        self.assertTrue(data["can_decrement"])
+
+    def test_update_cart_item_quantity_rejects_more_than_stock(self):
+        response = self.client.post(
+            reverse("bazar:cart-update-quantity", args=[self.cart_item.pk]),
+            {"quantity": 8},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.cart_item.refresh_from_db()
+
+        data = response.json()
+        self.assertEqual(self.cart_item.quantity, 1)
+        self.assertEqual(data["quantity"], 1)
+        self.assertEqual(data["stock"], 4)
+        self.assertIn("موجودی", data["message"])
+
+    def test_product_list_shows_cart_quick_link_and_quantity_badge(self):
+        response = self.client.get(reverse("bazar:product-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("bazar:cart"))
+        self.assertEqual(response.context["cart_total_quantity"], 1)
+        self.assertTrue(response.context["cart_has_items"])
+
+
 class CheckoutFlowTests(TestCase):
     def setUp(self):
         self.client = Client()

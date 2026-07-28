@@ -613,6 +613,70 @@
     color: #fca5a5;
 }
 
+.bazar-live-message {
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.bazar-live-message.is-success {
+    background: #064e3b;
+    border-color: #047857;
+    color: #6ee7b7;
+}
+
+.bazar-live-message.is-error {
+    background: #7f1d1d;
+    border-color: #b91c1c;
+    color: #fca5a5;
+}
+
+.bazar-cart-quantity-form {
+    margin: 0;
+}
+
+.bazar-quantity-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 180px;
+}
+
+.bazar-quantity-btn {
+    width: 42px;
+    height: 42px;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    background: #334155;
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.bazar-quantity-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #fbbf24;
+}
+
+.bazar-quantity-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.bazar-quantity-input {
+    max-width: 96px;
+    text-align: center;
+}
+
+.bazar-cart-item-loading {
+    opacity: 0.65;
+}
+
 @media (max-width: 980px) {
     .bazar-grid,
     .bazar-detail-layout,
@@ -767,6 +831,19 @@
     .bazar-input[style*="max-width: 120px"],
     .bazar-input[style*="max-width: 90px"] {
         max-width: none !important;
+    }
+
+    .bazar-quantity-control {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .bazar-quantity-btn {
+        flex: 0 0 42px;
+    }
+
+    .bazar-quantity-input {
+        max-width: none;
     }
 }
 

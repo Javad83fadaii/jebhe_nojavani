@@ -41,7 +41,7 @@ class ProductForm(StyledFormMixin, forms.ModelForm):
 
 
 class CartQuantityForm(StyledFormMixin, forms.Form):
-    quantity = forms.IntegerField(min_value=1, max_value=100, label="تعداد")
+    quantity = forms.IntegerField(min_value=1, label="تعداد")
 
 
 class CoinApplyForm(StyledFormMixin, forms.Form):

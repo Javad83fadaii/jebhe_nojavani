@@ -13,6 +13,7 @@
     </div>
 
     {% if cart_items %}
+        <div class="bazar-live-message" data-cart-feedback hidden></div>
         <div class="bazar-table-card">
             <table class="bazar-table">
                 <thead>
@@ -26,21 +27,32 @@
                 </thead>
                 <tbody>
                     {% for item in cart_items %}
-                        <tr>
+                        <tr data-cart-item data-item-id="{{ item.id }}" data-stock="{{ item.product.stock }}">
                             <td>
                                 <strong>{{ item.product.title }}</strong>
                                 <div class="bazar-note">{{ item.product.category.name }}</div>
+                                <div class="bazar-note">موجودی فروشگاه: <span data-item-stock>{{ item.product.stock|toman }}</span></div>
                             </td>
-                            <td>{{ item.product.final_price|toman }} تومان</td>
+                            <td><span data-item-unit-price>{{ item.product.final_price|toman }}</span> تومان</td>
                             <td>
-                                <form method="post" class="bazar-inline-actions">
+                                <form method="post" action="{% url 'bazar:cart-update-quantity' item.id %}" class="bazar-inline-actions bazar-cart-quantity-form" data-cart-quantity-form>
                                     {% csrf_token %}
-                                    <input type="hidden" name="item_id" value="{{ item.id }}">
-                                    <input type="number" name="quantity" min="1" max="{{ item.product.stock }}" value="{{ item.quantity }}" class="bazar-input" style="max-width: 90px;">
-                                    <button type="submit" class="bazar-secondary-btn">بروزرسانی</button>
+                                    <div class="bazar-quantity-control">
+                                        <button type="button" class="bazar-quantity-btn" data-cart-action="increase" aria-label="افزایش تعداد">+</button>
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            min="1"
+                                            max="{{ item.product.stock }}"
+                                            value="{{ item.quantity }}"
+                                            class="bazar-input bazar-quantity-input"
+                                            data-cart-quantity-input
+                                        >
+                                        <button type="button" class="bazar-quantity-btn" data-cart-action="decrease" aria-label="کاهش تعداد">-</button>
+                                    </div>
                                 </form>
                             </td>
-                            <td>{{ item.item_total|toman }} تومان</td>
+                            <td><span data-item-total>{{ item.item_total|toman }}</span> تومان</td>
                             <td>
                                 <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn">حذف</a>
                             </td>
@@ -53,7 +65,7 @@
         <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
             <div class="bazar-card">
                 <strong>جمع کل سبد</strong>
-                <div class="bazar-price">{{ cart_total|toman }} تومان</div>
+                <div class="bazar-price"><span data-cart-total>{{ cart_total|toman }}</span> تومان</div>
             </div>
             <div class="bazar-card">
                 <strong>سکه‌های شما</strong>
