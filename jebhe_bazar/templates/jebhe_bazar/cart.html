@@ -14,73 +14,79 @@
 
     {% if cart_items %}
         <div class="bazar-live-message" data-cart-feedback hidden></div>
-        <div class="bazar-table-card">
-            <table class="bazar-table">
-                <thead>
-                    <tr>
-                        <th>محصول</th>
-                        <th>قیمت واحد</th>
-                        <th>تعداد</th>
-                        <th>جمع</th>
-                        <th>عملیات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in cart_items %}
-                        <tr data-cart-item data-item-id="{{ item.id }}" data-stock="{{ item.product.stock }}">
-                            <td>
-                                <strong>{{ item.product.title }}</strong>
-                                <div class="bazar-note">{{ item.product.category.name }}</div>
-                                <div class="bazar-note">موجودی فروشگاه: <span data-item-stock>{{ item.product.stock|toman }}</span></div>
-                            </td>
-                            <td><span data-item-unit-price>{{ item.product.final_price|toman }}</span> تومان</td>
-                            <td>
-                                <form method="post" action="{% url 'bazar:cart-update-quantity' item.id %}" class="bazar-inline-actions bazar-cart-quantity-form" data-cart-quantity-form>
+
+        <div class="bazar-cart-layout">
+            <div class="bazar-cart-items">
+                {% for item in cart_items %}
+                    <article class="bazar-card bazar-cart-item" data-cart-item data-item-id="{{ item.id }}" data-stock="{{ item.product.stock }}">
+                        <div class="bazar-cart-item-media">
+                            {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.title }}">
+                            {% else %}
+                                <span class="bazar-placeholder">بدون تصویر</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="bazar-cart-item-info">
+                            <div class="bazar-cart-item-head">
+                                <div>
+                                    <strong>{{ item.product.title }}</strong>
+                                    <div class="bazar-note">{{ item.product.category.name }}</div>
+                                    <div class="bazar-note">موجودی: {{ item.product.stock|toman }}</div>
+                                </div>
+                                <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn bazar-cart-remove">حذف</a>
+                            </div>
+
+                            <div class="bazar-cart-item-foot">
+                                <form method="post" action="{% url 'bazar:cart-update-quantity' item.id %}" class="bazar-cart-quantity-form" data-cart-quantity-form>
                                     {% csrf_token %}
                                     <div class="bazar-quantity-control">
-                                        <button type="button" class="bazar-quantity-btn" data-cart-action="increase" aria-label="افزایش تعداد">+</button>
+                                        <button type="button" class="bazar-quantity-btn" data-cart-action="decrease" aria-label="کاهش تعداد">−</button>
                                         <input
                                             type="number"
                                             name="quantity"
                                             min="1"
                                             max="{{ item.product.stock }}"
                                             value="{{ item.quantity }}"
-                                            class="bazar-input bazar-quantity-input"
+                                            class="bazar-quantity-input"
                                             data-cart-quantity-input
+                                            aria-label="تعداد {{ item.product.title }}"
                                         >
-                                        <button type="button" class="bazar-quantity-btn" data-cart-action="decrease" aria-label="کاهش تعداد">-</button>
+                                        <button type="button" class="bazar-quantity-btn" data-cart-action="increase" aria-label="افزایش تعداد">+</button>
                                     </div>
+                                    <button type="submit" class="bazar-secondary-btn bazar-cart-update-btn">بروزرسانی</button>
                                 </form>
-                            </td>
-                            <td><span data-item-total>{{ item.item_total|toman }}</span> تومان</td>
-                            <td>
-                                <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn">حذف</a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
 
-        <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
-            <div class="bazar-card">
-                <strong>جمع کل سبد</strong>
-                <div class="bazar-price"><span data-cart-total>{{ cart_total|toman }}</span> تومان</div>
+                                <div class="bazar-cart-item-prices">
+                                    <span class="bazar-note">قیمت واحد: {{ item.product.final_price|toman }} تومان</span>
+                                    <span class="bazar-price">جمع: <span data-item-total>{{ item.item_total|toman }}</span> تومان</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
             </div>
-            <div class="bazar-card">
-                <strong>سکه‌های شما</strong>
-                <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
-            </div>
-            <div class="bazar-card">
-                <strong>افزایش اعتبار</strong>
-                <div class="bazar-note">برای دریافت سکه بیشتر، درخواست ثبت کن.</div>
-                <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn" style="margin-top: 0.75rem;">ثبت درخواست</a>
-            </div>
-        </div>
 
-        <div class="bazar-actions" style="margin-top: 1.5rem;">
-            <a href="{% url 'bazar:checkout' %}" class="bazar-btn">پرداخت</a>
-            <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">ادامه خرید</a>
+            <aside class="bazar-cart-summary bazar-card">
+                <h3>خلاصه سفارش</h3>
+
+                <div class="bazar-cart-summary-row">
+                    <span>جمع کل سبد</span>
+                    <strong class="bazar-price"><span data-cart-total>{{ cart_total|toman }}</span> تومان</strong>
+                </div>
+                <div class="bazar-cart-summary-row">
+                    <span>سکه‌های شما</span>
+                    <strong>{{ request.user.challenge_coins|toman }} سکه</strong>
+                </div>
+
+                <p class="bazar-note">برای دریافت سکه یا اعتبار بیشتر، درخواست شارژ کیف پول ثبت کن.</p>
+                <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn bazar-cart-summary-link">ثبت درخواست شارژ</a>
+
+                <div class="bazar-actions bazar-cart-summary-actions">
+                    <a href="{% url 'bazar:checkout' %}" class="bazar-btn">پرداخت</a>
+                    <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">ادامه خرید</a>
+                </div>
+            </aside>
         </div>
     {% else %}
         <div class="bazar-empty-state">

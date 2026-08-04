@@ -397,6 +397,49 @@ def remove_from_cart(request: HttpRequest, item_id: int) -> HttpResponse:
 
 
 @login_required
+@require_POST
+def update_cart_quantity(request: HttpRequest, item_id: int) -> HttpResponse:
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
+
+    cart = _get_cart(request.user)
+    item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+    try:
+        quantity = int(request.POST.get("quantity", item.quantity))
+    except (TypeError, ValueError):
+        quantity = item.quantity
+
+    quantity = max(quantity, 1)
+    error = None
+    if quantity > item.product.stock:
+        quantity = max(item.product.stock, 1)
+        error = "تعداد انتخابی بیشتر از موجودی محصول است."
+
+    item.quantity = quantity
+    item.save(update_fields=["quantity"])
+
+    if is_ajax:
+        cart_items = list(_get_cart_items(cart))
+        return JsonResponse({
+            "ok": error is None,
+            "error": error,
+            "item_id": item.id,
+            "quantity": item.quantity,
+            "item_total": item.item_total,
+            "cart_total": sum(i.item_total for i in cart_items),
+        })
+
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, "سبد خرید بروزرسانی شد.")
+    return redirect("bazar:cart")
+
+
+@login_required
 def checkout_view(request: HttpRequest) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:

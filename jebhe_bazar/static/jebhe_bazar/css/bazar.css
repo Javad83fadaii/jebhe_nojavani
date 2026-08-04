@@ -137,8 +137,43 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+/* کارت‌های خلاصه (سه‌تایی) در یک ردیف و فشرده‌تر */
 .bazar-summary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.bazar-summary-grid .bazar-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
+    padding: 1rem 1.1rem;
+    min-height: unset;
+}
+
+.bazar-summary-grid .bazar-card strong {
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.bazar-summary-grid .bazar-price {
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.bazar-summary-grid .bazar-note {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.bazar-summary-grid .bazar-secondary-btn {
+    margin-top: 0.35rem !important;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.85rem;
 }
 
 .bazar-orders-grid {
@@ -845,6 +880,169 @@
     .bazar-quantity-input {
         max-width: none;
     }
+}
+
+/* Cart page */
+.bazar-live-message {
+    padding: 0.85rem 1.1rem;
+    border-radius: 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #6ee7b7;
+    font-weight: 600;
+}
+
+.bazar-live-message.is-error {
+    background: #7f1d1d;
+    border-color: #b91c1c;
+    color: #fca5a5;
+}
+
+.bazar-cart-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.bazar-cart-items {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.bazar-cart-item {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 1.1rem;
+}
+
+.bazar-cart-item-media {
+    width: 96px;
+    height: 96px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #1e293b;
+    border: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.bazar-cart-item-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bazar-cart-item-info {
+    display: grid;
+    gap: 0.9rem;
+    min-width: 0;
+}
+
+.bazar-cart-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.bazar-cart-item-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.bazar-cart-quantity-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.bazar-quantity-control {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.bazar-quantity-btn {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    background: #1e293b;
+    color: #f8fafc;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.bazar-quantity-btn:hover {
+    background: #334155;
+}
+
+.bazar-quantity-input {
+    width: 52px;
+    height: 38px;
+    text-align: center;
+    border: 0;
+    border-right: 1px solid #334155;
+    border-left: 1px solid #334155;
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.bazar-cart-update-btn {
+    padding: 0.55rem 0.9rem !important;
+}
+
+html.js .bazar-cart-update-btn {
+    display: none;
+}
+
+.bazar-cart-item-prices {
+    display: grid;
+    gap: 0.3rem;
+    text-align: left;
+}
+
+.bazar-cart-remove {
+    white-space: nowrap;
+}
+
+.bazar-cart-summary {
+    position: sticky;
+    top: 100px;
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+}
+
+.bazar-cart-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+}
+
+.bazar-cart-summary-link {
+    width: 100%;
+    justify-content: center;
+}
+
+.bazar-cart-summary-actions {
+    flex-direction: column;
+    align-items: stretch;
 }
 
 @media (max-width: 320px) {

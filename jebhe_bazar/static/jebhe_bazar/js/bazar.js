@@ -146,3 +146,89 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+document.addEventListener("DOMContentLoaded", function () {
+    const feedbackEl = document.querySelector("[data-cart-feedback]");
+    let feedbackTimer = null;
+
+    function showCartFeedback(message, isError) {
+        if (!feedbackEl) return;
+        feedbackEl.textContent = message;
+        feedbackEl.hidden = false;
+        feedbackEl.classList.toggle("is-error", Boolean(isError));
+        window.clearTimeout(feedbackTimer);
+        feedbackTimer = window.setTimeout(function () {
+            feedbackEl.hidden = true;
+        }, 3000);
+    }
+
+    function toPersianDigits(value) {
+        return String(value).replace(/\d/g, function (d) {
+            return "۰۱۲۳۴۵۶۷۸۹"[d];
+        });
+    }
+
+    document.querySelectorAll("[data-cart-item]").forEach(function (row) {
+        const form = row.querySelector("[data-cart-quantity-form]");
+        const input = row.querySelector("[data-cart-quantity-input]");
+        if (!form || !input) return;
+
+        let debounceTimer = null;
+
+        function submitQuantity() {
+            const stock = Number(row.dataset.stock || input.max || 0);
+            let quantity = parseInt(input.value, 10);
+            if (!quantity || quantity < 1) quantity = 1;
+            if (stock > 0 && quantity > stock) {
+                quantity = stock;
+                showCartFeedback("تعداد انتخابی بیشتر از موجودی محصول است.", true);
+            }
+            input.value = quantity;
+
+            const formData = new FormData(form);
+            formData.set("quantity", quantity);
+            const csrfInput = form.querySelector("input[name=csrfmiddlewaretoken]");
+
+            fetch(form.action, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrfInput ? csrfInput.value : "",
+                },
+                body: formData,
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data) return;
+
+                    const totalEl = row.querySelector("[data-item-total]");
+                    if (totalEl) totalEl.textContent = toPersianDigits(data.item_total.toLocaleString("en-US"));
+
+                    const cartTotalEl = document.querySelector("[data-cart-total]");
+                    if (cartTotalEl) cartTotalEl.textContent = toPersianDigits(data.cart_total.toLocaleString("en-US"));
+
+                    showCartFeedback(data.error || "سبد خرید بروزرسانی شد.", Boolean(data.error));
+                })
+                .catch(function () {
+                    showCartFeedback("خطا در بروزرسانی سبد خرید. دوباره تلاش کنید.", true);
+                });
+        }
+
+        input.addEventListener("change", function () {
+            window.clearTimeout(debounceTimer);
+            debounceTimer = window.setTimeout(submitQuantity, 300);
+        });
+
+        row.querySelectorAll("[data-cart-action]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                const stock = Number(row.dataset.stock || input.max || 0);
+                let quantity = parseInt(input.value, 10) || 1;
+                quantity = btn.dataset.cartAction === "increase"
+                    ? (stock > 0 ? Math.min(quantity + 1, stock) : quantity + 1)
+                    : Math.max(quantity - 1, 1);
+                input.value = quantity;
+                window.clearTimeout(debounceTimer);
+                debounceTimer = window.setTimeout(submitQuantity, 150);
+            });
+        });
+    });
+});
