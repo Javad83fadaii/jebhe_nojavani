@@ -26,6 +26,7 @@
 
         <form method="post" style="margin-top: 1.5rem;">
             {% csrf_token %}
+            {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
             <div class="bazar-form-group">
                 <label for="{{ form.amount.id_for_label }}">مبلغ درخواستی</label>
                 {{ form.amount }}
@@ -36,8 +37,7 @@
             </div>
             <div class="bazar-actions" style="margin-top: 1.5rem;">
                 <button type="submit" class="bazar-btn">ثبت درخواست</button>
-                <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت</a>
-            </div>
+                <a href="{% if next_url %}{{ next_url }}{% else %}{% url 'bazar:checkout' %}{% endif %}" class="bazar-secondary-btn">بازگشت</a>            </div>
         </form>
     </div>
 

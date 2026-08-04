@@ -809,16 +809,50 @@ html.js .bazar-cart-update-btn {
    ========================================================================== */
 
 .bazar-alert {
-    padding: 1rem 1.15rem;
-    border-radius: 16px;
-    display: grid;
-    gap: 0.6rem;
-    align-items: start;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 18px;
+}
+
+.bazar-alert-icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.bazar-alert-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.bazar-alert-body strong {
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.bazar-alert-body p {
+    margin: 0;
+    line-height: 1.9;
+    font-size: 0.92rem;
 }
 
 .bazar-alert-danger {
     background: #7f1d1d;
     border: 1px solid #b91c1c;
+    color: #fca5a5;
+}
+
+.bazar-alert-danger .bazar-alert-icon {
     color: #fca5a5;
 }
 
@@ -828,9 +862,21 @@ html.js .bazar-cart-update-btn {
     color: #fcd34d;
 }
 
+.bazar-alert-warning .bazar-alert-icon {
+    color: #fcd34d;
+}
+
 .bazar-alert-list {
     margin: 0;
     padding-right: 1.2rem;
+    display: grid;
+    gap: 0.3rem;
+}
+
+.bazar-alert-btn {
+    align-self: flex-start;
+    margin-top: 0.25rem;
+    padding: 0.6rem 1.1rem !important;
 }
 
 .bazar-checkout-layout {
@@ -1131,6 +1177,15 @@ html.js .bazar-cart-update-btn {
         flex: 1;
         width: auto;
         max-width: none;
+    }
+    .bazar-alert {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .bazar-alert-icon {
+        width: 36px;
+        height: 36px;
     }
 }
 

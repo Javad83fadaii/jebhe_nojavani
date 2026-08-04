@@ -13,7 +13,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
-
+from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import Seller, User
 
 from .forms import CartQuantityForm, CoinApplyForm, ProductForm, WalletChargeRequestForm
@@ -618,6 +618,14 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
     suggested_amount = int(request.GET.get("amount", 0) or 0)
     recent_requests = WalletChargeRequest.objects.filter(user=request.user).order_by("-created_at")[:5]
 
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+    is_safe_next = bool(next_url) and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    )
+    safe_next_url = next_url if is_safe_next else ""
+
     if request.method == "POST":
         form = WalletChargeRequestForm(request.POST, suggested_amount=suggested_amount)
         if form.is_valid():
@@ -628,7 +636,7 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
                 requested_coins=amount,
             )
             messages.success(request, "درخواست افزایش اعتبار ثبت شد و پس از بررسی، شماره کارت برای شما ارسال می‌شود.")
-            return redirect("bazar:wallet-charge")
+            return redirect(safe_next_url or "bazar:wallet-charge")
     else:
         form = WalletChargeRequestForm(suggested_amount=suggested_amount)
 
@@ -636,6 +644,7 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
         "form": form,
         "suggested_amount": suggested_amount,
         "recent_requests": recent_requests,
+        "next_url": safe_next_url,
         "page_name": "bazar",
         "page_title": "درخواست افزایش اعتبار | جبهه بازار",
     }
