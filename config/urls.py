@@ -7,11 +7,7 @@ from django.http import HttpResponse
 from . import views
 
 
-def verify_file_view(request):
-    return HttpResponse("", content_type="text/plain")
-
 urlpatterns = [
-    path('10111303.txt', verify_file_view),
     path('admin/', admin.site.urls),
     path('', views.index_view, name='index'),
     path('home', views.home, name='home'),

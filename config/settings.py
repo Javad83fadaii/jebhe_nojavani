@@ -39,11 +39,20 @@ _load_env_file(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-9mvq-=#_)34*b85##dcu83vj8g6cvt@4df3rm$o+36un(59s$n'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if os.environ.get("DJANGO_DEBUG", "True").strip().lower() in ("1", "true", "yes"):
+        # فقط برای توسعه‌ی محلی؛ هرگز در پروداکشن به این فال‌بک تکیه نکن
+        SECRET_KEY = "django-insecure-dev-only-CHANGE-ME"
+    else:
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY تنظیم نشده است. آن را در فایل .env مقداردهی کنید."
+        )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip().lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()]
 if DEBUG and not ALLOWED_HOSTS:
@@ -116,12 +125,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql', # تغییر به موتور PostgreSQL
-        'NAME': 'dbN',                             # نام دیتابیسی که در HeidiSQL ساختید
-        'USER': 'darkoob.org',                     # root نام کاربری ویندوز شما (طبق تنظیمات پیش‌فرض لارگون)
-        'PASSWORD': '',                          # pN1syJR3sSRAo1JPnUi0rW0pرمز عبور (خالی بگذارید)
-        'HOST': '127.0.0.1',                       # آدرس لوکال هاست jebhe2
-        'PORT': '5432',                            # پورت پیش‌فرض PostgreSQL
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+        'NAME': os.environ.get('DB_NAME', 'dbN'),
+        'USER': os.environ.get('DB_USER', 'darkoob.org'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 

@@ -64,6 +64,27 @@
         </div>
     </div>
     <script>
+    // تابع کوتاه‌سازی هوشمند نام کاربری (تا 12 کاراکتر، اگه کلمه ناقص بود تا 15 چک می‌کنه)
+    function smartTruncateName(text, limit = 12, hardLimit = 15) {
+        if (!text) return text;
+        text = String(text).trim();
+
+        // اگه کل متن کوتاه‌تر یا مساوی حد مجازه، دست نخورده برگردون
+        if (text.length <= limit) return text;
+
+        // بین کاراکتر 12 تا 15 دنبال یه فاصله (پایان کلمه) بگرد
+        const window_ = text.slice(0, hardLimit + 1);
+        const lastSpace = window_.lastIndexOf(' ');
+
+        if (lastSpace > 0) {
+            // کلمه تا اینجا کامل شده، همینجا قطعش کن و … بذار
+            return text.slice(0, lastSpace) + '…';
+        }
+
+        // کلمه حتی تا 15 هم کامل نشد، مجبوری از 12 قطع کن
+        return text.slice(0, limit) + '…';
+    }
+
     // مدیریت نوار ناوبری بر اساس وضعیت لاگین
     function updateNavBar() {
         const isAuthenticated = document.body.dataset.authenticated === 'true';
@@ -94,11 +115,12 @@
                     </a>`
                 : '';
             const userFullName = (document.body.dataset.userFullName || '').trim() || 'حساب کاربری';
+            const userFullNameDisplay = smartTruncateName(userFullName);
             authNav.innerHTML = `
                 <div class="profile-dropdown" id="profile-dropdown">
                     <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
                         <i class="fa-solid fa-user-astronaut"></i>
-                        <span class="profile-trigger-name">${userFullName}</span>
+                        <span class="profile-trigger-name" title="${userFullName}">${userFullNameDisplay}</span>
                         <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
                     </button>
                     <div class="profile-menu" id="profile-menu" role="menu">
@@ -418,5 +440,6 @@
     });
     </script>
     {% block extra_js %}{% endblock %}
+
 </body>
 </html>
