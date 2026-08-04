@@ -9,70 +9,88 @@
 <section class="bazar-page">
     <div class="bazar-hero">
         <h1>تسویه حساب</h1>
-        <p class="bazar-note">ابتدا مقدار سکه مصرفی را مشخص کن، سپس پرداخت را نهایی کن.</p>
+        <p class="bazar-note">اقلام سفارش را بررسی کن، سکه مصرفی را تنظیم کن و پرداخت را نهایی کن.</p>
     </div>
 
-    <div class="bazar-grid">
-        <div class="bazar-card">
-            <h3>خلاصه سفارش</h3>
-            <div class="bazar-order-items" style="margin-top: 1rem;">
-                {% for item in cart_items %}
-                    <div class="bazar-order-item">
-                        <strong>{{ item.product.title }}</strong>
-                        <div class="bazar-note">تعداد: {{ item.quantity|toman }} | مبلغ: {{ item.item_total|toman }} تومان</div>
-                    </div>
+    {% if stock_issues %}
+        <div class="bazar-alert bazar-alert-danger">
+            <strong>موجودی برخی محصولات کافی نیست.</strong>
+            برای ادامه، تعداد این محصولات را در سبد خرید اصلاح کن:
+            <ul class="bazar-alert-list">
+                {% for item in stock_issues %}
+                    <li>{{ item.product.title }} — موجودی فعلی: {{ item.product.stock|toman }}</li>
                 {% endfor %}
+            </ul>
+            <a href="{% url 'bazar:cart' %}" class="bazar-secondary-btn">بازگشت به سبد خرید</a>
+        </div>
+    {% endif %}
+
+    {% if wallet_shortage > 0 %}
+        <div class="bazar-alert bazar-alert-warning">
+            <strong>موجودی کیف پول کافی نیست.</strong>
+            برای تکمیل این خرید {{ wallet_shortage|toman }} تومان کم داری. می‌تونی الان شارژ کنی یا موقع پرداخت به‌صورت خودکار به صفحه‌ی شارژ منتقل می‌شوی.
+            <a href="{% url 'bazar:wallet-charge' %}?amount={{ wallet_shortage }}&next={% url 'bazar:checkout' %}" class="bazar-secondary-btn">شارژ کیف پول</a>
+        </div>
+    {% endif %}
+
+    <div class="bazar-checkout-layout">
+        <div class="bazar-checkout-items">
+            <div class="bazar-card-head" style="margin-bottom: 0.5rem;">
+                <h3>اقلام سفارش</h3>
+                <a href="{% url 'bazar:cart' %}" class="bazar-link-btn">ویرایش سبد خرید</a>
             </div>
+
+            {% for item in cart_items %}
+                <article class="bazar-card bazar-checkout-item{% if item.quantity > item.product.stock %} is-stock-issue{% endif %}">
+                    <div class="bazar-checkout-item-media">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.title }}">
+                        {% else %}
+                            <span class="bazar-placeholder">بدون تصویر</span>
+                        {% endif %}
+                    </div>
+                    <div class="bazar-checkout-item-info">
+                        <strong>{{ item.product.title }}</strong>
+                        <div class="bazar-note">فروشنده: {{ item.product.seller.shop_name }}</div>
+                        <div class="bazar-checkout-item-foot">
+                            <span class="bazar-chip">تعداد: {{ item.quantity|toman }}</span>
+                            <span class="bazar-note">قیمت واحد: {{ item.product.final_price|toman }} تومان</span>
+                            <span class="bazar-price">{{ item.item_total|toman }} تومان</span>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
         </div>
 
-        <div class="bazar-card">
-            <h3>وضعیت پرداخت</h3>
-            <div class="bazar-summary-grid" style="margin-top: 1rem;">
-                <div class="bazar-card">
-                    <strong>جمع کل</strong>
-                    <div class="bazar-price">{{ cart_total|toman }} تومان</div>
-                </div>
-                <div class="bazar-card">
-                    <strong>سکه قابل استفاده</strong>
-                    <div class="bazar-price">{{ available_coins|toman }}</div>
-                </div>
-                <div class="bazar-card">
-                    <strong>سکه انتخاب‌شده</strong>
-                    <div class="bazar-price">{{ applied_coins|toman }}</div>
-                </div>
-                <div class="bazar-card">
-                    <strong>مبلغ باقی‌مانده</strong>
-                    <div class="bazar-price">{{ remaining_amount|toman }} سکه</div>
-                </div>
+        <aside class="bazar-card bazar-checkout-summary">
+            <h3>خلاصه پرداخت</h3>
+
+            <div class="bazar-cart-summary-row">
+                <span>جمع کل سبد</span>
+                <strong class="bazar-price">{{ cart_total|toman }} تومان</strong>
+            </div>
+            <div class="bazar-cart-summary-row">
+                <span>سکه مصرفی</span>
+                <strong>{{ applied_coins|toman }} از {{ available_coins|toman }}</strong>
+            </div>
+            <div class="bazar-cart-summary-row">
+                <span>موجودی کیف پول</span>
+                <strong>{{ wallet_balance|toman }} تومان</strong>
+            </div>
+            <div class="bazar-cart-summary-row bazar-cart-summary-row-highlight">
+                <span>مبلغ قابل پرداخت</span>
+                <strong class="bazar-price">{{ remaining_amount|toman }} تومان</strong>
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <h3 style="margin-bottom: 0.75rem;">روش‌های پرداخت</h3>
-                <div class="bazar-summary-grid">
-                    <div class="bazar-card bazar-payment-method is-active">
-                        <strong>پرداخت با سکه</strong>
-                        <p class="bazar-note">فقط زمانی قابل انجام است که کل مبلغ سفارش با سکه پوشش داده شود.</p>
-                    </div>
-                    <div class="bazar-card bazar-payment-method is-disabled" title="فعلا در دسترس نیست" data-disabled-label="فعلا در دسترس نیست">
-                        <strong>درگاه پرداخت</strong>
-                        <p class="bazar-note">این روش فعلا غیرفعال است و امکان پرداخت از طریق درگاه وجود ندارد.</p>
-                    </div>
-                </div>
-            </div>
+            <a href="{% url 'bazar:checkout-apply-coins' %}" class="bazar-secondary-btn bazar-cart-summary-link">تنظیم سکه مصرفی</a>
 
-            <div class="bazar-actions" style="margin-top: 1.5rem;">
-                <a href="{% url 'bazar:checkout-apply-coins' %}" class="bazar-secondary-btn">تنظیم سکه مصرفی</a>
-                <a href="{% url 'bazar:wallet-charge' %}?amount={{ remaining_amount }}" class="bazar-secondary-btn">درخواست افزایش اعتبار</a>
-                {% if remaining_amount == 0 %}
-                    <form method="post" action="{% url 'bazar:checkout-pay' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="bazar-btn">پرداخت نهایی با سکه</button>
-                    </form>
-                {% else %}
-                    <button type="button" class="bazar-btn bazar-btn-disabled" disabled title="ابتدا باید سکه کافی داشته باشید">پرداخت نهایی با سکه</button>
-                {% endif %}
-            </div>
-        </div>
+            <form method="post" action="{% url 'bazar:checkout-pay' %}" data-checkout-form>
+                {% csrf_token %}
+                <button type="submit" class="bazar-btn bazar-checkout-pay-btn" {% if stock_issues %}disabled{% endif %}>
+                    پرداخت نهایی
+                </button>
+            </form>
+        </aside>
     </div>
 </section>
 {% endblock %}

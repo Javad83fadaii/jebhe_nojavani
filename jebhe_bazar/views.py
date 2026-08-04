@@ -99,6 +99,10 @@ def _build_checkout_context(request: HttpRequest) -> dict:
     cart_total = sum(item.item_total for item in cart_items)
     available_coins = _get_available_coins(request.user, cart_total)
     applied_coins = _get_applied_coins(request, request.user, cart_total)
+    remaining_amount = max(cart_total - applied_coins, 0)
+    wallet_balance = int(request.user.wallet_balance or 0)
+    wallet_shortage = max(remaining_amount - wallet_balance, 0)
+    stock_issues = [item for item in cart_items if item.quantity > item.product.stock]
 
     return {
         "cart": cart,
@@ -106,7 +110,10 @@ def _build_checkout_context(request: HttpRequest) -> dict:
         "cart_total": cart_total,
         "available_coins": available_coins,
         "applied_coins": applied_coins,
-        "remaining_amount": max(cart_total - applied_coins, 0),
+        "remaining_amount": remaining_amount,
+        "wallet_balance": wallet_balance,
+        "wallet_shortage": wallet_shortage,
+        "stock_issues": stock_issues,
     }
 
 
