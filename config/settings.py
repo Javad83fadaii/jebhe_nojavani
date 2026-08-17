@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     'learning.apps.LearningConfig',
     'challenges',
     'jebhe_bazar.apps.JebheBazarConfig',
+    
+    'silk',
 ]
 
 try:
@@ -89,6 +91,7 @@ if libgdal is not None:
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'silk.middleware.SilkyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -200,3 +203,8 @@ PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "PASSWORD_RESET_SMS_TEXT",
     "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۲ دقیقه معتبر است.",
 )
+
+
+SILKY_PYTHON_PROFILER = True
+SILKY_PYTHON_PROFILER_BINARY = True
+SILKY_META = True  # نشون میدن هر ریکوئست چقدر خودِ silk overhead داشتهpython manage.py runserver
