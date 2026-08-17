@@ -12,30 +12,34 @@
         <p class="bazar-note">اقلام سفارش را بررسی کن، سکه مصرفی را تنظیم کن و پرداخت را نهایی کن.</p>
     </div>
 
-    {% if stock_issues %}
-        <div class="bazar-alert bazar-alert-danger">
-            <div class="bazar-alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div class="bazar-alert-body">
-                <strong>موجودی برخی محصولات کافی نیست.</strong>
-                <p>برای ادامه، تعداد این محصولات را در سبد خرید اصلاح کن:</p>
-                <ul class="bazar-alert-list">
-                    {% for item in stock_issues %}
-                        <li>{{ item.product.title }} — موجودی فعلی: {{ item.product.stock|toman }}</li>
-                    {% endfor %}
-                </ul>
-                <a href="{% url 'bazar:cart' %}" class="bazar-secondary-btn bazar-alert-btn">بازگشت به سبد خرید</a>
-            </div>
-        </div>
-    {% endif %}
+    {% if stock_issues or wallet_shortage > 0 %}
+        <div class="bazar-checkout-alerts">
+            {% if stock_issues %}
+                <div class="bazar-alert bazar-alert-danger">
+                    <div class="bazar-alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="bazar-alert-body">
+                        <strong>موجودی برخی محصولات کافی نیست.</strong>
+                        <p>برای ادامه، تعداد این محصولات را در سبد خرید اصلاح کن:</p>
+                        <ul class="bazar-alert-list">
+                            {% for item in stock_issues %}
+                                <li>{{ item.product.title }} — موجودی فعلی: {{ item.product.stock|toman }}</li>
+                            {% endfor %}
+                        </ul>
+                        <a href="{% url 'bazar:cart' %}" class="bazar-secondary-btn bazar-alert-btn">بازگشت به سبد خرید</a>
+                    </div>
+                </div>
+            {% endif %}
 
-    {% if wallet_shortage > 0 %}
-        <div class="bazar-alert bazar-alert-warning">
-            <div class="bazar-alert-icon"><i class="fa-solid fa-wallet"></i></div>
-            <div class="bazar-alert-body">
-                <strong>موجودی کیف پول کافی نیست.</strong>
-                <p>برای تکمیل این خرید {{ wallet_shortage|toman }} تومان کم داری. می‌تونی الان شارژ کنی یا موقع پرداخت به‌صورت خودکار به صفحه‌ی شارژ منتقل می‌شوی.</p>
-                <a href="{% url 'bazar:wallet-charge' %}?amount={{ wallet_shortage }}&next={% url 'bazar:checkout' %}" class="bazar-secondary-btn bazar-alert-btn">شارژ کیف پول</a>
-            </div>
+            {% if wallet_shortage > 0 %}
+                <div class="bazar-alert bazar-alert-warning">
+                    <div class="bazar-alert-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="bazar-alert-body">
+                        <strong>موجودی کیف پول کافی نیست.</strong>
+                        <p>برای تکمیل این خرید {{ wallet_shortage|toman }} تومان کم داری. می‌تونی الان شارژ کنی یا موقع پرداخت به‌صورت خودکار به صفحه‌ی شارژ منتقل می‌شوی.</p>
+                        <a href="{% url 'bazar:wallet-charge' %}?amount={{ wallet_shortage }}&next={% url 'bazar:checkout' %}" class="bazar-secondary-btn bazar-alert-btn">شارژ کیف پول</a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     {% endif %}
 

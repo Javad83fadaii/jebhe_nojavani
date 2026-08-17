@@ -232,3 +232,14 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+document.addEventListener("DOMContentLoaded", function () {
+    const checkoutForm = document.querySelector("[data-checkout-form]");
+    if (!checkoutForm) return;
+
+    checkoutForm.addEventListener("submit", function () {
+        const button = checkoutForm.querySelector("button[type=submit]");
+        if (!button || button.disabled) return;
+        button.disabled = true;
+        button.textContent = "در حال پردازش...";
+    });
+});
