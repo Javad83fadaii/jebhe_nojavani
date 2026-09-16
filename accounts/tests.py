@@ -409,3 +409,60 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(reset_request.provider_response["fallback_result"]["status"], 1)
         mocked_verify.assert_called_once()
         mocked_bulk_send.assert_called_once()
+
+    def test_convert_coins_api_and_approval_flow(self):
+        user = User.objects.create_user(
+            phone_number="09121112233",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="تبدیل",
+            challenge_coins=500,
+            wallet_balance=1000,
+        )
+        self.client.force_authenticate(user=user)
+
+        # 1. Check GET endpoint
+        get_res = self.client.get("/api/accounts/profile/convert-coins/")
+        self.assertEqual(get_res.status_code, 200)
+        self.assertEqual(get_res.data["challenge_coins"], 500)
+        self.assertEqual(get_res.data["wallet_balance"], 1000)
+
+        # 2. Try converting more than balance -> Should fail
+        fail_res = self.client.post("/api/accounts/profile/convert-coins/", {"coin_amount": 600}, format="json")
+        self.assertEqual(fail_res.status_code, 400)
+
+        # 3. Try converting zero or negative -> Should fail
+        zero_res = self.client.post("/api/accounts/profile/convert-coins/", {"coin_amount": 0}, format="json")
+        self.assertEqual(zero_res.status_code, 400)
+
+        # 4. Valid conversion request
+        ok_res = self.client.post("/api/accounts/profile/convert-coins/", {"coin_amount": 200}, format="json")
+        self.assertEqual(ok_res.status_code, 201)
+        transfer_id = ok_res.data["transfer_id"]
+
+        from accounts.models import CoinToWalletTransfer, CoinTransaction
+        transfer = CoinToWalletTransfer.objects.get(pk=transfer_id)
+        self.assertEqual(transfer.status, CoinToWalletTransfer.TransferStatus.PENDING)
+        self.assertEqual(transfer.coin_amount, 200)
+
+        # Before admin approval, user balance and coins remain as is
+        user.refresh_from_db()
+        self.assertEqual(user.challenge_coins, 500)
+        self.assertEqual(user.wallet_balance, 1000)
+
+        # Admin approves the transfer
+        transfer.status = CoinToWalletTransfer.TransferStatus.APPROVED
+        transfer.save()
+
+        user.refresh_from_db()
+        # Challenge coins deducted
+        self.assertEqual(user.challenge_coins, 300)
+        # Wallet balance directly credited in Tomans
+        self.assertEqual(user.wallet_balance, 1200)
+        self.assertTrue(
+            CoinTransaction.objects.filter(
+                user=user,
+                transaction_type=CoinTransaction.TransactionType.WALLET_TRANSFER,
+            ).exists()
+        )
+

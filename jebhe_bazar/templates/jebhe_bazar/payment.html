@@ -34,14 +34,68 @@
                 <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">بازگشت به بازار</a>
             </div>
         </div>
+    {% elif status == "insufficient_coins" %}
+        <div class="bazar-empty-state">
+            <div style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem;"><i class="fas fa-coins"></i></div>
+            <h1 style="color: #fde68a;">موجودی سکه چالش شما برای این سفارش کافی نیست</h1>
+            <p class="bazar-note" style="margin-top: 0.5rem;">برای اقلام سکه‌ای این سفارش، سکه چالش بیشتری نیاز است.</p>
+
+            <div class="bazar-summary-grid" style="margin: 1.5rem auto; max-width: 600px;">
+                <div class="bazar-card">
+                    <strong>سکه مورد نیاز</strong>
+                    <div class="bazar-price" style="color: #fbbf24;">{{ total_needed|toman }} سکه</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>موجودی فعلی شما</strong>
+                    <div class="bazar-price">{{ current_balance|toman }} سکه</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>کسری سکه</strong>
+                    <div class="bazar-price" style="color: #ef4444;">{{ shortage|toman }} سکه</div>
+                </div>
+            </div>
+
+            <p class="bazar-note">توجه: تبدیل پول نقدی به سکه چالش مجاز نیست. شما می‌توانید با انجام چالش‌ها سکه به دست آورید یا در صورت امکان روش پرداخت این اقلام را در سبد خرید به نقدی تغییر دهید.</p>
+
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <a href="{% url 'challenges' %}" class="bazar-btn"><i class="fas fa-trophy"></i> انجام چالش‌ها و دریافت سکه</a>
+                <a href="{% url 'bazar:cart' %}" class="bazar-secondary-btn"><i class="fas fa-shopping-cart"></i> ویرایش سبد خرید</a>
+            </div>
+        </div>
+    {% elif status == "insufficient_wallet" %}
+        <div class="bazar-empty-state">
+            <div style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"><i class="fas fa-wallet"></i></div>
+            <h1 style="color: #fca5a5;">موجودی کیف پول شما کافی نیست</h1>
+            <p class="bazar-note" style="margin-top: 0.5rem;">برای پرداخت اقلام نقدی این سفارش، ابتدا باید کیف پول خود را شارژ کنید.</p>
+
+            <div class="bazar-summary-grid" style="margin: 1.5rem auto; max-width: 600px;">
+                <div class="bazar-card">
+                    <strong>مبلغ نقدی سفارش</strong>
+                    <div class="bazar-price">{{ total_needed|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>موجودی فعلی کیف پول</strong>
+                    <div class="bazar-price" style="color: #4ade80;">{{ current_balance|toman }} تومان</div>
+                </div>
+                <div class="bazar-card">
+                    <strong>کسری موجودی</strong>
+                    <div class="bazar-price" style="color: #ef4444;">{{ shortage|toman }} تومان</div>
+                </div>
+            </div>
+
+            <p class="bazar-note">شما می‌توانید درخواست افزایش اعتبار ثبت کنید تا پس از بررسی و تایید ادمین، کیف پول شما به صورت مستقیم شارژ شود.</p>
+
+            <div class="bazar-actions" style="margin-top: 1.5rem;">
+                <a href="{{ charge_request_url }}" class="bazar-btn"><i class="fas fa-plus-circle"></i> ثبت درخواست شارژ کیف پول</a>
+                <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت به تسویه حساب</a>
+            </div>
+        </div>
     {% else %}
         <div class="bazar-empty-state">
-            <h1>اعتبار سکه شما برای این سفارش کافی نیست</h1>
-            <p class="bazar-note">کسری سکه: {{ shortage|toman }} سکه</p>
-            <p class="bazar-note">درگاه پرداخت فعلا غیرفعال است. برای افزایش اعتبار، درخواست ثبت کن تا پس از بررسی شماره کارت برای شما ارسال شود و بعد از تایید پرداخت، سکه به حسابتان اضافه شود.</p>
+            <h1>خطا در پردازش پرداخت</h1>
+            <p class="bazar-note">اطلاعات سفارش یا موجودی معتبر نمی‌باشد.</p>
             <div class="bazar-actions" style="margin-top: 1.5rem;">
-                <a href="{{ charge_request_url }}" class="bazar-btn">ثبت درخواست افزایش اعتبار</a>
-                <a href="{% url 'bazar:checkout' %}" class="bazar-secondary-btn">بازگشت به تسویه حساب</a>
+                <a href="{% url 'bazar:cart' %}" class="bazar-btn">بازگشت به سبد خرید</a>
             </div>
         </div>
     {% endif %}

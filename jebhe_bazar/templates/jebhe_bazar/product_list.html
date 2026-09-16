@@ -90,13 +90,14 @@
         <div>
             <div class="bazar-summary-grid" style="margin-bottom: 1rem;">
                 <div class="bazar-card">
-                    <strong>افزایش اعتبار</strong>
-                    <div class="bazar-note">اگر سکه کافی نداری، درخواست جدید ثبت کن.</div>
-                    <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn" style="margin-top: 0.75rem;">ثبت درخواست</a>
+                    <strong><i class="fas fa-wallet" style="color: var(--gold, #F5A623);"></i> موجودی کیف پول</strong>
+                    <div class="bazar-price">{{ request.user.wallet_balance|toman }} تومان</div>
+                    <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn" style="margin-top: 0.75rem;">افزایش اعتبار</a>
                 </div>
                 <div class="bazar-card">
-                    <strong>سکه چالش</strong>
+                    <strong><i class="fas fa-coins" style="color: #fbbf24;"></i> سکه چالش</strong>
                     <div class="bazar-price">{{ request.user.challenge_coins|toman }} سکه</div>
+                    <a href="{% url 'profile' %}" class="bazar-link-btn" style="margin-top: 0.75rem; font-size: 0.85rem;">تبدیل سکه به کیف پول</a>
                 </div>
                 <div class="bazar-card">
                     <strong>نتیجه‌ها</strong>
@@ -129,6 +130,13 @@
                             <div class="bazar-product-image">
                                 {% if product.image %}
                                     <img src="{{ product.image.url }}" alt="{{ product.title }}">
+                                    {% if product.payment_method == "coin" %}
+                                        <span class="bazar-chip is-active" style="position: absolute; top: 10px; right: 10px; background: rgba(245, 166, 35, 0.9); color: #000; font-weight: bold;"><i class="fas fa-coins"></i> فقط با سکه</span>
+                                    {% elif product.payment_method == "money" %}
+                                        <span class="bazar-chip" style="position: absolute; top: 10px; right: 10px; background: rgba(34, 197, 94, 0.9); color: #000; font-weight: bold;"><i class="fas fa-wallet"></i> نقدی</span>
+                                    {% else %}
+                                        <span class="bazar-chip" style="position: absolute; top: 10px; right: 10px; background: rgba(108, 63, 197, 0.9); color: #fff; font-weight: bold;">سکه یا پول</span>
+                                    {% endif %}
                                 {% else %}
                                     <span class="bazar-placeholder">بدون تصویر</span>
                                 {% endif %}
@@ -146,17 +154,33 @@
                                 </div>
                                 <div class="bazar-inline-actions" style="margin-top: 0.6rem; justify-content: space-between; align-items: center;">
                                     <span class="bazar-note">{{ product.seller.shop_name }}</span>
-                                    {% if product.is_ticket %}
-                                        <span class="bazar-chip">بلیط تفریحی</span>
+                                    {% if product.payment_method == "coin" %}
+                                        <span class="bazar-chip" style="color: #fbbf24; border-color: rgba(245, 166, 35, 0.4);"><i class="fas fa-coins"></i> فقط سکه چالش</span>
+                                    {% elif product.payment_method == "money" %}
+                                        <span class="bazar-chip" style="color: #4ade80; border-color: rgba(34, 197, 94, 0.4);"><i class="fas fa-wallet"></i> فقط اعتبار نقدی</span>
+                                    {% else %}
+                                        <span class="bazar-chip" style="color: #c4b5fd; border-color: rgba(108, 63, 197, 0.4);"><i class="fas fa-coins"></i> یا <i class="fas fa-wallet"></i> هر دو</span>
                                     {% endif %}
                                 </div>
                                 <h3 style="margin: 1rem 0 0.5rem;">{{ product.title }}</h3>
                                 <p class="bazar-note">{{ product.description|truncatechars:110 }}</p>
                                 <div class="bazar-price-row">
                                     <div>
-                                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
-                                        {% if product.discount_active and product.discount_percent %}
-                                            <div class="bazar-old-price">{{ product.price|toman }} تومان</div>
+                                        {% if product.payment_method == "coin" %}
+                                            <div class="bazar-price" style="color: #fbbf24;"><i class="fas fa-coins"></i> {{ product.final_coin_price|toman }} سکه</div>
+                                            {% if product.discount_active and product.discount_percent %}
+                                                <div class="bazar-old-price">{{ product.coin_price|default:product.price|toman }} سکه</div>
+                                            {% endif %}
+                                        {% elif product.payment_method == "money" %}
+                                            <div class="bazar-price"><i class="fas fa-wallet"></i> {{ product.final_price|toman }} تومان</div>
+                                            {% if product.discount_active and product.discount_percent %}
+                                                <div class="bazar-old-price">{{ product.price|toman }} تومان</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="bazar-price">{{ product.final_price|toman }} تومان <span style="font-size: 0.85rem; color: #fbbf24;">یا {{ product.final_coin_price|toman }} سکه</span></div>
+                                            {% if product.discount_active and product.discount_percent %}
+                                                <div class="bazar-old-price">{{ product.price|toman }} تومان</div>
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                     <span class="bazar-chip">موجودی: {{ product.stock|toman }}</span>
@@ -166,7 +190,7 @@
                                     <form method="post" action="{% url 'bazar:cart-add' product.id %}">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button type="submit" class="bazar-btn">افزودن به سبد</button>
+                                        <button type="submit" class="bazar-btn" {% if not product.is_in_stock %}disabled{% endif %}>افزودن به سبد</button>
                                     </form>
                                 </div>
                             </div>

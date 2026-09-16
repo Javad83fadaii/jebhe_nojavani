@@ -1,6 +1,38 @@
+# Environment variables
 .env
+.env.*
+
+# Python & Django caches
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Profiler & Silk output files
+*.prof
+silk_profiling/
+media/*.prof
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Database
+*.sqlite3
+*.db
+
+# Archives
 *.rar
 *.zip
-__pycache__
+*.tar.gz
+*.7z
+
+*.pyc

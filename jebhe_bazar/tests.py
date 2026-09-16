@@ -145,25 +145,38 @@ class CheckoutFlowTests(TestCase):
             shop_address="قم",
             platform_commission_percent=Decimal("15.00"),
         )
-        self.category = Category.objects.create(name="دوره")
-        self.product = Product.objects.create(
+        self.category, _ = Category.objects.get_or_create(name="دوره آموزشی")
+        self.coin_product = Product.objects.create(
             seller=self.seller,
             category=self.category,
-            title="دوره مهارتی",
+            title="دوره سکه‌ای",
             description="توضیح کامل",
             price=50000,
+            coin_price=50000,
             stock=4,
             discount_percent=10,
             discount_active=True,
+            payment_method=Product.PaymentMethod.COIN,
+        )
+        self.money_product = Product.objects.create(
+            seller=self.seller,
+            category=self.category,
+            title="دوره نقدی",
+            description="توضیح نقدی",
+            price=30000,
+            stock=5,
+            payment_method=Product.PaymentMethod.MONEY,
         )
         self.cart = Cart.objects.create(user=self.user)
-        CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
         self.client.force_login(self.user)
 
     def test_pay_view_completes_order_with_only_coins(self):
-        session = self.client.session
-        session[CHECKOUT_COINS_SESSION_KEY] = 45000
-        session.save()
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.coin_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.COIN,
+        )
 
         response = self.client.post(reverse("bazar:checkout-pay"))
 
@@ -172,32 +185,75 @@ class CheckoutFlowTests(TestCase):
 
         order = Order.objects.get()
         self.user.refresh_from_db()
-        self.product.refresh_from_db()
+        self.coin_product.refresh_from_db()
 
-        self.assertEqual(order.total_amount, 45000)
+        self.assertEqual(order.total_amount, 0)
         self.assertEqual(order.coins_used, 45000)
         self.assertEqual(order.wallet_used, 0)
         self.assertEqual(order.online_paid, 0)
         self.assertEqual(order.status, Order.Status.PAID)
         self.assertEqual(self.user.challenge_coins, 15000)
-        self.assertEqual(self.product.stock, 3)
+        self.assertEqual(self.coin_product.stock, 3)
         self.assertEqual(self.cart.items.count(), 0)
-        self.assertEqual(Transaction.objects.filter(transaction_type=Transaction.TransactionType.PURCHASE).count(), 1)
-        self.assertEqual(Transaction.objects.filter(transaction_type=Transaction.TransactionType.COMMISSION).count(), 1)
 
     def test_pay_view_shows_shortage_when_coins_are_not_enough(self):
         self.user.challenge_coins = 10000
         self.user.save(update_fields=["challenge_coins"])
 
-        session = self.client.session
-        session[CHECKOUT_COINS_SESSION_KEY] = 5000
-        session.save()
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.coin_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.COIN,
+        )
 
         response = self.client.post(reverse("bazar:checkout-pay"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "اعتبار سکه شما برای این سفارش کافی نیست")
-        self.assertContains(response, "۴۰,۰۰۰")
+        self.assertContains(response, "موجودی سکه چالش شما برای این سفارش کافی نیست")
+        self.assertContains(response, "۳۵,۰۰۰")
+        self.assertEqual(Order.objects.count(), 0)
+
+    def test_pay_view_completes_order_with_wallet_money(self):
+        self.user.wallet_balance = Decimal("50000")
+        self.user.save(update_fields=["wallet_balance"])
+
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.money_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.MONEY,
+        )
+
+        response = self.client.post(reverse("bazar:checkout-pay"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Order.objects.count(), 1)
+
+        order = Order.objects.get()
+        self.user.refresh_from_db()
+
+        self.assertEqual(order.total_amount, 30000)
+        self.assertEqual(order.wallet_used, 30000)
+        self.assertEqual(order.coins_used, 0)
+        self.assertEqual(self.user.wallet_balance, Decimal("20000"))
+
+    def test_pay_view_shows_shortage_when_wallet_is_not_enough(self):
+        self.user.wallet_balance = Decimal("10000")
+        self.user.save(update_fields=["wallet_balance"])
+
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.money_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.MONEY,
+        )
+
+        response = self.client.post(reverse("bazar:checkout-pay"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "موجودی کیف پول شما کافی نیست")
+        self.assertContains(response, "۲۰,۰۰۰")
         self.assertEqual(Order.objects.count(), 0)
 
 
@@ -210,6 +266,7 @@ class WalletChargeRequestTests(TestCase):
             first_name="کاربر",
             last_name="درخواست",
             challenge_coins=1000,
+            wallet_balance=0,
         )
         self.client.force_login(self.user)
 
@@ -222,28 +279,30 @@ class WalletChargeRequestTests(TestCase):
         charge_request = WalletChargeRequest.objects.get()
         self.assertEqual(charge_request.user, self.user)
         self.assertEqual(charge_request.requested_amount, 25000)
-        self.assertEqual(charge_request.requested_coins, 25000)
+        self.assertEqual(charge_request.requested_coins, 0)
         self.assertEqual(charge_request.status, WalletChargeRequest.Status.PENDING)
 
-    def test_completing_request_grants_coins_once(self):
+    def test_completing_request_grants_wallet_balance_not_coins(self):
         charge_request = WalletChargeRequest.objects.create(
             user=self.user,
             requested_amount=15000,
-            requested_coins=15000,
+            requested_coins=0,
         )
 
         charge_request.status = WalletChargeRequest.Status.COMPLETED
-        charge_request.granted_coins = 12000
+        charge_request.granted_amount = 15000
         charge_request.save()
         charge_request.save()
 
         self.user.refresh_from_db()
         charge_request.refresh_from_db()
 
-        self.assertEqual(self.user.challenge_coins, 13000)
-        self.assertIsNotNone(charge_request.coins_granted_at)
+        # Coins MUST NOT increase
+        self.assertEqual(self.user.challenge_coins, 1000)
+        # Wallet balance MUST be directly credited
+        self.assertEqual(self.user.wallet_balance, Decimal("15000"))
         self.assertEqual(
-            CoinTransaction.objects.filter(challenge=f"bazar-charge-request-{charge_request.pk}").count(),
+            Transaction.objects.filter(transaction_type=Transaction.TransactionType.CHARGE).count(),
             1,
         )
 
@@ -269,9 +328,9 @@ class ProductListFilteringTests(TestCase):
             shop_address="تهران",
             platform_commission_percent=Decimal("10.00"),
         )
-        self.restaurant = Category.objects.create(name="رستوران")
-        self.fast_food = Category.objects.create(name="فست فود", parent=self.restaurant)
-        self.shop = Category.objects.create(name="فروشگاه")
+        self.restaurant, _ = Category.objects.get_or_create(name="رستوران تست")
+        self.fast_food, _ = Category.objects.get_or_create(name="فست فود تست", defaults={"parent": self.restaurant})
+        self.shop, _ = Category.objects.get_or_create(name="فروشگاه تست")
         self.client.force_login(self.user)
 
     def test_top_category_filter_limits_results_to_selected_group(self):

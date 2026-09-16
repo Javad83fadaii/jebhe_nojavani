@@ -24,6 +24,8 @@ class ProductForm(StyledFormMixin, forms.ModelForm):
             "title",
             "description",
             "price",
+            "coin_price",
+            "payment_method",
             "stock",
             "discount_percent",
             "discount_active",
@@ -38,6 +40,17 @@ class ProductForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = self.fields["category"].queryset.filter(is_active=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_method = cleaned_data.get("payment_method")
+        price = cleaned_data.get("price")
+        coin_price = cleaned_data.get("coin_price")
+
+        if payment_method == Product.PaymentMethod.COIN:
+            if not coin_price and (price is None or price <= 0):
+                self.add_error("coin_price", "برای محصولی که فقط با سکه قابل خرید است، قیمت به سکه الزامی است.")
+        return cleaned_data
 
 
 class CartQuantityForm(StyledFormMixin, forms.Form):

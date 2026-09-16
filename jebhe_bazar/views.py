@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -55,10 +55,15 @@ def _build_cart_item_response(cart: Cart, item: CartItem, message: str, *, statu
         "stock": item.product.stock,
         "item_total": item.item_total,
         "item_total_display": _format_toman(item.item_total),
-        "unit_price": item.product.final_price,
-        "unit_price_display": _format_toman(item.product.final_price),
+        "unit_price": item.item_unit_price,
+        "unit_price_display": _format_toman(item.item_unit_price),
+        "is_paid_with_coins": item.is_paid_with_coins,
         "cart_total": cart_total,
         "cart_total_display": _format_toman(cart_total),
+        "cart_total_money": cart.total_money,
+        "cart_total_money_display": _format_toman(cart.total_money),
+        "cart_total_coins": cart.total_coins,
+        "cart_total_coins_display": _format_toman(cart.total_coins),
         "cart_total_quantity": cart.total_quantity,
         "cart_total_quantity_display": _format_toman(cart.total_quantity),
         "can_increment": item.quantity < item.product.stock,
@@ -96,24 +101,39 @@ def _require_seller(user: User) -> Seller:
 def _build_checkout_context(request: HttpRequest) -> dict:
     cart = _get_cart(request.user)
     cart_items = list(_get_cart_items(cart))
+
+    total_money_needed = sum(item.item_total_money for item in cart_items)
+    total_coins_needed = sum(item.item_total_coins for item in cart_items)
     cart_total = sum(item.item_total for item in cart_items)
-    available_coins = _get_available_coins(request.user, cart_total)
-    applied_coins = _get_applied_coins(request, request.user, cart_total)
-    remaining_amount = max(cart_total - applied_coins, 0)
-    wallet_balance = int(request.user.wallet_balance or 0)
-    wallet_shortage = max(remaining_amount - wallet_balance, 0)
+
+    user_coins = int(getattr(request.user, "challenge_coins", 0) or 0)
+    user_wallet = int(getattr(request.user, "wallet_balance", 0) or 0)
+
+    coins_shortage = max(total_coins_needed - user_coins, 0)
+    wallet_shortage = max(total_money_needed - user_wallet, 0)
+
+    has_insufficient_coins = coins_shortage > 0
+    has_insufficient_wallet = wallet_shortage > 0
     stock_issues = [item for item in cart_items if item.quantity > item.product.stock]
+    can_pay = (not has_insufficient_coins) and (not has_insufficient_wallet) and (not stock_issues) and bool(cart_items)
+
+    charge_url = f"{reverse('bazar:wallet-charge')}?amount={wallet_shortage or total_money_needed}" if wallet_shortage > 0 else reverse('bazar:wallet-charge')
 
     return {
         "cart": cart,
         "cart_items": cart_items,
         "cart_total": cart_total,
-        "available_coins": available_coins,
-        "applied_coins": applied_coins,
-        "remaining_amount": remaining_amount,
-        "wallet_balance": wallet_balance,
+        "total_money_needed": total_money_needed,
+        "total_coins_needed": total_coins_needed,
+        "user_coins": user_coins,
+        "user_wallet": user_wallet,
+        "coins_shortage": coins_shortage,
         "wallet_shortage": wallet_shortage,
+        "has_insufficient_coins": has_insufficient_coins,
+        "has_insufficient_wallet": has_insufficient_wallet,
+        "can_pay": can_pay,
         "stock_issues": stock_issues,
+        "charge_request_url": charge_url,
     }
 
 
@@ -327,6 +347,8 @@ def cart_view(request: HttpRequest) -> HttpResponse:
         "cart": cart,
         "cart_items": cart_items,
         "cart_total": sum(item.item_total for item in cart_items),
+        "cart_total_money": cart.total_money,
+        "cart_total_coins": cart.total_coins,
         "page_name": "bazar",
         "page_title": "سبد خرید | جبهه بازار",
         "quantity_form": CartQuantityForm(),
@@ -377,10 +399,26 @@ def add_to_cart(request: HttpRequest, product_id: int) -> HttpResponse:
         messages.error(request, "این محصول در حال حاضر موجود نیست.")
         return redirect(product.get_absolute_url())
 
-    item, created = CartItem.objects.get_or_create(cart=cart, product=product, defaults={"quantity": 0})
+    payment_choice = request.POST.get("payment_method")
+    if product.payment_method == Product.PaymentMethod.COIN:
+        default_method = CartItem.SelectedPaymentMethod.COIN
+    elif product.payment_method == Product.PaymentMethod.MONEY:
+        default_method = CartItem.SelectedPaymentMethod.MONEY
+    elif payment_choice in {CartItem.SelectedPaymentMethod.COIN, CartItem.SelectedPaymentMethod.MONEY}:
+        default_method = payment_choice
+    else:
+        default_method = CartItem.SelectedPaymentMethod.MONEY
+
+    item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={"quantity": 0, "selected_payment_method": default_method},
+    )
     new_quantity = min(item.quantity + quantity, product.stock)
     item.quantity = new_quantity
-    item.save(update_fields=["quantity"])
+    if not created and payment_choice:
+        item.selected_payment_method = default_method
+    item.save(update_fields=["quantity", "selected_payment_method"] if not created and payment_choice else ["quantity"])
 
     if created:
         messages.success(request, "محصول به سبد خرید اضافه شد.")
@@ -389,6 +427,24 @@ def add_to_cart(request: HttpRequest, product_id: int) -> HttpResponse:
 
     next_url = request.POST.get("next")
     return redirect(next_url or "bazar:cart")
+
+
+@login_required
+@require_POST
+def update_cart_item_payment_method(request: HttpRequest, item_id: int) -> HttpResponse:
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
+
+    cart = _get_cart(request.user)
+    item = get_object_or_404(CartItem.objects.select_related("product"), pk=item_id, cart=cart)
+    if item.product.payment_method == Product.PaymentMethod.BOTH:
+        method = request.POST.get("payment_method")
+        if method in {CartItem.SelectedPaymentMethod.COIN, CartItem.SelectedPaymentMethod.MONEY}:
+            item.selected_payment_method = method
+            item.save(update_fields=["selected_payment_method"])
+            messages.success(request, "روش پرداخت کالا در سبد خرید تغییر کرد.")
+    return redirect("bazar:cart")
 
 
 @login_required
@@ -529,52 +585,77 @@ def pay_view(request: HttpRequest) -> HttpResponse:
                 messages.error(request, f"موجودی {item.product.title} کافی نیست.")
                 return redirect("bazar:cart")
 
-        cart_total = sum(item.item_total for item in cart_items)
-        coins_used = min(_get_applied_coins(request, user, cart_total), int(user.challenge_coins or 0), cart_total)
-        remaining_amount = max(cart_total - coins_used, 0)
-        if remaining_amount > 0:
+        total_money_needed = sum(item.item_total_money for item in cart_items)
+        total_coins_needed = sum(item.item_total_coins for item in cart_items)
+
+        user_coins = int(user.challenge_coins or 0)
+        user_wallet = int(user.wallet_balance or 0)
+
+        # بررسی موجودی سکه چالش
+        if user_coins < total_coins_needed:
+            shortage = total_coins_needed - user_coins
             context = {
                 "status": "insufficient_coins",
-                "shortage": remaining_amount,
-                "charge_request_url": f"{reverse('bazar:wallet-charge')}?amount={remaining_amount}",
+                "shortage": shortage,
+                "total_needed": total_coins_needed,
+                "current_balance": user_coins,
                 "page_name": "bazar",
-                "page_title": "عدم کفایت سکه | جبهه بازار",
+                "page_title": "عدم کفایت سکه چالش | جبهه بازار",
             }
             return render(request, "jebhe_bazar/payment.html", context)
 
-        if coins_used > 0:
-            user.challenge_coins -= coins_used
-            record_coin_spend(user, coins_used, f"استفاده از {coins_used} سکه برای خرید از جبهه بازار")
+        # بررسی موجودی کیف پول تومانی
+        if user_wallet < total_money_needed:
+            shortage = total_money_needed - user_wallet
+            context = {
+                "status": "insufficient_wallet",
+                "shortage": shortage,
+                "total_needed": total_money_needed,
+                "current_balance": user_wallet,
+                "charge_request_url": f"{reverse('bazar:wallet-charge')}?amount={shortage}",
+                "page_name": "bazar",
+                "page_title": "عدم کفایت موجودی کیف پول | جبهه بازار",
+            }
+            return render(request, "jebhe_bazar/payment.html", context)
 
-        user.save(update_fields=["challenge_coins"])
+        # کسر مقادیر از حساب کاربر
+        if total_coins_needed > 0:
+            user.challenge_coins -= total_coins_needed
+            record_coin_spend(user, total_coins_needed, f"استفاده از {total_coins_needed} سکه برای خرید سفارش جبهه بازار")
+
+        if total_money_needed > 0:
+            user.wallet_balance -= Decimal(total_money_needed)
+
+        user.save(update_fields=["challenge_coins", "wallet_balance"])
 
         order = Order.objects.create(
             user=user,
-            total_amount=cart_total,
-            coins_used=coins_used,
-            wallet_used=0,
+            total_amount=total_money_needed,
+            coins_used=total_coins_needed,
+            wallet_used=total_money_needed,
             online_paid=0,
             status=Order.Status.PAID,
         )
 
-        Transaction.objects.create(
-            user=user,
-            order=order,
-            amount=cart_total,
-            transaction_type=Transaction.TransactionType.PURCHASE,
-            description=(
-                f"پرداخت سفارش #{order.pk}. "
-                f"سکه مصرفی: {coins_used} تومان."
-            ),
-        )
+        if total_money_needed > 0:
+            Transaction.objects.create(
+                user=user,
+                order=order,
+                amount=total_money_needed,
+                transaction_type=Transaction.TransactionType.PURCHASE,
+                description=f"پرداخت نقدی سفارش #{order.pk} از موجودی کیف پول.",
+            )
 
         commission_totals: dict[int, int] = {}
         for item in cart_items:
+            paid_with = "coin" if item.is_paid_with_coins else "money"
             OrderItem.objects.create(
                 order=order,
                 product=item.product,
                 quantity=item.quantity,
                 unit_price=item.product.final_price,
+                unit_coins=item.product.final_coin_price,
+                paid_with=paid_with,
             )
             item.product.stock -= item.quantity
             item.product.save(update_fields=["stock"])
@@ -583,7 +664,7 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             item_total = item.quantity * item.product.final_price
             commission_value = Decimal(item_total) * Decimal(item.product.seller.platform_commission_percent) / Decimal(100)
             commission_totals[seller_id] = commission_totals.get(seller_id, 0) + int(
-                commission_value.quantize(Decimal("1"))
+                commission_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             )
 
         for seller_id, commission_amount in commission_totals.items():
@@ -599,7 +680,7 @@ def pay_view(request: HttpRequest) -> HttpResponse:
         cart.items.all().delete()
         _clear_checkout_session(request)
 
-    messages.success(request, "پرداخت با موفقیت انجام شد.")
+    messages.success(request, "پرداخت سفارش با موفقیت انجام شد.")
     context = {
         "status": "success",
         "order": order,
@@ -633,9 +714,9 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
             WalletChargeRequest.objects.create(
                 user=request.user,
                 requested_amount=amount,
-                requested_coins=amount,
+                requested_coins=0,
             )
-            messages.success(request, "درخواست افزایش اعتبار ثبت شد و پس از بررسی، شماره کارت برای شما ارسال می‌شود.")
+            messages.success(request, "درخواست افزایش اعتبار کیف پول ثبت شد و پس از بررسی و تایید ادمین، اعتبار به کیف پول شما افزوده می‌شود.")
             return redirect(safe_next_url or "bazar:wallet-charge")
     else:
         form = WalletChargeRequestForm(suggested_amount=suggested_amount)
@@ -646,7 +727,7 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
         "recent_requests": recent_requests,
         "next_url": safe_next_url,
         "page_name": "bazar",
-        "page_title": "درخواست افزایش اعتبار | جبهه بازار",
+        "page_title": "افزایش اعتبار کیف پول | جبهه بازار",
     }
     return render(request, "jebhe_bazar/wallet_charge.html", context)
 

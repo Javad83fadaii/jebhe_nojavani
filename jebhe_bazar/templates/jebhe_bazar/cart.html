@@ -33,6 +33,22 @@
                                     <strong>{{ item.product.title }}</strong>
                                     <div class="bazar-note">{{ item.product.category.name }}</div>
                                     <div class="bazar-note">موجودی: {{ item.product.stock|toman }}</div>
+                                    <div style="margin-top: 0.4rem;">
+                                        {% if item.product.payment_method == "coin" %}
+                                            <span class="bazar-chip" style="background: rgba(245, 166, 35, 0.15); color: #fbbf24; border-color: rgba(245, 166, 35, 0.4);"><i class="fas fa-coins"></i> پرداخت با سکه چالش</span>
+                                        {% elif item.product.payment_method == "money" %}
+                                            <span class="bazar-chip" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border-color: rgba(34, 197, 94, 0.4);"><i class="fas fa-wallet"></i> پرداخت نقدی کیف پول</span>
+                                        {% else %}
+                                            <form method="post" action="{% url 'bazar:cart-update-payment-method' item.id %}" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                                {% csrf_token %}
+                                                <span class="bazar-note" style="font-size: 0.85rem;">روش پرداخت:</span>
+                                                <select name="payment_method" onchange="this.form.submit()" style="background: #1e2330; color: #fff; border: 1px solid #3b4256; border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.85rem; cursor: pointer;">
+                                                    <option value="money" {% if not item.is_paid_with_coins %}selected{% endif %}>نقدی (کیف پول)</option>
+                                                    <option value="coin" {% if item.is_paid_with_coins %}selected{% endif %}>سکه چالش</option>
+                                                </select>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn bazar-cart-remove">حذف</a>
                             </div>
@@ -58,8 +74,13 @@
                                 </form>
 
                                 <div class="bazar-cart-item-prices">
-                                    <span class="bazar-note">قیمت واحد: {{ item.product.final_price|toman }} تومان</span>
-                                    <span class="bazar-price">جمع: <span data-item-total>{{ item.item_total|toman }}</span> تومان</span>
+                                    {% if item.is_paid_with_coins %}
+                                        <span class="bazar-note" style="color: #fbbf24 !important;">قیمت واحد: {{ item.item_unit_price|toman }} سکه</span>
+                                        <span class="bazar-price" style="color: #fbbf24 !important;">جمع: <span data-item-total>{{ item.item_total_coins|toman }}</span> سکه</span>
+                                    {% else %}
+                                        <span class="bazar-note">قیمت واحد: {{ item.item_unit_price|toman }} تومان</span>
+                                        <span class="bazar-price">جمع: <span data-item-total>{{ item.item_total_money|toman }}</span> تومان</span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -71,20 +92,46 @@
                 <h3>خلاصه سفارش</h3>
 
                 <div class="bazar-cart-summary-row">
-                    <span>جمع کل سبد</span>
-                    <strong class="bazar-price"><span data-cart-total>{{ cart_total|toman }}</span> تومان</strong>
+                    <span>مبلغ نقدی کیف پول</span>
+                    <strong class="bazar-price"><span data-cart-total-money>{{ cart_total_money|toman }}</span> تومان</strong>
                 </div>
                 <div class="bazar-cart-summary-row">
-                    <span>سکه‌های شما</span>
-                    <strong>{{ request.user.challenge_coins|toman }} سکه</strong>
+                    <span>سکه‌های چالش مورد نیاز</span>
+                    <strong class="bazar-price" style="color: #fbbf24 !important;"><span data-cart-total-coins>{{ cart_total_coins|toman }}</span> سکه</strong>
                 </div>
 
-                <p class="bazar-note">برای دریافت سکه یا اعتبار بیشتر، درخواست شارژ کیف پول ثبت کن.</p>
-                <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn bazar-cart-summary-link">ثبت درخواست شارژ</a>
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 0.75rem 0;">
 
-                <div class="bazar-actions bazar-cart-summary-actions">
-                    <a href="{% url 'bazar:checkout' %}" class="bazar-btn">پرداخت</a>
-                    <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn">ادامه خرید</a>
+                <div class="bazar-cart-summary-row">
+                    <span>موجودی کیف پول شما</span>
+                    <strong style="color: #4ade80;">{{ request.user.wallet_balance|toman }} تومان</strong>
+                </div>
+                <div class="bazar-cart-summary-row">
+                    <span>موجودی سکه چالش شما</span>
+                    <strong style="color: #fbbf24;">{{ request.user.challenge_coins|toman }} سکه</strong>
+                </div>
+
+                {% if request.user.wallet_balance < cart_total_money %}
+                    <div style="margin-top: 0.75rem; padding: 0.65rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle"></i> موجودی کیف پول کافی نیست (کسری: {{ cart_total_money|sub:request.user.wallet_balance|toman }} تومان).
+                    </div>
+                {% endif %}
+
+                {% if request.user.challenge_coins < cart_total_coins %}
+                    <div style="margin-top: 0.75rem; padding: 0.65rem; border-radius: 6px; background: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.4); color: #fcd34d; font-size: 0.85rem;">
+                        <i class="fas fa-coins"></i> موجودی سکه چالش کافی نیست (کسری: {{ cart_total_coins|sub:request.user.challenge_coins|toman }} سکه).
+                    </div>
+                {% endif %}
+
+                <p class="bazar-note" style="margin-top: 1rem;">برای افزایش اعتبار کیف پول یا تبدیل سکه به اعتبار، به پنل کاربری مراجعه کنید.</p>
+                <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+                    <a href="{% url 'bazar:wallet-charge' %}" class="bazar-secondary-btn" style="text-align: center;"><i class="fas fa-wallet"></i> افزایش اعتبار کیف پول</a>
+                    <a href="{% url 'profile' %}" class="bazar-link-btn" style="text-align: center; font-size: 0.85rem;"><i class="fas fa-exchange-alt"></i> تبدیل سکه چالش به کیف پول</a>
+                </div>
+
+                <div class="bazar-actions bazar-cart-summary-actions" style="margin-top: 1rem;">
+                    <a href="{% url 'bazar:checkout' %}" class="bazar-btn" style="text-align: center;">ادامه جهت تسویه حساب</a>
+                    <a href="{% url 'bazar:product-list' %}" class="bazar-secondary-btn" style="text-align: center;">ادامه خرید از بازار</a>
                 </div>
             </aside>
         </div>

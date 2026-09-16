@@ -88,6 +88,32 @@
     .profile-actions {
         display: flex;
         gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-convert {
+        background: linear-gradient(135deg, var(--profile-gold) 0%, #d97706 100%);
+        color: #0b0b1a;
+        border: none;
+        padding: 0.85rem 1.8rem;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(245, 166, 35, 0.35);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-convert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(245, 166, 35, 0.55);
+    }
+
+    .btn-convert i {
+        font-size: 1.1rem;
     }
 
     .btn-edit {
@@ -113,6 +139,71 @@
 
     .btn-edit i {
         font-size: 1.1rem;
+    }
+
+    .convert-section {
+        background: var(--profile-card-bg);
+        border: 1px solid rgba(245, 166, 35, 0.3);
+        border-radius: 20px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        display: none;
+        animation: slideDown 0.4s ease;
+        margin-bottom: 2rem;
+    }
+
+    .convert-section.active {
+        display: block;
+    }
+
+    .convert-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .convert-table th,
+    .convert-table td {
+        padding: 0.75rem 1rem;
+        text-align: right;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .convert-table th {
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .convert-table tr:hover td {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .badge-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-status.pending {
+        background: rgba(245, 166, 35, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 166, 35, 0.4);
+    }
+
+    .badge-status.approved {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+        border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .badge-status.rejected {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+        border: 1px solid rgba(239, 68, 68, 0.4);
     }
 
     /* Stats Grid */
@@ -519,6 +610,10 @@
                 <p>مدیریت اطلاعات حساب کاربری و پیشرفت شما</p>
             </div>
             <div class="profile-actions">
+                <button class="btn-convert" id="toggle-convert">
+                    <i class="fas fa-coins"></i>
+                    تبدیل سکه به کیف پول
+                </button>
                 <button class="btn-edit" id="toggle-edit">
                     <i class="fas fa-edit"></i>
                     ویرایش پروفایل
@@ -634,6 +729,65 @@
             </div>
         </form>
     </div>
+
+    <!-- Convert Coins Section -->
+    <div class="convert-section" id="convert-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h2 style="font-size: 1.5rem; font-weight: var(--font-weight-heading); color: white; margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-coins" style="color: var(--profile-gold);"></i>
+                تبدیل سکه چالش به اعتبار کیف پول
+            </h2>
+            <span style="background: rgba(245, 166, 35, 0.15); color: #fbbf24; border: 1px solid rgba(245, 166, 35, 0.3); padding: 0.35rem 0.85rem; border-radius: 20px; font-size: 0.85rem;">
+                <i class="fas fa-info-circle"></i> تبدیل یک‌طرفه (سکه به پول نقد)
+            </span>
+        </div>
+
+        <div style="background: rgba(245, 166, 35, 0.08); border-right: 4px solid #F5A623; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: rgba(255, 255, 255, 0.85); font-size: 0.9rem; line-height: 1.7;">
+            <p style="margin: 0 0 0.5rem 0;"><i class="fas fa-check-circle" style="color: #F5A623;"></i> <strong>قوانین تبدیل:</strong> شما می‌توانید سکه‌های به دست آمده از چالش‌ها را به اعتبار نقدی کیف پول تبدیل کنید. پس از تایید توسط ادمین، اعتبار به صورت مستقیم به کیف پول تومانی شما افزوده خواهد شد.</p>
+            <p style="margin: 0; color: #fca5a5;"><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> <strong>توجه مهم:</strong> طبق قوانین، تبدیل پول نقد یا کیف پول به سکه چالش امکان‌پذیر نیست و سکه‌های چالش صرفاً از طریق انجام فعالیت‌ها و چالش‌ها به دست می‌آیند.</p>
+        </div>
+
+        <form id="convert-coins-form" style="margin-bottom: 2rem;">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+                <div>
+                    <label for="convert_coin_amount" style="display: block; color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">تعداد سکه جهت تبدیل:</label>
+                    <div style="position: relative;">
+                        <input type="number" id="convert_coin_amount" name="coin_amount" min="1" placeholder="مثال: 50" required style="width: 100%; padding: 0.85rem 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; color: white; font-size: 1rem;">
+                        <button type="button" id="convert_max_btn" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(245, 166, 35, 0.2); border: 1px solid rgba(245, 166, 35, 0.4); color: #fbbf24; border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.75rem; cursor: pointer;">حداکثر</button>
+                    </div>
+                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.4rem;">موجودی قابل تبدیل شما: <strong id="current-coins-display" style="color: #fbbf24;">۰</strong> سکه</div>
+                </div>
+
+                <div>
+                    <label style="display: block; color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">اعتبار دریافتی کیف پول:</label>
+                    <div id="converted-toman-preview" style="padding: 0.85rem 1rem; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; color: #4ade80; font-weight: 700; font-size: 1.1rem;">
+                        ۰ تومان
+                    </div>
+                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.4rem;">نرخ تبدیل: هر ۱ سکه = ۱ تومان</div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="submit" id="btn-submit-convert" style="flex: 1; background: linear-gradient(135deg, #F5A623 0%, #d97706 100%); color: #000; font-weight: 700; border: none; padding: 0.85rem 1.5rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s ease;">
+                        <i class="fas fa-check"></i> ثبت درخواست
+                    </button>
+                    <button type="button" id="btn-cancel-convert" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 0.85rem 1.25rem; border-radius: 10px; cursor: pointer;">
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Past Requests -->
+        <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+            <h3 style="font-size: 1.1rem; color: rgba(255,255,255,0.9); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-history" style="color: #fbbf24;"></i> سابقه درخواست‌های تبدیل سکه
+            </h3>
+            <div id="convert-history-container" style="overflow-x: auto;">
+                <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">در حال دریافت سابقه...</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
@@ -657,6 +811,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const editSection = document.getElementById('edit-section');
     const profileEditForm = document.getElementById('profile-edit-form');
     const cancelEditBtn = document.getElementById('cancel-edit');
+    const toggleConvertBtn = document.getElementById('toggle-convert');
+    const convertSection = document.getElementById('convert-section');
+    const convertCoinsForm = document.getElementById('convert-coins-form');
+    const cancelConvertBtn = document.getElementById('btn-cancel-convert');
+    const convertCoinAmountInput = document.getElementById('convert_coin_amount');
+    const convertMaxBtn = document.getElementById('convert_max_btn');
+    const convertedTomanPreview = document.getElementById('converted-toman-preview');
+    const currentCoinsDisplay = document.getElementById('current-coins-display');
+    const convertHistoryContainer = document.getElementById('convert-history-container');
+    let userChallengeCoins = 0;
     const schoolSelect = document.getElementById('school');
     const mosqueSelect = document.getElementById('mosque');
     const birthDateHidden = document.getElementById('birth_date');
@@ -819,18 +983,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Render stats
     function renderStats(profile) {
+        userChallengeCoins = Number(profile.challenge_coins || 0);
+        if (currentCoinsDisplay) {
+            currentCoinsDisplay.textContent = userChallengeCoins.toLocaleString('fa-IR');
+        }
+        if (convertCoinAmountInput) {
+            convertCoinAmountInput.max = userChallengeCoins;
+        }
+
         const stats = [
             {
                 icon: 'fa-trophy',
                 label: 'امتیاز کل',
-                value: profile.total_points || 0,
+                value: (profile.total_points || 0).toLocaleString('fa-IR'),
                 color: 'purple'
             },
             {
                 icon: 'fa-wallet',
                 label: 'موجودی کیف پول',
-                value: `${profile.wallet_balance || 0} تومان`,
-                color: 'gold'
+                value: `${Number(profile.wallet_balance || 0).toLocaleString('fa-IR')} تومان`,
+                color: 'gold',
+                action: `<div style="margin-top: 0.65rem;"><a href="/bazar/wallet/charge/" style="background: rgba(74, 222, 128, 0.15); border: 1px solid rgba(74, 222, 128, 0.4); color: #4ade80; border-radius: 8px; padding: 0.25rem 0.65rem; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fas fa-plus-circle"></i> افزایش اعتبار</a></div>`
             },
             {
                 icon: 'fa-medal',
@@ -846,8 +1019,9 @@ document.addEventListener('DOMContentLoaded', function() {
             {
                 icon: 'fa-coins',
                 label: 'سکه‌های چالش',
-                value: `${profile.challenge_coins || 0} سکه`,
-                color: 'gold'
+                value: `${userChallengeCoins.toLocaleString('fa-IR')} سکه`,
+                color: 'gold',
+                action: `<div style="margin-top: 0.65rem;"><button type="button" class="btn-stat-convert" style="background: rgba(245, 166, 35, 0.15); border: 1px solid rgba(245, 166, 35, 0.4); color: #fbbf24; border-radius: 8px; padding: 0.25rem 0.65rem; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fas fa-exchange-alt"></i> تبدیل به کیف پول</button></div>`
             }
         ];
 
@@ -858,6 +1032,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="stat-label">${stat.label}</div>
                 <div class="stat-value">${stat.value}</div>
+                ${stat.action || ''}
             </div>
         `).join('');
     }
@@ -1066,6 +1241,175 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error updating profile:', error);
         }
     });
+
+    // Convert Coins Handlers
+    function openConvertSection() {
+        convertSection.classList.add('active');
+        editSection.classList.remove('active');
+        toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
+        toggleConvertBtn.innerHTML = '<i class="fas fa-times"></i> بستن تبدیل سکه';
+        convertSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        loadConvertHistory();
+    }
+
+    function closeConvertSection() {
+        convertSection.classList.remove('active');
+        toggleConvertBtn.innerHTML = '<i class="fas fa-coins"></i> تبدیل سکه به کیف پول';
+    }
+
+    if (toggleConvertBtn) {
+        toggleConvertBtn.addEventListener('click', function() {
+            if (convertSection.classList.contains('active')) {
+                closeConvertSection();
+            } else {
+                openConvertSection();
+            }
+        });
+    }
+
+    if (cancelConvertBtn) {
+        cancelConvertBtn.addEventListener('click', closeConvertSection);
+    }
+
+    if (statsSection) {
+        statsSection.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-stat-convert');
+            if (btn) {
+                openConvertSection();
+            }
+        });
+    }
+
+    function updateConvertPreview() {
+        if (!convertCoinAmountInput || !convertedTomanPreview) return;
+        const amount = Number(convertCoinAmountInput.value || 0);
+        if (amount > 0) {
+            convertedTomanPreview.textContent = `${amount.toLocaleString('fa-IR')} تومان`;
+        } else {
+            convertedTomanPreview.textContent = '۰ تومان';
+        }
+    }
+
+    if (convertMaxBtn) {
+        convertMaxBtn.addEventListener('click', function() {
+            if (userChallengeCoins > 0 && convertCoinAmountInput) {
+                convertCoinAmountInput.value = userChallengeCoins;
+                updateConvertPreview();
+            }
+        });
+    }
+
+    if (convertCoinAmountInput) {
+        convertCoinAmountInput.addEventListener('input', updateConvertPreview);
+    }
+
+    async function loadConvertHistory() {
+        if (!convertHistoryContainer) return;
+        try {
+            const response = await fetch('/api/accounts/profile/convert-coins/', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                credentials: 'same-origin'
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            userChallengeCoins = Number(data.challenge_coins || 0);
+            if (currentCoinsDisplay) {
+                currentCoinsDisplay.textContent = userChallengeCoins.toLocaleString('fa-IR');
+            }
+            if (convertCoinAmountInput) {
+                convertCoinAmountInput.max = userChallengeCoins;
+            }
+
+            const transfers = data.transfers || [];
+            if (transfers.length === 0) {
+                convertHistoryContainer.innerHTML = '<p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">هنوز هیچ درخواستی برای تبدیل سکه ثبت نکرده‌اید.</p>';
+                return;
+            }
+
+            convertHistoryContainer.innerHTML = `
+                <table class="convert-table">
+                    <thead>
+                        <tr>
+                            <th>شماره</th>
+                            <th>تعداد سکه</th>
+                            <th>مبلغ تومانی</th>
+                            <th>وضعیت</th>
+                            <th>تاریخ ثبت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transfers.map((t, idx) => `
+                            <tr>
+                                <td>${(idx + 1).toLocaleString('fa-IR')}</td>
+                                <td style="color: #fbbf24; font-weight: 700;">${Number(t.coin_amount).toLocaleString('fa-IR')} سکه</td>
+                                <td style="color: #4ade80;">${Number(t.amount_toman).toLocaleString('fa-IR')} تومان</td>
+                                <td><span class="badge-status ${t.status}">${t.status_display}</span></td>
+                                <td style="color: rgba(255,255,255,0.6);">${t.requested_at}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        } catch (e) {
+            console.error('Error loading convert history:', e);
+            convertHistoryContainer.innerHTML = '<p style="color: #fca5a5; font-size: 0.9rem;">خطا در دریافت سابقه درخواست‌ها.</p>';
+        }
+    }
+
+    if (convertCoinsForm) {
+        convertCoinsForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const coinAmount = Number(convertCoinAmountInput.value || 0);
+            if (coinAmount <= 0) {
+                showMessage('لطفاً تعداد سکه معتبر وارد کنید.', 'error');
+                return;
+            }
+            if (coinAmount > userChallengeCoins) {
+                showMessage(`موجودی سکه چالش شما (${userChallengeCoins.toLocaleString('fa-IR')}) کمتر از مقدار انتخابی است.`, 'error');
+                return;
+            }
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+            const submitBtn = document.getElementById('btn-submit-convert');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ارسال...';
+            }
+
+            try {
+                const response = await fetch('/api/accounts/profile/convert-coins/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-CSRFToken': csrfToken || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ coin_amount: coinAmount })
+                });
+
+                const resData = await response.json();
+                if (!response.ok) {
+                    throw new Error(resData.detail || 'ثبت درخواست با خطا مواجه شد.');
+                }
+
+                showMessage(resData.detail || 'درخواست با موفقیت ثبت شد.', 'success');
+                convertCoinsForm.reset();
+                updateConvertPreview();
+                loadProfile();
+                loadConvertHistory();
+            } catch (err) {
+                showMessage(err.message, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> ثبت درخواست';
+                }
+            }
+        });
+    }
 
     // Initialize
     loadSelect('/api/geography/schools/', schoolSelect);

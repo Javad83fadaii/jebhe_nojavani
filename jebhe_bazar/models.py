@@ -66,6 +66,11 @@ class Category(models.Model):
 
 
 class Product(models.Model):
+    class PaymentMethod(models.TextChoices):
+        COIN = "coin", "فقط با سکه چالش"
+        MONEY = "money", "فقط با پول / اعتبار کیف پول"
+        BOTH = "both", "هر دو (سکه یا پول - به انتخاب خریدار)"
+
     seller = models.ForeignKey(
         Seller,
         on_delete=models.CASCADE,
@@ -81,7 +86,19 @@ class Product(models.Model):
     title = models.CharField(max_length=200, verbose_name="عنوان")
     slug = models.SlugField(max_length=220, unique=True, blank=True, verbose_name="اسلاگ")
     description = models.TextField(verbose_name="توضیحات")
-    price = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="قیمت")
+    price = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="قیمت (تومان)")
+    coin_price = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="قیمت به سکه چالش",
+        help_text="در صورتی که خالی باشد، از قیمت اصلی برای سکه استفاده می‌شود.",
+    )
+    payment_method = models.CharField(
+        max_length=10,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.BOTH,
+        verbose_name="روش پرداخت",
+    )
     stock = models.PositiveIntegerField(default=0, verbose_name="موجودی")
     discount_percent = models.PositiveSmallIntegerField(
         default=0,
@@ -119,6 +136,22 @@ class Product(models.Model):
         return int(discounted_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
     @property
+    def final_coin_price(self) -> int:
+        base_coin = self.coin_price if (self.coin_price is not None and self.coin_price > 0) else self.price
+        if not self.discount_active or self.discount_percent <= 0:
+            return int(base_coin)
+        discounted_value = Decimal(base_coin) * (Decimal(100) - Decimal(self.discount_percent)) / Decimal(100)
+        return int(discounted_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+    @property
+    def allows_coins(self) -> bool:
+        return self.payment_method in {self.PaymentMethod.COIN, self.PaymentMethod.BOTH}
+
+    @property
+    def allows_money(self) -> bool:
+        return self.payment_method in {self.PaymentMethod.MONEY, self.PaymentMethod.BOTH}
+
+    @property
     def is_in_stock(self) -> bool:
         return self.is_active and self.stock > 0
 
@@ -149,14 +182,32 @@ class Cart(models.Model):
         return sum(item.item_total for item in self.items.select_related("product"))
 
     @property
+    def total_money(self) -> int:
+        return sum(item.item_total_money for item in self.items.select_related("product"))
+
+    @property
+    def total_coins(self) -> int:
+        return sum(item.item_total_coins for item in self.items.select_related("product"))
+
+    @property
     def total_quantity(self) -> int:
         return sum(item.quantity for item in self.items.all())
 
 
 class CartItem(models.Model):
+    class SelectedPaymentMethod(models.TextChoices):
+        MONEY = "money", "پول / کیف پول"
+        COIN = "coin", "سکه چالش"
+
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items", verbose_name="سبد خرید")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="cart_items", verbose_name="محصول")
     quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)], verbose_name="تعداد")
+    selected_payment_method = models.CharField(
+        max_length=10,
+        choices=SelectedPaymentMethod.choices,
+        default=SelectedPaymentMethod.MONEY,
+        verbose_name="روش پرداخت انتخابی",
+    )
 
     class Meta:
         ordering = ("id",)
@@ -170,8 +221,30 @@ class CartItem(models.Model):
         return f"{self.product.title} x {self.quantity}"
 
     @property
+    def is_paid_with_coins(self) -> bool:
+        if self.product.payment_method == Product.PaymentMethod.COIN:
+            return True
+        if self.product.payment_method == Product.PaymentMethod.MONEY:
+            return False
+        return self.selected_payment_method == self.SelectedPaymentMethod.COIN
+
+    @property
+    def item_unit_price(self) -> int:
+        if self.is_paid_with_coins:
+            return self.product.final_coin_price
+        return self.product.final_price
+
+    @property
     def item_total(self) -> int:
-        return self.quantity * self.product.final_price
+        return self.quantity * self.item_unit_price
+
+    @property
+    def item_total_money(self) -> int:
+        return 0 if self.is_paid_with_coins else (self.quantity * self.product.final_price)
+
+    @property
+    def item_total_coins(self) -> int:
+        return (self.quantity * self.product.final_coin_price) if self.is_paid_with_coins else 0
 
 
 class Order(models.Model):
@@ -187,7 +260,7 @@ class Order(models.Model):
         related_name="bazar_orders",
         verbose_name="کاربر",
     )
-    total_amount = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="مبلغ کل")
+    total_amount = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="مبلغ کل (تومان)")
     coins_used = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="سکه مصرفی")
     wallet_used = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="کیف پول مصرفی")
     online_paid = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="پرداخت آنلاین")
@@ -207,7 +280,14 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items", verbose_name="سفارش")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items", verbose_name="محصول")
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="تعداد")
-    unit_price = models.IntegerField(validators=[MinValueValidator(0)], verbose_name="قیمت واحد")
+    unit_price = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="قیمت واحد (تومان)")
+    unit_coins = models.PositiveIntegerField(default=0, verbose_name="قیمت واحد (سکه)")
+    paid_with = models.CharField(
+        max_length=10,
+        choices=[("money", "پول / کیف پول"), ("coin", "سکه چالش")],
+        default="money",
+        verbose_name="پرداخت شده با",
+    )
 
     class Meta:
         ordering = ("id",)
@@ -219,12 +299,15 @@ class OrderItem(models.Model):
 
     @property
     def line_total(self) -> int:
+        if self.paid_with == "coin":
+            return self.quantity * self.unit_coins
         return self.quantity * self.unit_price
 
     @property
     def seller_commission(self) -> int:
         commission_percent = Decimal(self.product.seller.platform_commission_percent)
-        commission_value = Decimal(self.line_total) * commission_percent / Decimal(100)
+        base_amount = self.quantity * self.unit_price
+        commission_value = Decimal(base_amount) * commission_percent / Decimal(100)
         return int(commission_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
@@ -267,7 +350,7 @@ class WalletChargeRequest(models.Model):
         PENDING = "pending", "در انتظار بررسی"
         REVIEWING = "reviewing", "در حال بررسی"
         CARD_SENT = "card_sent", "شماره کارت ارسال شد"
-        COMPLETED = "completed", "سکه واریز شد"
+        COMPLETED = "completed", "کیف پول شارژ شد"
         REJECTED = "rejected", "رد شده"
 
     user = models.ForeignKey(
@@ -281,10 +364,15 @@ class WalletChargeRequest(models.Model):
         verbose_name="مبلغ درخواستی (تومان)",
     )
     requested_coins = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name="سکه درخواستی",
+        default=0,
+        blank=True,
+        verbose_name="سکه درخواستی (قدیمی)",
     )
-    granted_coins = models.PositiveIntegerField(default=0, verbose_name="سکه واریزی")
+    granted_coins = models.PositiveIntegerField(
+        default=0,
+        blank=True,
+        verbose_name="مبلغ شارژ تایید شده (تومان)",
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -295,8 +383,8 @@ class WalletChargeRequest(models.Model):
     admin_note = models.TextField(blank=True, verbose_name="یادداشت ادمین")
     payment_reference = models.CharField(max_length=120, blank=True, verbose_name="شناسه یا توضیح پرداخت")
     reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان بررسی")
-    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان واریز سکه")
-    coins_granted_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ثبت سکه")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان شارژ کیف پول")
+    coins_granted_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ثبت شارژ")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
 
@@ -311,22 +399,12 @@ class WalletChargeRequest(models.Model):
     def clean(self):
         if self.requested_amount <= 0:
             raise ValidationError({"requested_amount": "مبلغ درخواستی باید بیشتر از صفر باشد."})
-        if self.requested_coins <= 0:
-            raise ValidationError({"requested_coins": "تعداد سکه درخواستی باید بیشتر از صفر باشد."})
-        if self.granted_coins < 0:
-            raise ValidationError({"granted_coins": "تعداد سکه واریزی نمی‌تواند منفی باشد."})
-        if self.status == self.Status.COMPLETED and (self.granted_coins or self.requested_coins) <= 0:
-            raise ValidationError({"granted_coins": "برای تکمیل درخواست باید تعداد سکه مشخص باشد."})
 
     def save(self, *args, **kwargs):
         previous_status = None
         if self.pk:
             previous_status = type(self).objects.filter(pk=self.pk).values_list("status", flat=True).first()
 
-        if not self.requested_coins:
-            self.requested_coins = self.requested_amount
-        if self.status == self.Status.COMPLETED and self.granted_coins <= 0:
-            self.granted_coins = self.requested_coins
         if self.status in {self.Status.REVIEWING, self.Status.CARD_SENT, self.Status.COMPLETED, self.Status.REJECTED}:
             self.reviewed_at = self.reviewed_at or timezone.now()
         if self.status == self.Status.COMPLETED:
@@ -351,14 +429,14 @@ class WalletChargeRequest(models.Model):
             if not updated:
                 return
 
-            User.objects.filter(pk=self.user_id).update(challenge_coins=F("challenge_coins") + self.granted_coins)
-            CoinTransaction.objects.create(
+            credit_amount = self.granted_coins if self.granted_coins > 0 else self.requested_amount
+            User.objects.filter(pk=self.user_id).update(wallet_balance=F("wallet_balance") + Decimal(credit_amount))
+            Transaction.objects.create(
                 user=self.user,
-                amount=self.granted_coins,
-                transaction_type=CoinTransaction.TransactionType.REWARD,
-                description=f"واریز {self.granted_coins} سکه بابت درخواست افزایش اعتبار بازار #{self.pk}",
-                challenge=f"bazar-charge-request-{self.pk}",
-                transaction_date=granted_at,
+                amount=credit_amount,
+                transaction_type=Transaction.TransactionType.CHARGE,
+                description=f"شارژ مستقیم کیف پول بابت درخواست افزایش اعتبار بازار #{self.pk}",
+                created_at=granted_at,
             )
 
         self.coins_granted_at = granted_at

@@ -69,6 +69,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (cartTotalNode) {
             cartTotalNode.textContent = payload.cart_total_display;
         }
+        const cartTotalMoneyNode = document.querySelector("[data-cart-total-money]");
+        if (cartTotalMoneyNode && payload.cart_total_money_display !== undefined) {
+            cartTotalMoneyNode.textContent = payload.cart_total_money_display;
+        }
+        const cartTotalCoinsNode = document.querySelector("[data-cart-total-coins]");
+        if (cartTotalCoinsNode && payload.cart_total_coins_display !== undefined) {
+            cartTotalCoinsNode.textContent = payload.cart_total_coins_display;
+        }
         if (increaseBtn) {
             increaseBtn.disabled = !payload.can_increment;
         }

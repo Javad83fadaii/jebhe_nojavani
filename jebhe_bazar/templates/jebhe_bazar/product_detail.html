@@ -56,10 +56,19 @@
         </div>
 
         <div class="bazar-card">
-            <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
-                <span class="bazar-chip">{{ product.category.name }}</span>
+            <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span class="bazar-chip">{{ product.category.name }}</span>
+                    {% if product.payment_method == "coin" %}
+                        <span class="bazar-chip is-active" style="background: rgba(245, 166, 35, 0.2); color: #fbbf24; border-color: rgba(245, 166, 35, 0.5);"><i class="fas fa-coins"></i> فقط با سکه چالش</span>
+                    {% elif product.payment_method == "money" %}
+                        <span class="bazar-chip is-active" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.5);"><i class="fas fa-wallet"></i> قابل خرید نقدی</span>
+                    {% else %}
+                        <span class="bazar-chip is-active" style="background: rgba(108, 63, 197, 0.2); color: #c4b5fd; border-color: rgba(108, 63, 197, 0.5);"><i class="fas fa-coins"></i> یا <i class="fas fa-wallet"></i> سکه یا پول نقد</span>
+                    {% endif %}
+                </div>
                 {% if product.discount_active and product.discount_percent %}
-                    <span class="bazar-chip">تخفیف {{ product.discount_percent|toman }}٪</span>
+                    <span class="bazar-chip is-active">تخفیف {{ product.discount_percent|toman }}٪</span>
                 {% endif %}
             </div>
 
@@ -67,15 +76,46 @@
             <p class="bazar-note">{{ product.description|linebreaksbr }}</p>
 
             <div class="bazar-summary-grid" style="margin: 1.5rem 0;">
+                {% if product.payment_method == "coin" %}
+                    <div class="bazar-card">
+                        <strong>قیمت با سکه چالش</strong>
+                        <div class="bazar-price" style="color: #fbbf24;"><i class="fas fa-coins"></i> {{ product.final_coin_price|toman }} سکه</div>
+                        {% if product.discount_active and product.discount_percent %}
+                            <div class="bazar-note" style="text-decoration: line-through; color: #888 !important;">{{ product.coin_price|default:product.price|toman }} سکه</div>
+                        {% endif %}
+                    </div>
+                {% elif product.payment_method == "money" %}
+                    <div class="bazar-card">
+                        <strong>قیمت نقدی کیف پول</strong>
+                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                        {% if product.discount_active and product.discount_percent %}
+                            <div class="bazar-note" style="text-decoration: line-through; color: #888 !important;">{{ product.price|toman }} تومان</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="bazar-card">
+                        <strong>قیمت نقدی</strong>
+                        <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
+                    </div>
+                    <div class="bazar-card">
+                        <strong>قیمت با سکه چالش</strong>
+                        <div class="bazar-price" style="color: #fbbf24;"><i class="fas fa-coins"></i> {{ product.final_coin_price|toman }} سکه</div>
+                    </div>
+                {% endif %}
                 <div class="bazar-card">
-                    <strong>قیمت نهایی</strong>
-                    <div class="bazar-price">{{ product.final_price|toman }} تومان</div>
-                </div>
-                <div class="bazar-card">
-                    <strong>موجودی</strong>
-                    <div class="bazar-price" style="color: #ffffff !important;">{{ product.stock|toman }}</div>
+                    <strong>موجودی انبار</strong>
+                    <div class="bazar-price" style="color: #ffffff !important;">{{ product.stock|toman }} عدد</div>
                 </div>
             </div>
+
+            {% if user.is_authenticated %}
+                <div class="bazar-card" style="margin-bottom: 1.25rem; background: rgba(255,255,255,0.03) !important; border: 1px dashed rgba(255,255,255,0.15) !important;">
+                    <div style="font-size: 0.9rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+                        <span><i class="fas fa-wallet" style="color: #4ade80;"></i> اعتبار کیف پول شما: <strong>{{ user.wallet_balance|toman }} تومان</strong></span>
+                        <span><i class="fas fa-coins" style="color: #fbbf24;"></i> سکه چالش شما: <strong>{{ user.challenge_coins|toman }} سکه</strong></span>
+                    </div>
+                </div>
+            {% endif %}
 
             <div class="bazar-list">
                 <div class="bazar-list-item"><strong>فروشنده:</strong> {{ product.seller.shop_name }}</div>
@@ -89,6 +129,27 @@
             <form method="post" action="{% url 'bazar:cart-add' product.id %}" style="margin-top: 1.5rem;">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{% url 'bazar:cart' %}">
+
+                {% if product.payment_method == "both" %}
+                    <div style="margin-bottom: 1.25rem; padding: 1rem; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid #2a2f3f;">
+                        <label style="display: block; margin-bottom: 0.6rem; font-weight: 700; color: #fff;">روش پرداخت دلخواه را انتخاب کنید:</label>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; background: rgba(0,0,0,0.25); padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #3f4559;">
+                                <input type="radio" name="payment_method" value="money" checked>
+                                <span><i class="fas fa-wallet" style="color: #4ade80;"></i> پرداخت با موجودی کیف پول ({{ product.final_price|toman }} تومان)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; background: rgba(0,0,0,0.25); padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid #3f4559;">
+                                <input type="radio" name="payment_method" value="coin">
+                                <span><i class="fas fa-coins" style="color: #fbbf24;"></i> پرداخت با سکه چالش ({{ product.final_coin_price|toman }} سکه)</span>
+                            </label>
+                        </div>
+                    </div>
+                {% elif product.payment_method == "coin" %}
+                    <input type="hidden" name="payment_method" value="coin">
+                {% else %}
+                    <input type="hidden" name="payment_method" value="money">
+                {% endif %}
+
                 <div class="bazar-inline-actions">
                     <input type="number" name="quantity" min="1" max="{{ product.stock }}" value="1" class="bazar-input" style="max-width: 120px;">
                     <button type="submit" class="bazar-btn" {% if not product.is_in_stock %}disabled{% endif %}>افزودن به سبد خرید</button>
@@ -105,7 +166,13 @@
                 <article class="bazar-card">
                     <h3>{{ related.title }}</h3>
                     <p class="bazar-note">{{ related.description|truncatechars:80 }}</p>
-                    <div class="bazar-price">{{ related.final_price|toman }} تومان</div>
+                    {% if related.payment_method == "coin" %}
+                        <div class="bazar-price" style="color: #fbbf24;"><i class="fas fa-coins"></i> {{ related.final_coin_price|toman }} سکه</div>
+                    {% elif related.payment_method == "money" %}
+                        <div class="bazar-price"><i class="fas fa-wallet"></i> {{ related.final_price|toman }} تومان</div>
+                    {% else %}
+                        <div class="bazar-price">{{ related.final_price|toman }} تومان <span style="font-size: 0.85rem; color: #fbbf24;">یا {{ related.final_coin_price|toman }} سکه</span></div>
+                    {% endif %}
                     <a href="{{ related.get_absolute_url }}" class="bazar-link-btn" style="margin-top: 1rem; display: inline-flex;">مشاهده</a>
                 </article>
             {% empty %}

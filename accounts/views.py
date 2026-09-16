@@ -319,6 +319,56 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get", "post"], url_path="convert-coins")
+    def convert_coins(self, request):
+        user = request.user
+        if request.method.lower() == "get":
+            transfers = user.coin_wallet_transfers.all().order_by("-requested_at")[:15]
+            return Response(
+                {
+                    "challenge_coins": user.challenge_coins,
+                    "wallet_balance": int(user.wallet_balance or 0),
+                    "transfers": [
+                        {
+                            "id": t.id,
+                            "coin_amount": t.coin_amount,
+                            "amount_toman": t.amount_toman,
+                            "status": t.status,
+                            "status_display": t.get_status_display(),
+                            "requested_at": t.requested_at.strftime("%Y-%m-%d %H:%M"),
+                            "processed_at": t.processed_at.strftime("%Y-%m-%d %H:%M") if t.processed_at else None,
+                        }
+                        for t in transfers
+                    ],
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        try:
+            coin_amount = int(request.data.get("coin_amount", 0) or 0)
+        except (TypeError, ValueError):
+            return Response({"detail": "تعداد سکه وارد شده معتبر نیست."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if coin_amount <= 0:
+            return Response({"detail": "تعداد سکه باید بیشتر از صفر باشد."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if coin_amount > user.challenge_coins:
+            return Response(
+                {"detail": f"موجودی سکه چالش شما کافی نیست. موجودی شما: {user.challenge_coins} سکه است."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        transfer = user.transfer_coins_to_wallet(coin_amount)
+        return Response(
+            {
+                "detail": f"درخواست تبدیل {coin_amount} سکه به {coin_amount:,} تومان ثبت شد و پس از بررسی ادمین به کیف پول شما واریز می‌شود.",
+                "transfer_id": transfer.id,
+                "status": transfer.status,
+                "status_display": transfer.get_status_display(),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
 
 class SellerRegistrationView(APIView):
     permission_classes = [AllowAny]

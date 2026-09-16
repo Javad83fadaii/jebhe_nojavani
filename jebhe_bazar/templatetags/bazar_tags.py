@@ -67,6 +67,14 @@ def multiply(value, arg):
 
 
 @register.filter
+def sub(value, arg):
+    try:
+        return int(value) - int(arg)
+    except (TypeError, ValueError):
+        return 0
+
+
+@register.filter
 def jalali_date(value):
     if value is None:
         return ""
