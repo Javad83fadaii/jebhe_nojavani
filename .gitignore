@@ -36,3 +36,6 @@ Thumbs.db
 *.7z
 
 *.pyc
+*.pyo
+*.pyd
+*.pyo
