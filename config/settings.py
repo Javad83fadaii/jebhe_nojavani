@@ -77,9 +77,10 @@ INSTALLED_APPS = [
     'challenges',
     'jebhe_bazar.apps.JebheBazarConfig',
     
-    if DEBUG:
-        INSTALLED_APPS.append('silk')
     ]
+if DEBUG:
+    INSTALLED_APPS.append('silk')
+
 
 try:
     from django.contrib.gis.gdal import libgdal
@@ -99,9 +100,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
-    if DEBUG:
+    ]
+
+if DEBUG:
     MIDDLEWARE.insert(2, 'silk.middleware.SilkyMiddleware')
-]
+
 
 ROOT_URLCONF = 'config.urls'
 
