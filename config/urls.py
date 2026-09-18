@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.http import HttpResponse
+import importlib.util
 
 from . import views
 
@@ -35,10 +36,10 @@ urlpatterns = [
     path("bazar/", include("jebhe_bazar.urls")),
     ]
 
-if settings.DEBUG:
+
+if settings.DEBUG and importlib.util.find_spec('silk') is not None:
     urlpatterns += [
         path('silk/', include('silk.urls', namespace='silk')),
     ]
-
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

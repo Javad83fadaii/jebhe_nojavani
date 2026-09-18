@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from datetime import timedelta
 import os
+import importlib.util
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -78,9 +79,8 @@ INSTALLED_APPS = [
     'jebhe_bazar.apps.JebheBazarConfig',
     
     ]
-if DEBUG:
+if DEBUG and importlib.util.find_spec('silk') is not None:
     INSTALLED_APPS.append('silk')
-
 
 try:
     from django.contrib.gis.gdal import libgdal
@@ -102,9 +102,8 @@ MIDDLEWARE = [
     
     ]
 
-if DEBUG:
+if DEBUG and importlib.util.find_spec('silk') is not None:
     MIDDLEWARE.insert(2, 'silk.middleware.SilkyMiddleware')
-
 
 ROOT_URLCONF = 'config.urls'
 
@@ -210,8 +209,7 @@ PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۲ دقیقه معتبر است.",
 )
 
-if DEBUG:
-    
+if DEBUG and importlib.util.find_spec('silk') is not None:
     SILKY_PYTHON_PROFILER = True
     SILKY_PYTHON_PROFILER_BINARY = True
-    SILKY_META = True  # نشون میدن هر ریکوئست چقدر خودِ silk overhead داشتهpython manage.py runserver
+    SILKY_META = True
