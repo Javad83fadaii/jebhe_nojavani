@@ -213,6 +213,10 @@ def profile(request):
 
 
 def login(request):
+    """
+    این ویو حالا یک تمپلیت مشترک (auth.html) با ویو register رندر می‌کند.
+    initial_mode مشخص می‌کند که کارت با کدام پنل باز شود.
+    """
     if request.user.is_authenticated:
         if request.user.is_seller:
             return redirect("bazar:seller-dashboard")
@@ -220,10 +224,11 @@ def login(request):
 
     return render(
         request,
-        "login.html",
+        "auth.html",
         {
             "page_name": "login",
             "page_title": "ورود | جبهه نوجوانی",
+            "initial_mode": "login",
         },
     )
 
@@ -261,15 +266,19 @@ def password_reset_confirm(request):
 
 
 def register(request):
+    """
+    این ویو هم همان تمپلیت مشترک auth.html را با initial_mode='register' رندر می‌کند.
+    """
     if request.user.is_authenticated:
         return redirect("home")
 
     return render(
         request,
-        "register.html",
+        "auth.html",
         {
             "page_name": "register",
             "page_title": "ثبت‌نام | جبهه نوجوانی",
+            "initial_mode": "register",
         },
     )
 

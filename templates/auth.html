@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="auth-flip-page">
+    <div class="auth-flip-card{% if initial_mode == 'register' %} mode-register{% endif %}" id="auth-flip-card">
+
+        <div class="auth-forms-panel" id="auth-forms-panel">
+
+            <!-- ===================== LOGIN FORM ===================== -->
+            <div class="auth-form-box auth-login-box" id="login-box">
+                <div class="auth-form-scroll">
+                    <h1>ورود به جبهه نوجوانی</h1>
+                    <p class="auth-subtitle">به خانواده بزرگ جبهه نوجوانی خوش آمدید</p>
+
+                    <div id="login-message-container"></div>
+
+                    <form id="login-form" autocomplete="on">
+                        <div class="auth-field">
+                            <label for="login_phone_number">شماره تلفن</label>
+                            <input type="tel" id="login_phone_number" name="phone_number" class="form-control" pattern="09[0-9]{9}" placeholder="09123456789" dir="ltr" maxlength="11" inputmode="numeric" autocomplete="username" required>
+                        </div>
+
+                        <div class="auth-field">
+                            <label for="login_password">رمز عبور</label>
+                            <input type="password" id="login_password" name="password" class="form-control" placeholder="••••••••" dir="ltr" autocomplete="current-password" required>
+                        </div>
+
+                        <div class="auth-forgot-row">
+                            <a href="{% url 'forgot_password' %}">رمز عبورم را فراموش کرده‌ام</a>
+                        </div>
+
+                        <button type="submit" class="auth-submit-btn" id="login-submit-btn">
+                            <i class="fas fa-arrow-left"></i> ورود
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ===================== REGISTER FORM ===================== -->
+            <div class="auth-form-box auth-register-box" id="register-box">
+                <div class="auth-form-scroll">
+                    <h1>ثبت‌نام کاربر</h1>
+                    <p class="auth-subtitle">برای شروع، اطلاعات خود را با دقت وارد کنید</p>
+
+                    <div id="register-message-container"></div>
+
+                    <form id="register-form" autocomplete="on">
+                        <div class="auth-field">
+                            <label for="register_phone_number">شماره تلفن (نام کاربری)</label>
+                            <input type="tel" id="register_phone_number" name="phone_number" class="form-control" pattern="09[0-9]{9}" placeholder="مثال: 09123456789" dir="ltr" maxlength="11" inputmode="numeric" autocomplete="username" required>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_first_name">نام</label>
+                                <input type="text" id="register_first_name" name="first_name" class="form-control" placeholder="نام خود را وارد کنید" required>
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_last_name">نام خانوادگی</label>
+                                <input type="text" id="register_last_name" name="last_name" class="form-control" placeholder="نام خانوادگی خود را وارد کنید" required>
+                            </div>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_national_code">کد ملی</label>
+                                <input type="text" id="register_national_code" name="national_code" class="form-control" pattern="[0-9]{10}" placeholder="کد ملی ۱۰ رقمی (اختیاری)" dir="ltr">
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_birth_date_display">تاریخ تولد</label>
+                                <input type="hidden" id="register_birth_date" name="birth_date">
+                                <div class="auth-date-group">
+                                    <input type="text" id="register_birth_date_display" class="form-control auth-date-input" placeholder="مثال: 1388/05/12" dir="ltr" inputmode="numeric" autocomplete="bday" maxlength="10">
+                                    <button type="button" id="register_open_birth_date_picker" class="auth-date-btn" aria-label="باز کردن تقویم تاریخ تولد">تقویم</button>
+                                    <button type="button" id="register_clear_birth_date" class="auth-date-btn" aria-label="پاک کردن تاریخ تولد">حذف</button>
+                                </div>
+                                <small class="auth-help-text">فقط سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز است.</small>
+                            </div>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_gender">جنسیت</label>
+                                <select id="register_gender" name="gender" class="form-control">
+                                    <option value="">انتخاب کنید...</option>
+                                    <option value="male">مرد</option>
+                                    <option value="female">زن</option>
+                                </select>
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_grade_level">پایه تحصیلی</label>
+                                <select id="register_grade_level" name="grade_level" class="form-control" required>
+                                    <option value="">انتخاب کنید...</option>
+                                    <option value="1">اول</option>
+                                    <option value="2">دوم</option>
+                                    <option value="3">سوم</option>
+                                    <option value="4">چهارم</option>
+                                    <option value="5">پنجم</option>
+                                    <option value="6">ششم</option>
+                                    <option value="7">هفتم</option>
+                                    <option value="8">هشتم</option>
+                                    <option value="9">نهم</option>
+                                    <option value="10">دهم</option>
+                                    <option value="11">یازدهم</option>
+                                    <option value="12">دوازدهم</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_province">استان</label>
+                                <select id="register_province" name="province" class="form-control">
+                                    <option value="">انتخاب کنید...</option>
+                                </select>
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_city">شهر</label>
+                                <select id="register_city" name="city" class="form-control" disabled>
+                                    <option value="">ابتدا استان را انتخاب کنید...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_school">مدرسه</label>
+                                <select id="register_school" name="school" class="form-control">
+                                    <option value="">ابتدا شهر را انتخاب کنید (اختیاری)</option>
+                                </select>
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_mosque">مسجد</label>
+                                <select id="register_mosque" name="mosque" class="form-control">
+                                    <option value="">انتخاب مسجد پایگاه (اختیاری)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="auth-grid-2">
+                            <div class="auth-field">
+                                <label for="register_password">رمز عبور</label>
+                                <input type="password" id="register_password" name="password" class="form-control" minlength="8" placeholder="حداقل ۸ کاراکتر" dir="ltr" autocomplete="new-password" required>
+                                <small class="auth-help-text">رمز عبور باید حداقل ۸ کاراکتر داشته باشد.</small>
+                            </div>
+                            <div class="auth-field">
+                                <label for="register_password_confirm">تکرار رمز عبور</label>
+                                <input type="password" id="register_password_confirm" name="password_confirm" class="form-control" minlength="8" placeholder="تکرار دقیق رمز عبور" dir="ltr" autocomplete="new-password" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="auth-submit-btn" id="register-submit-btn">
+                            ایجاد حساب کاربری
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="auth-overlay-panel" id="auth-overlay-panel">
+            <div class="auth-overlay-bg"></div>
+            <img src="{% static 'images/jebhe-emblem-gold.png' %}" class="auth-overlay-emblem" alt="">
+            <div class="auth-overlay-content">
+
+                <div class="auth-overlay-msg auth-overlay-to-register" id="overlay-to-register">
+                    <h2>به جبهه نوجوانی خوش آمدید</h2>
+                    <p>برای ورود به حساب کاربری‌تان، شماره تلفن و رمز عبورتان را در فرم کنار وارد کنید.</p>
+                    <button type="button" class="auth-switch-btn" id="btn-show-register">ثبت‌نام</button>
+                </div>
+
+                <div class="auth-overlay-msg auth-overlay-to-login" id="overlay-to-login">
+                    <h2>یکی از ماست؟</h2>
+                    <p>اگر قبلاً ثبت‌نام کرده‌اید، همین‌جا با شماره تلفن و رمز عبورتان وارد شوید.</p>
+                    <button type="button" class="auth-switch-btn" id="btn-show-login">ورود</button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ======================= PANEL SWITCH ======================= */
+    const card = document.getElementById('auth-flip-card');
+    const btnShowRegister = document.getElementById('btn-show-register');
+    const btnShowLogin = document.getElementById('btn-show-login');
+    const loginUrl = "{% url 'login' %}";
+    const registerUrl = "{% url 'register' %}";
+
+    function setMode(mode) {
+        if (mode === 'register') {
+            card.classList.add('mode-register');
+            window.history.replaceState({}, '', registerUrl);
+        } else {
+            card.classList.remove('mode-register');
+            window.history.replaceState({}, '', loginUrl);
+        }
+    }
+
+    if (btnShowRegister) btnShowRegister.addEventListener('click', () => setMode('register'));
+    if (btnShowLogin) btnShowLogin.addEventListener('click', () => setMode('login'));
+
+    /* ======================= SHARED HELPERS ======================= */
+    function normalizeDigits(value) {
+        const map = {
+            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+        };
+        return String(value || '').trim().replace(/[۰-۹٠-٩]/g, (d) => map[d] || d);
+    }
+
+    async function fetchJson(url, options) {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        let data = null;
+        if (text) {
+            try { data = JSON.parse(text); } catch (e) { data = null; }
+        }
+        return { ok: res.ok, status: res.status, data, text };
+    }
+
+    function extractErrorMessage(payload) {
+        if (!payload || typeof payload !== 'object') return 'درخواست انجام نشد. دوباره تلاش کنید.';
+        if (payload.detail) return payload.detail;
+        const parts = [];
+        Object.entries(payload).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                value.forEach(v => parts.push(String(v)));
+            } else if (value && typeof value === 'object') {
+                Object.values(value).flat().forEach(v => parts.push(String(v)));
+            } else if (value) {
+                parts.push(String(value));
+            }
+        });
+        return parts.join(' | ') || 'درخواست انجام نشد. دوباره تلاش کنید.';
+    }
+
+    function extractTextErrorMessage(text) {
+        const normalized = String(text || '').trim();
+        if (!normalized) return 'درخواست انجام نشد. دوباره تلاش کنید.';
+        const lower = normalized.toLowerCase();
+        if (lower.startsWith('<!doctype') || lower.startsWith('<html') || lower.includes('<body')) {
+            return 'خطای داخلی سرور. لطفاً دوباره تلاش کنید.';
+        }
+        if (normalized.length > 200) return 'درخواست انجام نشد. دوباره تلاش کنید.';
+        return normalized;
+    }
+
+    function showMessage(container, message, type) {
+        container.innerHTML = '';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = type === 'error' ? 'auth-error-message' : 'auth-success-message';
+        msgDiv.textContent = message;
+        container.appendChild(msgDiv);
+        msgDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ======================= LOGIN FORM ======================= */
+    const loginForm = document.getElementById('login-form');
+    const loginMessageContainer = document.getElementById('login-message-container');
+    const loginPhoneInput = document.getElementById('login_phone_number');
+
+    if (loginPhoneInput) {
+        loginPhoneInput.addEventListener('input', function () {
+            loginPhoneInput.value = normalizeDigits(loginPhoneInput.value).replace(/\D/g, '').slice(0, 11);
+        });
+    }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            loginMessageContainer.innerHTML = '';
+
+            const phone_number = normalizeDigits(document.getElementById('login_phone_number').value);
+            const password = document.getElementById('login_password').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const nextUrl = urlParams.get('next');
+
+            if (!/^09\d{9}$/.test(phone_number)) {
+                showMessage(loginMessageContainer, 'شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('login-submit-btn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ورود...';
+            submitBtn.disabled = true;
+
+            const payload = { phone_number, password };
+            if (nextUrl) payload.next = nextUrl;
+
+            fetch('/api/accounts/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    const detail = data.detail || Object.values(data).flat().join(' ');
+                    showMessage(loginMessageContainer, detail || 'ورود انجام نشد. دوباره تلاش کنید.', 'error');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('user_type', data.user_type || 'user');
+
+                showMessage(loginMessageContainer, 'ورود با موفقیت انجام شد. در حال انتقال...', 'success');
+                window.location.href = data.redirect_url || nextUrl || "{% url 'home' %}";
+            }).catch(() => {
+                showMessage(loginMessageContainer, 'خطا در ارتباط با سرور. دوباره تلاش کنید.', 'error');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    }
+
+    /* ======================= REGISTER FORM ======================= */
+    const registerForm = document.getElementById('register-form');
+    const registerMessageContainer = document.getElementById('register-message-container');
+
+    const provinceSelect = document.getElementById('register_province');
+    const citySelect = document.getElementById('register_city');
+    const schoolSelect = document.getElementById('register_school');
+    const mosqueSelect = document.getElementById('register_mosque');
+    const registerPhoneInput = document.getElementById('register_phone_number');
+
+    const birthDateHidden = document.getElementById('register_birth_date');
+    const birthDateDisplay = document.getElementById('register_birth_date_display');
+    const openBirthDatePickerBtn = document.getElementById('register_open_birth_date_picker');
+    const clearBirthDateBtn = document.getElementById('register_clear_birth_date');
+
+    function parseBirthDateValue(rawValue) {
+        const normalized = normalizeDigits(rawValue).replace(/[.\-]/g, '/').replace(/\s+/g, '').trim();
+        if (!normalized) {
+            return { valid: true, normalized: '', message: '' };
+        }
+
+        const match = normalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+        if (!match) {
+            return {
+                valid: false,
+                normalized: '',
+                message: 'تاریخ تولد معتبر نیست. تاریخ را به صورت 1388/05/12 وارد کنید.'
+            };
+        }
+
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+
+        if (year < 1385 || year > 1395) {
+            return { valid: false, normalized: '', message: 'ثبت‌نام برای این سن مقدور نمی‌باشد. فقط متولدین سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز هستند.' };
+        }
+
+        if (month < 1 || month > 12) {
+            return { valid: false, normalized: '', message: 'تاریخ تولد معتبر نیست.' };
+        }
+
+        const maxDay = month <= 6 ? 31 : 30;
+        if (day < 1 || day > maxDay) {
+            return { valid: false, normalized: '', message: 'تاریخ تولد معتبر نیست.' };
+        }
+
+        return {
+            valid: true,
+            normalized: `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`,
+            message: ''
+        };
+    }
+
+    function syncBirthDateHidden() {
+        const parsed = parseBirthDateValue(birthDateDisplay.value || '');
+        birthDateHidden.value = parsed.valid ? parsed.normalized : '';
+        if (parsed.valid && parsed.normalized) {
+            birthDateDisplay.value = parsed.normalized;
+        }
+        return parsed;
+    }
+
+    function clearBirthDate() {
+        birthDateDisplay.value = '';
+        birthDateHidden.value = '';
+    }
+
+    function openBirthDatePicker() {
+        birthDateDisplay.focus();
+        birthDateDisplay.click();
+        if (window.jQuery && window.jQuery.fn) {
+            const pickerInstance = window.jQuery(birthDateDisplay).data('datepicker');
+            if (pickerInstance && typeof pickerInstance.show === 'function') {
+                pickerInstance.show();
+            }
+        }
+    }
+
+    function resetSelect(selectEl, placeholderText, disabled) {
+        selectEl.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = placeholderText;
+        selectEl.appendChild(opt);
+        if (typeof disabled === 'boolean') selectEl.disabled = disabled;
+    }
+
+    function fillItems(selectEl, items, placeholderText) {
+        resetSelect(selectEl, placeholderText, false);
+        (items || []).forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item.name;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    async function loadProvinces() {
+        resetSelect(provinceSelect, 'انتخاب کنید...', false);
+        resetSelect(citySelect, 'ابتدا استان را انتخاب کنید...', true);
+        resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+        resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+
+        try {
+            const res = await fetchJson('/api/geography/provinces/');
+            if (!res.ok || !Array.isArray(res.data)) return;
+            res.data.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                provinceSelect.appendChild(opt);
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    async function loadCities(province) {
+        resetSelect(citySelect, 'در حال بارگذاری شهرها...', true);
+        resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+        resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+
+        try {
+            const res = await fetchJson(`/api/geography/cities/?province=${encodeURIComponent(province)}`);
+            resetSelect(citySelect, 'انتخاب کنید...', false);
+            if (!res.ok || !Array.isArray(res.data)) return;
+            res.data.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                citySelect.appendChild(opt);
+            });
+        } catch (e) {
+            resetSelect(citySelect, 'خطا در دریافت شهرها', true);
+        }
+    }
+
+    async function loadSchoolsAndMosques(province, city) {
+        fillItems(schoolSelect, [], 'در حال بارگذاری... (اختیاری)');
+        fillItems(mosqueSelect, [], 'در حال بارگذاری... (اختیاری)');
+        try {
+            const qs = `province=${encodeURIComponent(province)}&city=${encodeURIComponent(city)}`;
+            const [schoolsRes, mosquesRes] = await Promise.all([
+                fetchJson(`/api/geography/schools/?${qs}`),
+                fetchJson(`/api/geography/mosques/?${qs}`),
+            ]);
+
+            const schools = (schoolsRes.data && (schoolsRes.data.results || schoolsRes.data)) || [];
+            const mosques = (mosquesRes.data && (mosquesRes.data.results || mosquesRes.data)) || [];
+
+            fillItems(schoolSelect, Array.isArray(schools) ? schools : [], 'انتخاب مدرسه (اختیاری)');
+            fillItems(mosqueSelect, Array.isArray(mosques) ? mosques : [], 'انتخاب مسجد پایگاه (اختیاری)');
+        } catch (e) {
+            fillItems(schoolSelect, [], 'خطا در دریافت مدارس (اختیاری)');
+            fillItems(mosqueSelect, [], 'خطا در دریافت مساجد (اختیاری)');
+        }
+    }
+
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.persianDatepicker) {
+        window.jQuery(birthDateDisplay).persianDatepicker({
+            initialValue: false,
+            observer: true,
+            autoClose: true,
+            format: 'YYYY/MM/DD',
+            minDate: new persianDate([1385, 1, 1]).valueOf(),
+            maxDate: new persianDate([1395, 12, 29]).valueOf(),
+            toolbox: {
+                enabled: true,
+                calendarSwitch: { enabled: false },
+                todayButton: { enabled: false },
+                submitButton: { enabled: true, text: { fa: 'تایید' } }
+            },
+            navigator: { enabled: true, scroll: { enabled: false } },
+            onSelect: function () { syncBirthDateHidden(); }
+        });
+    }
+
+    if (birthDateDisplay) {
+        birthDateDisplay.addEventListener('input', function () {
+            birthDateDisplay.value = normalizeDigits(birthDateDisplay.value).replace(/[^0-9/.\-]/g, '');
+        });
+        birthDateDisplay.addEventListener('change', syncBirthDateHidden);
+        birthDateDisplay.addEventListener('blur', syncBirthDateHidden);
+    }
+    if (openBirthDatePickerBtn) openBirthDatePickerBtn.addEventListener('click', openBirthDatePicker);
+    if (clearBirthDateBtn) clearBirthDateBtn.addEventListener('click', clearBirthDate);
+
+    if (registerPhoneInput) {
+        registerPhoneInput.addEventListener('input', function () {
+            registerPhoneInput.value = normalizeDigits(registerPhoneInput.value).replace(/\D/g, '').slice(0, 11);
+        });
+    }
+
+    if (provinceSelect) {
+        provinceSelect.addEventListener('change', function () {
+            const province = (provinceSelect.value || '').trim();
+            if (!province) {
+                resetSelect(citySelect, 'ابتدا استان را انتخاب کنید...', true);
+                resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                return;
+            }
+            loadCities(province);
+        });
+    }
+
+    if (citySelect) {
+        citySelect.addEventListener('change', function () {
+            const province = (provinceSelect.value || '').trim();
+            const city = (citySelect.value || '').trim();
+            if (!province || !city) {
+                resetSelect(schoolSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                resetSelect(mosqueSelect, 'ابتدا شهر را انتخاب کنید (اختیاری)', false);
+                return;
+            }
+            loadSchoolsAndMosques(province, city);
+        });
+    }
+
+    if (registerForm) {
+        loadProvinces();
+
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            registerMessageContainer.innerHTML = '';
+
+            const phone_number = normalizeDigits(document.getElementById('register_phone_number').value);
+            const first_name = document.getElementById('register_first_name').value.trim();
+            const last_name = document.getElementById('register_last_name').value.trim();
+            const national_code = normalizeDigits(document.getElementById('register_national_code').value);
+            const birthDateState = syncBirthDateHidden();
+            const birth_date = (birthDateState.normalized || '').trim();
+            const gender = document.getElementById('register_gender').value || null;
+            const grade_level = document.getElementById('register_grade_level').value;
+            const school = schoolSelect.value || null;
+            const mosque = mosqueSelect.value || null;
+            const city = (citySelect.value || '').trim();
+            const province = (provinceSelect.value || '').trim();
+            const password = document.getElementById('register_password').value;
+            const passwordConfirm = document.getElementById('register_password_confirm').value;
+
+            if (!/^09\d{9}$/.test(phone_number)) {
+                showMessage(registerMessageContainer, 'شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.', 'error');
+                return;
+            }
+            if (!first_name) {
+                showMessage(registerMessageContainer, 'نام الزامی است.', 'error');
+                return;
+            }
+            if (!last_name) {
+                showMessage(registerMessageContainer, 'نام خانوادگی الزامی است.', 'error');
+                return;
+            }
+            if (national_code && !/^\d{10}$/.test(national_code)) {
+                showMessage(registerMessageContainer, 'کد ملی باید یک عدد ۱۰ رقمی معتبر باشد.', 'error');
+                return;
+            }
+            if (birthDateDisplay.value.trim() && !birthDateState.valid) {
+                showMessage(registerMessageContainer, birthDateState.message || 'تاریخ تولد معتبر نیست.', 'error');
+                return;
+            }
+            if (!grade_level) {
+                showMessage(registerMessageContainer, 'پایه تحصیلی الزامی است.', 'error');
+                return;
+            }
+            if (password.length < 8) {
+                showMessage(registerMessageContainer, 'رمز عبور باید حداقل ۸ کاراکتر داشته باشد.', 'error');
+                return;
+            }
+            if (password !== passwordConfirm) {
+                showMessage(registerMessageContainer, 'رمز عبور و تکرار آن با هم مطابقت ندارند.', 'error');
+                return;
+            }
+
+            const payload = {
+                phone_number, first_name, last_name, password,
+                national_code: national_code || null,
+                birth_date: birth_date || null,
+                grade_level: Number(grade_level),
+                gender: gender || null,
+                school, mosque,
+                city: city || null,
+                province: province || null
+            };
+
+            const submitBtn = document.getElementById('register-submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'در حال پردازش...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetchJson('/api/accounts/register/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const message = res.data ? extractErrorMessage(res.data) : extractTextErrorMessage(res.text);
+                    showMessage(registerMessageContainer, message, 'error');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                const data = res.data || {};
+                localStorage.setItem('access_token', data.access || data.access_token);
+                localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
+                localStorage.setItem('user_type', 'user');
+
+                showMessage(registerMessageContainer, 'ثبت‌نام با موفقیت انجام شد. در حال انتقال...', 'success');
+                setTimeout(() => {
+                    window.location.href = "{% url 'home' %}";
+                }, 1200);
+            } catch (err) {
+                showMessage(registerMessageContainer, 'خطا در برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

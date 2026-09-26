@@ -1,0 +1,383 @@
+/* ==========================================================================
+   auth.css — صفحه‌ی مشترک ورود / ثبت‌نام (کارت دوقسمتی با اسلاید)
+   Mobile-first: حالت پایه = چیده‌شده روی هم (موبایل)
+   از breakpoint دسکتاپ به بعد، افکت اسلاید دو نیمه فعال می‌شود.
+   ========================================================================== */
+
+.auth-flip-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 4vw, 3rem) clamp(0.75rem, 3vw, 1.5rem);
+    direction: rtl;
+}
+
+.auth-flip-card {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    border-radius: clamp(18px, 3vw, 28px);
+    overflow: hidden;
+    background: rgba(20, 16, 45, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    isolation: isolate;
+}
+
+/* ============ پنل تصویر/اورلی — همیشه position:relative ============ */
+.auth-overlay-panel {
+    position: relative;
+    width: 100%;
+    height: clamp(190px, 34vw, 250px);
+    order: 1;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.auth-overlay-bg {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(150deg, rgba(74, 38, 145, 0.94) 0%, rgba(9, 6, 18, 0.97) 70%);
+}
+
+.auth-overlay-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(245, 166, 35, 0.3), transparent 55%);
+}
+
+.auth-overlay-emblem {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60%;
+    max-width: 220px;
+    opacity: 0.18;
+    z-index: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) rotate(-2deg) scale(1);
+    animation: authEmblemFloat 7s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(245, 166, 35, 0.25));
+}
+
+@keyframes authEmblemFloat {
+    0%, 100% { transform: translate(-50%, -50%) rotate(-2deg) scale(1); }
+    50% { transform: translate(-50%, -53%) rotate(2deg) scale(1.05); }
+}
+
+.auth-overlay-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.auth-overlay-msg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.5s ease 0.18s, visibility 0.5s ease 0.18s, transform 0.5s ease 0.18s;
+}
+
+.auth-overlay-to-login { opacity: 0; visibility: hidden; transform: translateY(18px); }
+.auth-flip-card.mode-register .auth-overlay-to-register { opacity: 0; visibility: hidden; transform: translateY(-18px); }
+.auth-flip-card.mode-register .auth-overlay-to-login { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.auth-overlay-msg > * { transition: transform 0.5s ease, opacity 0.5s ease; }
+.auth-overlay-msg .auth-overlay-logo { transition-delay: 0.05s; }
+.auth-overlay-msg h2 { transition-delay: 0.12s; }
+.auth-overlay-msg p { transition-delay: 0.19s; }
+.auth-overlay-msg .auth-switch-btn { transition-delay: 0.26s; }
+
+.auth-overlay-logo {
+    width: clamp(40px, 8vw, 60px);
+    height: clamp(40px, 8vw, 60px);
+    margin-bottom: clamp(0.5rem, 2vw, 1.1rem);
+    filter: drop-shadow(0 0 18px rgba(245, 166, 35, 0.45));
+    animation: authLogoBounce 3.2s ease-in-out infinite;
+}
+
+@keyframes authLogoBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.auth-overlay-msg h2 {
+    color: var(--white);
+    font-size: clamp(1.05rem, 3vw, 1.5rem);
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.auth-overlay-msg p {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(0.8rem, 2vw, 0.92rem);
+    line-height: 1.85;
+    max-width: 300px;
+    margin-bottom: clamp(0.85rem, 3vw, 1.5rem);
+}
+
+.auth-switch-btn {
+    padding: clamp(0.6rem, 2vw, 0.8rem) clamp(1.5rem, 6vw, 2.4rem);
+    border-radius: 50px;
+    border: 2px solid var(--white);
+    background: transparent;
+    color: var(--white);
+    font-weight: 700;
+    font-size: clamp(0.85rem, 2vw, 0.95rem);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.auth-switch-btn:hover {
+    background: var(--white);
+    color: var(--dark-bg);
+    transform: translateY(-2px);
+}
+
+/* ============ پنل فرم‌ها — همیشه position:relative ============ */
+.auth-forms-panel {
+    position: relative;
+    width: 100%;
+    order: 2;
+    transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.auth-form-box {
+    position: relative;
+    display: none;
+}
+
+.auth-login-box { display: flex; }
+.auth-flip-card.mode-register .auth-login-box { display: none; }
+.auth-flip-card.mode-register .auth-register-box { display: flex; }
+
+.auth-form-scroll {
+    width: 100%;
+    max-height: min(70vh, 600px);
+    overflow-y: auto;
+    padding: clamp(1.5rem, 5vw, 2.25rem);
+}
+
+.auth-form-scroll::-webkit-scrollbar { width: 6px; }
+.auth-form-scroll::-webkit-scrollbar-thumb { background: var(--primary-purple); border-radius: 10px; }
+
+.auth-form-scroll h1 {
+    font-size: clamp(1.3rem, 3.5vw, 1.65rem);
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 0.35rem;
+    line-height: 1.4;
+}
+
+.auth-form-scroll .auth-subtitle {
+    color: var(--gray-light);
+    font-size: clamp(0.82rem, 2vw, 0.9rem);
+    margin-bottom: 1.5rem;
+}
+
+/* ============ فیلدهای فرم ============ */
+.auth-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.auth-field { margin-bottom: 1.1rem; }
+
+.auth-field label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-weight: 500;
+    color: var(--gray-light);
+    font-size: 0.86rem;
+}
+
+.auth-field .form-control {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    color: var(--white);
+    font-size: 0.94rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.auth-field .form-control:focus {
+    outline: none;
+    border-color: var(--primary-gold);
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+}
+
+.auth-field select.form-control option { background: #1a1a2e; color: #fff; }
+
+.auth-date-group { display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap; }
+.auth-date-input { direction: ltr; text-align: left; min-width: 120px; flex: 1 1 120px; }
+
+.auth-date-btn {
+    flex: 0 0 auto;
+    min-width: 52px;
+    padding: 0.7rem 0.55rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--gray-light);
+    font-family: inherit;
+    cursor: pointer;
+    font-size: 0.78rem;
+}
+
+.auth-date-btn:hover { border-color: var(--primary-gold); color: var(--primary-gold); }
+
+.auth-help-text { display: block; margin-top: 0.4rem; color: var(--gray-light); font-size: 0.76rem; }
+
+.auth-submit-btn {
+    width: 100%;
+    padding: 0.95rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--primary-purple) 0%, #8e54e9 100%);
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(108, 63, 197, 0.4);
+    transition: all 0.3s ease;
+    margin-top: 0.5rem;
+}
+
+.auth-submit-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(108, 63, 197, 0.55); }
+.auth-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+.auth-forgot-row {
+    display: flex;
+    justify-content: flex-end;
+    margin: -0.5rem 0 1.3rem;
+}
+
+.auth-forgot-row a {
+    color: var(--primary-gold);
+    text-decoration: none;
+    font-size: 0.83rem;
+    font-weight: 500;
+}
+
+.auth-error-message, .auth-success-message {
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.86rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+.auth-error-message {
+    background: rgba(244, 67, 54, 0.15);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+    color: #ff8a80;
+}
+
+.auth-success-message {
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    color: #b9f6ca;
+}
+
+.datepicker-plot-area { z-index: 4000 !important; }
+
+/* ==========================================================================
+   دسکتاپ: از اینجا به بعد افکت اسلاید دو نیمه فعال می‌شود
+   ========================================================================== */
+@media (min-width: 900px) {
+    .auth-flip-card {
+        max-width: 980px;
+        min-height: 620px;
+        flex-direction: row;
+    }
+
+    .auth-forms-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100%;
+        z-index: 2;
+    }
+
+    .auth-overlay-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        z-index: 3;
+    }
+
+    .auth-flip-card.mode-register .auth-forms-panel { transform: translateX(-100%); }
+    .auth-flip-card.mode-register .auth-overlay-panel { transform: translateX(100%); }
+
+    .auth-form-box {
+        position: absolute;
+        inset: 0;
+        display: flex !important;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .auth-login-box { opacity: 1; visibility: visible; z-index: 2; }
+    .auth-register-box { opacity: 0; visibility: hidden; z-index: 1; }
+    .auth-flip-card.mode-register .auth-login-box { opacity: 0; visibility: hidden; z-index: 1; }
+    .auth-flip-card.mode-register .auth-register-box { opacity: 1; visibility: visible; z-index: 2; }
+
+    .auth-form-scroll {
+        max-height: 100%;
+        height: 100%;
+        padding: 3rem 3rem 2.5rem;
+    }
+
+    .auth-overlay-emblem { max-width: 320px; }
+}
+
+/* موبایل‌های خیلی کوچک */
+@media (max-width: 360px) {
+    .auth-flip-card { max-width: 100%; border-radius: 16px; }
+    .auth-form-scroll { padding: 1.25rem 1rem 1.75rem; }
+    .auth-overlay-panel { height: 170px; }
+}
+
+/* کاربرانی که انیمیشن کمتر ترجیح می‌دهند */
+@media (prefers-reduced-motion: reduce) {
+    .auth-overlay-emblem,
+    .auth-overlay-logo {
+        animation: none !important;
+    }
+    .auth-forms-panel,
+    .auth-overlay-panel,
+    .auth-overlay-msg,
+    .auth-overlay-msg > *,
+    .auth-form-box {
+        transition: none !important;
+    }
+}
