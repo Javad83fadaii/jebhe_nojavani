@@ -341,69 +341,162 @@
         syncPageScrollLock();
     }
 
-    // مدیریت منوی موبایل
-    const menuToggle = document.getElementById('menu-toggle');
-    const navContainerInner = document.getElementById('nav-container-inner');
+    // مدیریت Active State برای Mobile Navigation
+    function updateMobileNavActive() {
+        const currentPage = document.body.dataset.page || '';
+        const mobileNavItems = document.querySelectorAll('.mobile-nav-item[data-nav]');
+        
+        mobileNavItems.forEach(item => {
+            const navValue = item.dataset.nav;
+            if (navValue === currentPage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
 
-    function setMobileMenuState(isOpen) {
-        if (!menuToggle || !navContainerInner) {
-            return;
-        }
+    // مدیریت مودال "بیشتر" در Mobile Bottom Nav
+    function buildMobileMoreMenu() {
+        const isAuthenticated = document.body.dataset.authenticated === 'true';
+        const userType = document.body.dataset.userType || 'user';
+        const sellerSiteView = document.body.dataset.sellerSiteView === 'true';
+        const isAdmin = document.body.dataset.isAdmin === 'true';
+        const userFullName = (document.body.dataset.userFullName || '').trim() || 'کاربر';
+        const totalPoints = document.getElementById('points-badge')?.dataset.totalPoints || '0';
+        const rankName = document.getElementById('user-rank-name')?.textContent || 'بدون درجه';
 
-        menuToggle.classList.toggle('active', isOpen);
-        navContainerInner.classList.toggle('active', isOpen);
-        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        document.body.classList.toggle('mobile-menu-open', isOpen);
+        const moreBody = document.getElementById('mobile-more-body');
+        if (!moreBody) return;
 
-        if (isOpen) {
-            lockPageScroll('mobile-menu');
+        let html = '';
+
+        if (isAuthenticated) {
+            // بخش امتیازات
+            html += `
+                <div class="mobile-more-points">
+                    <div class="mobile-more-points-info">
+                        <div class="mobile-more-points-icon">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <div class="mobile-more-points-text">
+                            <h4>درجه شما</h4>
+                            <p>${rankName}</p>
+                        </div>
+                    </div>
+                    <div class="mobile-more-points-value">${parseInt(totalPoints).toLocaleString('fa-IR')}</div>
+                </div>
+            `;
+
+            // بخش منوی اصلی
+            html += '<div class="mobile-more-section">';
+            html += '<div class="mobile-more-section-title">منوی اصلی</div>';
+            html += '<div class="mobile-more-list">';
+
+            if (userType === 'seller' && !sellerSiteView) {
+                // منوی پنل فروشنده
+                html += `<a href="{% url 'bazar:seller-dashboard' %}" class="mobile-more-item"><i class="fa-solid fa-gauge-high"></i><span>داشبورد فروشنده</span></a>`;
+                html += `<a href="{% url 'bazar:seller-product-list' %}" class="mobile-more-item"><i class="fa-solid fa-boxes-stacked"></i><span>محصولات من</span></a>`;
+                html += `<a href="{% url 'bazar:seller-order-list' %}" class="mobile-more-item"><i class="fa-solid fa-receipt"></i><span>سفارش‌های من</span></a>`;
+            } else {
+                // منوی کاربر عادی
+                html += `<a href="{% url 'home' %}" class="mobile-more-item"><i class="fa-solid fa-house"></i><span>صفحه اصلی</span></a>`;
+                html += `<a href="{% url 'challenges' %}" class="mobile-more-item"><i class="fa-solid fa-trophy"></i><span>چالش‌ها</span></a>`;
+                html += `<a href="{% url 'learning:rank_cards' %}" class="mobile-more-item"><i class="fa-solid fa-map-location-dot"></i><span>سیر مطالعاتی</span></a>`;
+                html += `<a href="{% url 'bazar:product-list' %}" class="mobile-more-item"><i class="fa-solid fa-store"></i><span>جبهه بازار</span></a>`;
+                html += `<a href="{% url 'bazar:cart' %}" class="mobile-more-item"><i class="fa-solid fa-cart-shopping"></i><span>سبد خرید</span></a>`;
+            }
+
+            html += '</div></div>';
+
+            // بخش حساب کاربری
+            html += '<div class="mobile-more-section">';
+            html += '<div class="mobile-more-section-title">حساب کاربری</div>';
+            html += '<div class="mobile-more-list">';
+            html += `<a href="{% url 'profile' %}" class="mobile-more-item"><i class="fa-solid fa-user"></i><span>پروفایل من</span></a>`;
+
+            if (userType === 'seller') {
+                if (sellerSiteView) {
+                    html += `<a href="{% url 'seller_view_panel' %}" class="mobile-more-item"><i class="fa-solid fa-arrow-rotate-left"></i><span>برگشت به پنل فروشنده</span></a>`;
+                } else {
+                    html += `<a href="{% url 'seller_view_site' %}" class="mobile-more-item"><i class="fa-solid fa-eye"></i><span>مشاهده به عنوان کاربر</span></a>`;
+                }
+            }
+
+            if (isAdmin) {
+                html += `<a href="{% url 'admin:index' %}" class="mobile-more-item"><i class="fa-solid fa-user-shield"></i><span>پنل مدیریت</span></a>`;
+            }
+
+            html += `<a href="#" id="mobile-logout-btn" class="mobile-more-item logout-item"><i class="fa-solid fa-power-off"></i><span>خروج از حساب</span></a>`;
+            html += '</div></div>';
+
         } else {
-            unlockPageScroll('mobile-menu');
+            // کاربر لاگین نکرده
+            html += '<div class="mobile-more-section">';
+            html += '<div class="mobile-more-list">';
+            html += `<a href="{% url 'login' %}" class="mobile-more-item"><i class="fa-solid fa-right-to-bracket"></i><span>ورود به حساب کاربری</span></a>`;
+            html += `<a href="{% url 'register' %}" class="mobile-more-item"><i class="fa-solid fa-user-plus"></i><span>ثبت‌نام</span></a>`;
+            html += '</div></div>';
+        }
+
+        moreBody.innerHTML = html;
+
+        // اضافه کردن event listener برای دکمه خروج
+        const logoutBtn = document.getElementById('mobile-logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_type');
+                localStorage.removeItem('userSession');
+                sessionStorage.removeItem('userSession');
+                window.location.href = "{% url 'logout' %}";
+            });
         }
     }
 
-    if (menuToggle) {
-        menuToggle.setAttribute('aria-expanded', 'false');
+    // باز و بسته کردن مودال "بیشتر"
+    const mobileNavMore = document.getElementById('mobile-nav-more');
+    const mobileMoreModal = document.getElementById('mobile-more-modal');
+    const mobileMoreClose = document.getElementById('mobile-more-close');
+    const mobileMoreBackdrop = mobileMoreModal?.querySelector('.mobile-more-backdrop');
 
-        menuToggle.addEventListener('click', function() {
-            const willOpen = !navContainerInner.classList.contains('active');
-            setMobileMenuState(willOpen);
-        });
-
-        navContainerInner.addEventListener('click', function(event) {
-            if (!event.target.closest('a')) {
-                return;
-            }
-            setMobileMenuState(false);
-        });
-
-        document.addEventListener('click', function(e) {
-            const navbarEl = document.getElementById('navbar');
-            if (!navContainerInner.classList.contains('active')) {
-                return;
-            }
-            if (menuToggle.contains(e.target) || navContainerInner.contains(e.target)) {
-                return;
-            }
-            if (navbarEl && navbarEl.contains(e.target)) {
-                return;
-            }
-            setMobileMenuState(false);
-        });
-
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                setMobileMenuState(false);
-                closeGuestModal();
-            }
-        });
-
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 850) {
-                setMobileMenuState(false);
-            }
-        });
+    function openMobileMoreModal() {
+        if (!mobileMoreModal) return;
+        buildMobileMoreMenu();
+        mobileMoreModal.classList.add('active');
+        lockPageScroll('mobile-more');
     }
+
+    function closeMobileMoreModal() {
+        if (!mobileMoreModal) return;
+        mobileMoreModal.classList.remove('active');
+        unlockPageScroll('mobile-more');
+    }
+
+    if (mobileNavMore) {
+        mobileNavMore.addEventListener('click', openMobileMoreModal);
+    }
+
+    if (mobileMoreClose) {
+        mobileMoreClose.addEventListener('click', closeMobileMoreModal);
+    }
+
+    if (mobileMoreBackdrop) {
+        mobileMoreBackdrop.addEventListener('click', closeMobileMoreModal);
+    }
+
+    // اعمال active state هنگام لود صفحه
+    document.addEventListener('DOMContentLoaded', updateMobileNavActive);
+
+    // بستن مودال با کلید Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeGuestModal();
+            closeMobileMoreModal();
+        }
+    });
 
     // مدیریت هدر متحرک هنگام اسکرول
     let lastScrollTop = 0;

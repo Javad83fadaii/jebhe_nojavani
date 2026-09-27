@@ -381,3 +381,46 @@
         transition: none !important;
     }
 }
+
+/* ==========================================================================
+   اصلاحات اختصاصی موبایل (زیر ۹۰۰px)
+   دسکتاپ کاملاً دست‌نخورده می‌ماند — این بلوک فقط سایز موبایل را هدف می‌گیرد.
+   ========================================================================== */
+@media (max-width: 899px) {
+
+    /* جلوگیری از زوم خودکار مرورگرهای موبایل هنگام فوکوس روی اینپوت زیر ۱۶px
+       (همین زوم ناخواسته باعث می‌شد وسط انیمیشن جابه‌جایی متن، کارت از حالت درست خارج شود) */
+    .auth-field .form-control,
+    .auth-date-input {
+        font-size: 16px;
+    }
+
+    /* حذف فلش آبی/خاکستری تپ روی دکمه‌ها و لینک‌ها برای ظاهر اپ‌مانندتر */
+    .auth-switch-btn,
+    .auth-submit-btn,
+    .auth-date-btn,
+    .auth-forgot-row a {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* جلوگیری از درز اسکرول فرم به بیرون از کارت هنگام باز شدن کیبورد */
+    .auth-form-scroll {
+        overscroll-behavior: contain;
+    }
+
+    /* هماهنگ کردن پس‌زمینه‌ی Autofill مرورگر با تم تیره‌ی سایت */
+    .auth-field .form-control:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.06) inset;
+        -webkit-text-fill-color: var(--white);
+        caret-color: var(--white);
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+    /* شتاب‌دهی GPU برای روان ماندن انیمیشن شناوری لوگو و جابه‌جایی متن روی موبایل */
+    .auth-overlay-emblem,
+    .auth-overlay-logo,
+    .auth-overlay-msg {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+    }
+}

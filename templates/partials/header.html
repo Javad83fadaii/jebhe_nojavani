@@ -9,48 +9,49 @@
                 width="40"
                 height="40"
             >
-            <span>جبهه نوجوانی</span>
+            <span class="logo-text">جبهه نوجوانی</span>
         </a>
-
-        <div class="menu-toggle" id="menu-toggle" aria-label="منوی موبایل">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
 
         <div class="nav-container-inner" id="nav-container-inner">
             <div class="nav-links">
                 {% if request.user.is_authenticated and request.user.is_seller and seller_panel_mode %}
                     <a href="{% url 'bazar:seller-dashboard' %}" class="nav-item" data-nav="seller-dashboard">
-                        <i class="fa-solid fa-gauge-high"></i> داشبورد فروشنده
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span class="nav-item-label">داشبورد فروشنده</span>
                     </a>
                     <a href="{% url 'bazar:seller-product-list' %}" class="nav-item" data-nav="seller-products">
-                        <i class="fa-solid fa-boxes-stacked"></i> محصولات
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span class="nav-item-label">محصولات</span>
                     </a>
                     <a href="{% url 'bazar:seller-order-list' %}" class="nav-item" data-nav="seller-orders">
-                        <i class="fa-solid fa-receipt"></i> سفارش‌ها
+                        <i class="fa-solid fa-receipt"></i>
+                        <span class="nav-item-label">سفارش‌ها</span>
                     </a>
                 {% else %}
                     <a href="{% url 'home' %}" class="nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
-                        <i class="fa-solid fa-house"></i> خانه
+                        <i class="fa-solid fa-house"></i>
+                        <span class="nav-item-label">خانه</span>
                     </a>
                     <a href="{% url 'challenges' %}" class="nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
-                        <i class="fa-solid fa-trophy"></i> چالش‌ها
+                        <i class="fa-solid fa-trophy"></i>
+                        <span class="nav-item-label">چالش‌ها</span>
                     </a>
                     <a href="{% url 'learning:rank_cards' %}" class="nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
-                        <i class="fa-solid fa-map-location-dot"></i> سیر مطالعاتی
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span class="nav-item-label">سیر مطالعاتی</span>
                     </a>
                     <a href="{% url 'bazar:product-list' %}" class="nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
-                        <i class="fa-solid fa-store"></i> جبهه بازار
+                        <i class="fa-solid fa-store"></i>
+                        <span class="nav-item-label">جبهه بازار</span>
                     </a> 
                 {% endif %}
             </div>
 
             <div class="nav-actions">
                 {% if request.user.is_authenticated and not seller_panel_mode %}
-                    <a href="{% url 'bazar:cart' %}" class="btn-nav btn-login cart-nav-link" data-nav="cart">
+                    <a href="{% url 'bazar:cart' %}" class="nav-item cart-nav-link" data-nav="cart">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        <span>سبد خرید</span>
+                        <span class="nav-item-label">سبد خرید</span>
                         {% if cart_has_items %}
                             <span class="cart-nav-badge">{{ cart_total_quantity|toman }}</span>
                         {% endif %}
@@ -70,3 +71,74 @@
         </div>
     </div>
 </nav>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <div class="mobile-nav-container">
+        {% if request.user.is_authenticated and request.user.is_seller and seller_panel_mode %}
+            <a href="{% url 'bazar:seller-dashboard' %}" class="mobile-nav-item" data-nav="seller-dashboard">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>داشبورد</span>
+            </a>
+            <a href="{% url 'bazar:seller-product-list' %}" class="mobile-nav-item" data-nav="seller-products">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>محصولات</span>
+            </a>
+            <a href="{% url 'bazar:seller-order-list' %}" class="mobile-nav-item" data-nav="seller-orders">
+                <i class="fa-solid fa-receipt"></i>
+                <span>سفارش‌ها</span>
+            </a>
+            <button class="mobile-nav-item mobile-nav-more" id="mobile-nav-more" type="button">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span>بیشتر</span>
+            </button>
+        {% else %}
+            <a href="{% url 'home' %}" class="mobile-nav-item" data-nav="home" data-requires-auth="true" data-guest-section="خانه کاربری">
+                <i class="fa-solid fa-house"></i>
+                <span>خانه</span>
+            </a>
+            <a href="{% url 'challenges' %}" class="mobile-nav-item" data-nav="challenges" data-requires-auth="true" data-guest-section="چالش‌ها">
+                <i class="fa-solid fa-trophy"></i>
+                <span>چالش‌ها</span>
+            </a>
+            <a href="{% url 'learning:rank_cards' %}" class="mobile-nav-item" data-nav="learning-paths" data-requires-auth="true" data-guest-section="سیر مطالعاتی">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>مطالعه</span>
+            </a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'bazar:cart' %}" class="mobile-nav-item mobile-cart-item" data-nav="cart">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>سبد</span>
+                    {% if cart_has_items %}
+                        <span class="mobile-cart-badge">{{ cart_total_quantity|toman }}</span>
+                    {% endif %}
+                </a>
+            {% else %}
+                <a href="{% url 'bazar:product-list' %}" class="mobile-nav-item" data-nav="shop" data-requires-auth="true" data-guest-section="جبهه بازار">
+                    <i class="fa-solid fa-store"></i>
+                    <span>بازار</span>
+                </a>
+            {% endif %}
+            <button class="mobile-nav-item mobile-nav-more" id="mobile-nav-more" type="button">
+                <i class="fa-solid fa-ellipsis"></i>
+                <span>بیشتر</span>
+            </button>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- Mobile More Menu Modal -->
+<div class="mobile-more-modal" id="mobile-more-modal">
+    <div class="mobile-more-backdrop"></div>
+    <div class="mobile-more-content">
+        <div class="mobile-more-header">
+            <h3>منوی کامل</h3>
+            <button type="button" class="mobile-more-close" id="mobile-more-close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="mobile-more-body" id="mobile-more-body">
+            <!-- محتوا با جاوااسکریپت پر می‌شود -->
+        </div>
+    </div>
+</div>
