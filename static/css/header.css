@@ -528,126 +528,22 @@ body.mobile-menu-open .navbar.hide-nav {
     .btn-nav { padding: 0.5rem 1rem !important; }
 }
 
-/* Mobile Bottom Navigation */
-.mobile-bottom-nav {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 999;
-    padding: 0 0 env(safe-area-inset-bottom, 0px);
-}
 
-.mobile-nav-container {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    background: rgba(15, 10, 25, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.6rem 0.5rem;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-}
+/* ==========================================================================
+   MOBILE  (<= 850px)
+   همه‌ی استایل‌های موبایل از اینجا به بعد است؛ دسکتاپ دست‌نخورده می‌ماند.
+   ========================================================================== */
 
-.mobile-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 14px;
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.65);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    flex: 1;
-    max-width: 80px;
-    position: relative;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-}
+/* پیش‌فرض: داک و شیت در دسکتاپ نمایش داده نمی‌شوند */
+.mobile-bottom-nav { display: none; }
 
-.mobile-nav-item:hover:not(.active) {
-    color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.mobile-nav-item:hover:not(.active) i {
-    transform: scale(1.08);
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.mobile-nav-item i {
-    font-size: 1.35rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mobile-nav-item span {
-    font-size: 0.7rem;
-    font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mobile-nav-item.active {
-    color: #fff;
-    background: linear-gradient(135deg, rgba(108, 63, 197, 0.3) 0%, rgba(142, 84, 233, 0.3) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 12px rgba(108, 63, 197, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(142, 84, 233, 0.4);
-}
-
-.mobile-nav-item.active i {
-    color: #b794f6;
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 8px rgba(183, 148, 246, 0.5));
-}
-
-.mobile-nav-item.active span {
-    color: #fff;
-    font-weight: 700;
-}
-
-.mobile-nav-item:active {
-    transform: scale(0.95);
-}
-
-/* Mobile Cart Badge */
-.mobile-cart-item {
-    position: relative;
-}
-
-.mobile-cart-badge {
-    position: absolute;
-    top: 0.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 1.3rem;
-    height: 1.3rem;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 0.3rem;
-    background: linear-gradient(135deg, #f5a623, #f97316);
-    color: #111827;
-    font-size: 0.65rem;
-    font-weight: 800;
-    box-shadow: 0 2px 8px rgba(245, 166, 35, 0.4);
-}
-
-/* Mobile More Menu Modal */
 .mobile-more-modal {
     position: fixed;
     inset: 0;
     z-index: 2500;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .mobile-more-modal.active {
@@ -658,77 +554,238 @@ body.mobile-menu-open .navbar.hide-nav {
 .mobile-more-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(6, 4, 12, 0.85);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(5, 3, 12, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .mobile-more-content {
     position: absolute;
-    bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(20, 15, 35, 0.98);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border-top-left-radius: 28px;
-    border-top-right-radius: 28px;
-    max-height: 75vh;
+    bottom: 0;
+    max-height: 88vh;
+    max-height: 88dvh;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(180deg, rgba(30, 22, 54, 0.98) 0%, rgba(13, 9, 25, 0.99) 100%);
+    border-radius: 28px 28px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 -22px 60px rgba(0, 0, 0, 0.6);
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .mobile-more-modal.active .mobile-more-content {
     transform: translateY(0);
 }
 
+.mobile-more-head {
+    flex: 0 0 auto;
+    padding: 0.6rem 1.25rem 0.4rem;
+    touch-action: none;
+}
+
+.mobile-more-grabber {
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+    margin: 0 auto 0.75rem;
+}
+
 .mobile-more-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mobile-more-header h3 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #fff;
     margin: 0;
 }
 
 .mobile-more-close {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.mobile-more-close:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: rotate(90deg);
+.mobile-more-close:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.14);
 }
 
 .mobile-more-body {
-    overflow-y: auto;
-    padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom, 0px));
     flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* کارت کاربر */
+.mm-user {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(108, 63, 197, 0.3), rgba(245, 166, 35, 0.14));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mm-avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, #6C3FC5, #F5A623);
+    box-shadow: 0 8px 20px rgba(108, 63, 197, 0.45);
+}
+
+.mm-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mm-user-info strong {
+    color: #fff;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mm-user-info span {
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.8rem;
+}
+
+.mm-points {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.mm-points b {
+    display: block;
+    color: #F5A623;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.mm-points small {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.68rem;
+}
+
+.mm-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin: 0.75rem 0.25rem 1.1rem;
+}
+
+.mm-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #8e54e9, #F5A623);
+}
+
+/* گرید دسترسی سریع */
+.mm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+}
+
+.mm-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 0.35rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.mm-tile:active {
+    transform: scale(0.95);
+}
+
+.mm-tile-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    font-size: 1.15rem;
+    color: #c9b6ff;
+    background: rgba(108, 63, 197, 0.22);
+}
+
+.mm-tile.is-current {
+    background: rgba(108, 63, 197, 0.22);
+    border-color: rgba(142, 84, 233, 0.55);
+    color: #fff;
+}
+
+.mm-tile.is-current .mm-tile-icon {
+    color: #fff;
+    background: linear-gradient(135deg, #6C3FC5, #8E54E9);
+    box-shadow: 0 6px 16px rgba(108, 63, 197, 0.45);
+}
+
+.mm-tile-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #f5a623, #f97316);
+    color: #111827;
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+/* لیست‌ها */
 .mobile-more-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.1rem;
 }
 
 .mobile-more-section:last-child {
@@ -736,12 +793,10 @@ body.mobile-menu-open .navbar.hide-nav {
 }
 
 .mobile-more-section-title {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
     padding-right: 0.25rem;
 }
 
@@ -755,29 +810,37 @@ body.mobile-menu-open .navbar.hide-nav {
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    padding: 0.95rem 1.1rem;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.045);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
-    transition: all 0.2s ease;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.mobile-more-item:hover,
 .mobile-more-item:active {
+    transform: scale(0.98);
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateX(-2px);
 }
 
-.mobile-more-item i {
-    font-size: 1.2rem;
+.mobile-more-item > i:first-child {
     width: 24px;
     text-align: center;
+    font-size: 1.1rem;
     color: #b794f6;
+}
+
+.mobile-more-item > span {
+    flex: 1;
+}
+
+.mobile-more-item .mm-chevron {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
 }
 
 .mobile-more-item.logout-item {
@@ -786,257 +849,110 @@ body.mobile-menu-open .navbar.hide-nav {
     color: #ff6b6b;
 }
 
-.mobile-more-item.logout-item:hover {
-    background: rgba(255, 71, 87, 0.18);
-    border-color: rgba(255, 71, 87, 0.45);
-}
-
-.mobile-more-item.logout-item i {
+.mobile-more-item.logout-item > i:first-child {
     color: #ff6b6b;
 }
 
-.mobile-more-points {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.1rem;
-    border-radius: 14px;
-    background: linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.08) 100%);
-    border: 1px solid rgba(245, 166, 35, 0.25);
-    margin-bottom: 1rem;
+/* مهمان */
+.mm-guest {
+    text-align: center;
+    padding: 0.5rem 0 0.25rem;
 }
 
-.mobile-more-points-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+.mm-guest p {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.92rem;
+    line-height: 1.9;
+    margin-bottom: 1.1rem;
 }
 
-.mobile-more-points-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: rgba(245, 166, 35, 0.2);
-    display: flex;
-    align-items: center;
+.mm-guest-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+.mm-guest-actions .btn-nav {
     justify-content: center;
-    color: #F5A623;
-    font-size: 1.15rem;
-}
-
-.mobile-more-points-text h4 {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.7);
-    margin: 0 0 0.15rem 0;
-}
-
-.mobile-more-points-text p {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #fff;
-    margin: 0;
-}
-
-.mobile-more-points-value {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #F5A623;
+    padding: 0.85rem 1rem !important;
 }
 
 @media (max-width: 850px) {
-    body { 
-        padding-top: 80px;
-        padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+
+    :root {
+        --m-nav-h: 60px;
+        --m-dock-h: 64px;
     }
 
+    body {
+        padding-top: calc(var(--m-nav-h) + 12px);
+        padding-bottom: calc(var(--m-dock-h) + 34px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* ---------------- Top bar ---------------- */
     .navbar {
         top: 0;
+        left: 0;
+        right: 0;
         width: 100%;
-        border-radius: 0;
+        max-width: 100%;
+        margin: 0;
+        padding: env(safe-area-inset-top, 0px) 0 0;
         border: none;
-        background: rgba(15, 10, 25, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        border-radius: 0;
+        background: rgba(12, 8, 24, 0.74);
+        backdrop-filter: blur(18px) saturate(160%);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        /* انیمیشن fadeSlideDown در style.css با forwards جلوی کار hide-nav را می‌گرفت */
+        animation: none;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    }
+
+    .navbar::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        pointer-events: none;
+        background: linear-gradient(90deg, transparent, rgba(142, 84, 233, 0.65), rgba(245, 166, 35, 0.5), transparent);
+        opacity: 0.7;
+    }
+
+    .navbar.scrolled {
+        background: rgba(10, 6, 20, 0.88);
+        border: none;
     }
 
     .navbar.hide-nav {
         transform: translateY(-100%);
     }
 
+    .navbar-container {
+        height: var(--m-nav-h);
+        padding: 0 0.9rem;
+        gap: 0.6rem;
+    }
+
     .menu-toggle {
         display: none;
     }
 
-    .logo-text {
-        display: none;
-    }
-
-    .nav-container-inner {
-        display: flex;
-    }
-
-    .nav-links {
-        display: none;
-    }
-
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        width: 100%;
-        justify-content: flex-end;
-    }
-
-    .nav-actions .cart-nav-link {
-        display: none;
-    }
-
-    #auth-nav-links {
-        display: flex;
-        flex-direction: row;
-        gap: 0.6rem;
-    }
-
-    .btn-nav {
-        padding: 0.5rem 1rem !important;
-        font-size: 0.88rem !important;
-    }
-
-    .profile-dropdown {
-        display: flex;
-        flex-direction: row;
-    }
-
-    .profile-trigger {
-        justify-content: center;
-        min-width: auto;
-    }
-
-    .profile-trigger .profile-trigger-name {
-        display: none;
-    }
-
-    .profile-trigger .profile-trigger-caret {
-        display: none;
-    }
-
-    .points-badge {
-        display: none !important;
-    }
-
-    .profile-menu {
-        display: none !important;
-    }
-
-    .mobile-bottom-nav {
-        display: block;
-    }
-
-    .mobile-nav-container {
-        padding: 0.65rem 0.5rem;
-    }
-}
-
-@media (max-width: 425px) {
-    body {
-        padding-top: 74px;
-        padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px));
-    }
-
-    .navbar-container {
-        padding: 0.7rem 0.9rem;
-    }
-
     .logo {
+        margin: 0;
         gap: 0.55rem;
-        margin-left: 0;
-        font-size: 1.05rem;
         min-width: 0;
+        transition: opacity 0.2s ease;
     }
 
-    .logo .logo-text {
-        display: none;
+    .logo:hover {
+        transform: none;
     }
 
-    .logo-mark {
-        width: 42px;
-        height: 42px;
-    }
-
-    .nav-actions {
-        gap: 0.5rem;
-    }
-
-    .btn-nav {
-        padding: 0.45rem 0.85rem !important;
-        font-size: 0.82rem !important;
-    }
-
-    .profile-trigger i {
-        font-size: 1.1rem;
-    }
-
-    .mobile-nav-container {
-        padding: 0.55rem 0.35rem;
-    }
-
-    .mobile-nav-item {
-        padding: 0.45rem 0.5rem;
-        max-width: 70px;
-    }
-
-    .mobile-nav-item i {
-        font-size: 1.25rem;
-    }
-
-    .mobile-nav-item span {
-        font-size: 0.65rem;
-    }
-}
-
-@media (max-width: 375px) {
-    .navbar-container {
-        padding: 0.65rem 0.75rem;
-    }
-
-    .logo {
-        margin-left: 0;
-        font-size: 0.98rem;
-    }
-
-    .logo-mark {
-        width: 38px;
-        height: 38px;
-    }
-
-    .btn-nav {
-        padding: 0.4rem 0.75rem !important;
-        font-size: 0.78rem !important;
-    }
-
-    .mobile-nav-container {
-        padding: 0.5rem 0.25rem;
-    }
-
-    .mobile-nav-item {
-        padding: 0.4rem 0.4rem;
-        max-width: 65px;
-    }
-
-    .mobile-nav-item i {
-        font-size: 1.2rem;
-    }
-
-    .mobile-nav-item span {
-        font-size: 0.62rem;
-    }
-}
-
-@media (max-width: 320px) {
-    .logo {
-        gap: 0.45rem;
-        font-size: 0.92rem;
+    .logo:active {
+        opacity: 0.75;
     }
 
     .logo-mark {
@@ -1044,21 +960,301 @@ body.mobile-menu-open .navbar.hide-nav {
         height: 36px;
     }
 
+    .logo .logo-text {
+        display: inline;
+        font-size: 1rem;
+        font-weight: 800;
+        white-space: nowrap;
+        background: linear-gradient(135deg, #fff 30%, #F5A623 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .nav-container-inner {
+        flex: 1;
+        min-width: 0;
+        justify-content: flex-end;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .nav-actions {
+        width: auto;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    /* سبد خرید: دکمه‌ی مربعی با بج */
+    .nav-actions .cart-nav-link {
+        display: inline-flex;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        gap: 0;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-actions .cart-nav-link:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .nav-actions .cart-nav-link:active {
+        transform: scale(0.92);
+    }
+
+    .cart-nav-link .nav-item-label {
+        display: none;
+    }
+
+    .cart-nav-link i {
+        font-size: 1.05rem;
+        color: #c9b6ff;
+    }
+
+    .cart-nav-badge {
+        position: absolute;
+        top: -6px;
+        left: -6px;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        padding: 0 0.3rem;
+        font-size: 0.68rem;
+        border: 2px solid #100a1e;
+        box-shadow: none;
+    }
+
+    /* چیپ امتیاز/درجه (قبلاً روی موبایل کاملاً مخفی بود) */
+    .points-badge {
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem 0.3rem 0.55rem;
+        height: 40px;
+        max-width: 128px;
+        font-size: 0.78rem;
+        background: rgba(245, 166, 35, 0.12);
+        border: 1px solid rgba(245, 166, 35, 0.28);
+    }
+
+    .points-badge .rank-name {
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.78rem;
+    }
+
+    .points-badge .star-meter::after {
+        display: none;
+    }
+
+    #auth-nav-links {
+        gap: 0.5rem;
+    }
+
+    /* دکمه‌ی پروفایل: آواتار مربعی که شیت را باز می‌کند */
+    .profile-dropdown {
+        display: flex;
+    }
+
+    .profile-trigger {
+        width: 40px;
+        height: 40px;
+        min-width: 0;
+        padding: 0 !important;
+        justify-content: center;
+        border-radius: 14px !important;
+        background: linear-gradient(135deg, rgba(108, 63, 197, 0.4), rgba(245, 166, 35, 0.22)) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .profile-trigger:active {
+        transform: scale(0.92);
+    }
+
+    .profile-trigger i {
+        font-size: 1.05rem;
+    }
+
+    .profile-trigger .profile-trigger-name,
+    .profile-trigger .profile-trigger-caret {
+        display: none;
+    }
+
+    .profile-menu {
+        display: none !important;
+    }
+
+    /* دکمه‌های ورود/ثبت‌نام مهمان */
     .btn-nav {
-        padding: 0.38rem 0.65rem !important;
-        font-size: 0.75rem !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.85rem !important;
+        height: 40px;
+        justify-content: center;
+    }
+
+    /* ---------------- Bottom dock ---------------- */
+    .mobile-bottom-nav {
+        display: block;
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        padding: 0;
+        z-index: 999;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+
+    /* وقتی کیبورد باز است (فوکوس روی ورودی) داک مخفی می‌شود */
+    body:has(input:focus, textarea:focus, select:focus) .mobile-bottom-nav {
+        transform: translateY(calc(100% + 30px));
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .mobile-nav-container {
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 2px;
+        height: var(--m-dock-h);
+        padding: 6px;
+        background: rgba(16, 11, 30, 0.84);
+        backdrop-filter: blur(22px) saturate(170%);
+        -webkit-backdrop-filter: blur(22px) saturate(170%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .mobile-nav-item {
-        padding: 0.35rem 0.3rem;
-        max-width: 60px;
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 0;
+        border: 0;
+        border-radius: 18px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: inherit;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.25s ease;
+    }
+
+    .mobile-nav-icon {
+        position: relative;
+        width: 46px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
     }
 
     .mobile-nav-item i {
-        font-size: 1.15rem;
+        font-size: 1.12rem;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
     }
 
-    .mobile-nav-item span {
+    .mobile-nav-label {
+        font-size: 0.66rem;
+        font-weight: 600;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .mobile-nav-item:active .mobile-nav-icon {
+        transform: scale(0.9);
+    }
+
+    .mobile-nav-item.active {
+        color: #fff;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .mobile-nav-item.active .mobile-nav-icon {
+        background: linear-gradient(135deg, #6C3FC5, #8E54E9);
+        box-shadow: 0 6px 16px rgba(108, 63, 197, 0.5),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .mobile-nav-item.active i {
+        color: #fff;
+        filter: none;
+        transform: translateY(-1px) scale(1.08);
+    }
+
+    .mobile-nav-item.active .mobile-nav-label {
+        font-weight: 800;
+    }
+
+    @media (hover: hover) {
+        .mobile-nav-item:hover:not(.active) {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+        }
+    }
+}
+
+@media (max-width: 400px) {
+    .logo .logo-text {
+        display: none;
+    }
+
+    .navbar-container {
+        padding: 0 0.75rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .points-badge .rank-name {
+        display: none;
+    }
+
+    .points-badge {
+        padding: 0 0.65rem;
+    }
+
+    .mobile-bottom-nav {
+        left: 8px;
+        right: 8px;
+    }
+
+    .mobile-nav-icon {
+        width: 40px;
+    }
+
+    .mobile-nav-label {
         font-size: 0.6rem;
+    }
+
+    .mm-tile {
+        font-size: 0.72rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navbar,
+    .mobile-bottom-nav,
+    .mobile-more-content,
+    .mobile-nav-item i,
+    .mobile-nav-icon {
+        transition: none !important;
     }
 }

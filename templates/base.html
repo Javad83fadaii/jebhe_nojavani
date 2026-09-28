@@ -3,7 +3,8 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0c0818">
     <title>{{ page_title|default:"جبهه نوجوانی" }}</title>
     <script>
         document.documentElement.classList.add('js');
@@ -64,6 +65,26 @@
         </div>
     </div>
     <script>
+    // جلوگیری از XSS: نام کاربر/درجه توسط کاربر یا ادمین ساخته می‌شود و نباید خام داخل innerHTML برود
+    function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+        });
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia('(max-width: 850px)').matches;
+    }
+
+    // خروج از حساب (یک‌جا تعریف شده تا در منوی دسکتاپ و موبایل تکرار نشود)
+    function performLogout() {
+        ['access_token', 'refresh_token', 'user_type', 'userSession'].forEach(function (key) {
+            localStorage.removeItem(key);
+        });
+        sessionStorage.removeItem('userSession');
+        window.location.href = "{% url 'logout' %}";
+    }
+
     // تابع کوتاه‌سازی هوشمند نام کاربری (تا 12 کاراکتر، اگه کلمه ناقص بود تا 15 چک می‌کنه)
     function smartTruncateName(text, limit = 12, hardLimit = 15) {
         if (!text) return text;
@@ -118,9 +139,9 @@
             const userFullNameDisplay = smartTruncateName(userFullName);
             authNav.innerHTML = `
                 <div class="profile-dropdown" id="profile-dropdown">
-                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
+                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
                         <i class="fa-solid fa-user-astronaut"></i>
-                        <span class="profile-trigger-name" title="${userFullName}">${userFullNameDisplay}</span>
+                        <span class="profile-trigger-name" title="${escapeHtml(userFullName)}">${escapeHtml(userFullNameDisplay)}</span>
                         <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
                     </button>
                     <div class="profile-menu" id="profile-menu" role="menu">
@@ -148,17 +169,17 @@
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    localStorage.removeItem('user_type');
-                    localStorage.removeItem('userSession');
-                    sessionStorage.removeItem('userSession');
-                    window.location.href = "{% url 'logout' %}";
+                    performLogout();
                 });
             }
 
             if (dropdown && trigger) {
                 trigger.addEventListener('click', function() {
+                    // روی موبایل منوی کشویی مخفی است؛ به‌جایش شیت پایین باز می‌شود
+                    if (isMobileViewport()) {
+                        openMobileMoreModal();
+                        return;
+                    }
                     const isOpen = dropdown.classList.toggle('open');
                     trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
                 });
@@ -213,11 +234,15 @@
             return;
         }
 
-        const protectedLinks = document.querySelectorAll('.nav-item[data-requires-auth="true"]');
+        // قبلاً فقط .nav-item انتخاب می‌شد و آیتم‌های داک موبایل (.mobile-nav-item) را شامل نمی‌شد
+        const protectedLinks = document.querySelectorAll(
+            '.nav-item[data-requires-auth="true"], .mobile-nav-item[data-requires-auth="true"]'
+        );
         protectedLinks.forEach(link => {
             link.addEventListener('click', function(event) {
                 event.preventDefault();
-                setMobileMenuState(false);
+                // قبلاً اینجا setMobileMenuState(false) صدا زده می‌شد که هیچ‌جا تعریف نشده بود و خطا می‌داد
+                closeMobileMoreModal();
                 openGuestModal(this.dataset.guestSection || 'این بخش');
             });
         });
@@ -341,126 +366,166 @@
         syncPageScrollLock();
     }
 
-    // مدیریت Active State برای Mobile Navigation
+    // تشخیص صفحه‌ی فعلی از روی URL
+    // (page_name در ویوها با data-nav آیتم‌ها هم‌خوان نبود؛ مثلاً bazar در برابر shop)
+    function resolveNavKey(pathname) {
+        const path = ((pathname || '').replace(/\/+$/, '')) || '/';
+        const rules = [
+            ['/bazar/seller/dashboard', 'seller-dashboard'],
+            ['/bazar/seller/products', 'seller-products'],
+            ['/bazar/seller/orders', 'seller-orders'],
+            ['/bazar/cart', 'cart'],
+            ['/bazar/checkout', 'cart'],
+            ['/bazar', 'shop'],
+            ['/learning', 'learning-paths'],
+            ['/challenges', 'challenges'],
+            ['/home', 'home']
+        ];
+        for (let i = 0; i < rules.length; i++) {
+            const prefix = rules[i][0];
+            if (path === prefix || path.indexOf(prefix + '/') === 0) {
+                return rules[i][1];
+            }
+        }
+        return document.body.dataset.page || null;
+    }
+
+    // مدیریت Active State برای داک موبایل
     function updateMobileNavActive() {
-        const currentPage = document.body.dataset.page || '';
-        const mobileNavItems = document.querySelectorAll('.mobile-nav-item[data-nav]');
-        
-        mobileNavItems.forEach(item => {
-            const navValue = item.dataset.nav;
-            if (navValue === currentPage) {
-                item.classList.add('active');
+        const currentKey = resolveNavKey(window.location.pathname);
+        document.querySelectorAll('.mobile-nav-item[data-nav]').forEach(item => {
+            const isActive = item.dataset.nav === currentKey;
+            item.classList.toggle('active', isActive);
+            if (isActive) {
+                item.setAttribute('aria-current', 'page');
             } else {
-                item.classList.remove('active');
+                item.removeAttribute('aria-current');
             }
         });
     }
 
-    // مدیریت مودال "بیشتر" در Mobile Bottom Nav
+    // ساخت محتوای شیت «بیشتر»
     function buildMobileMoreMenu() {
-        const isAuthenticated = document.body.dataset.authenticated === 'true';
-        const userType = document.body.dataset.userType || 'user';
-        const sellerSiteView = document.body.dataset.sellerSiteView === 'true';
-        const isAdmin = document.body.dataset.isAdmin === 'true';
-        const userFullName = (document.body.dataset.userFullName || '').trim() || 'کاربر';
-        const totalPoints = document.getElementById('points-badge')?.dataset.totalPoints || '0';
-        const rankName = document.getElementById('user-rank-name')?.textContent || 'بدون درجه';
+        const dataset = document.body.dataset;
+        const isAuthenticated = dataset.authenticated === 'true';
+        const userType = dataset.userType || 'user';
+        const sellerSiteView = dataset.sellerSiteView === 'true';
+        const isAdmin = dataset.isAdmin === 'true';
+        const fullName = (dataset.userFullName || '').trim() || 'کاربر';
+
+        const badge = document.getElementById('points-badge');
+        const totalPoints = parseInt((badge && badge.dataset.totalPoints) || '0', 10) || 0;
+        const rankName = (document.getElementById('user-rank-name') || {}).textContent || 'بدون درجه';
+        const fillWrap = badge ? badge.querySelector('.star-fill-wrap') : null;
+        const progress = Math.max(0, Math.min(100, parseFloat(fillWrap && fillWrap.style.width) || 0));
+        const cartBadge = document.querySelector('.cart-nav-badge');
+        const cartCount = cartBadge ? cartBadge.textContent.trim() : '';
+        const currentKey = resolveNavKey(window.location.pathname);
 
         const moreBody = document.getElementById('mobile-more-body');
         if (!moreBody) return;
 
+        const tile = (href, icon, label, key, badgeText) => `
+            <a href="${href}" class="mm-tile${key && key === currentKey ? ' is-current' : ''}">
+                <span class="mm-tile-icon"><i class="fa-solid ${icon}"></i></span>
+                <span>${label}</span>
+                ${badgeText ? `<span class="mm-tile-badge">${escapeHtml(badgeText)}</span>` : ''}
+            </a>`;
+
+        const row = (href, icon, label, extraClass, id) => `
+            <a href="${href}"${id ? ` id="${id}"` : ''} class="mobile-more-item ${extraClass || ''}">
+                <i class="fa-solid ${icon}"></i>
+                <span>${label}</span>
+                <i class="fa-solid fa-chevron-left mm-chevron"></i>
+            </a>`;
+
         let html = '';
 
         if (isAuthenticated) {
-            // بخش امتیازات
+            const initial = escapeHtml(Array.from(fullName)[0] || 'ک');
+
             html += `
-                <div class="mobile-more-points">
-                    <div class="mobile-more-points-info">
-                        <div class="mobile-more-points-icon">
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-                        <div class="mobile-more-points-text">
-                            <h4>درجه شما</h4>
-                            <p>${rankName}</p>
-                        </div>
+                <div class="mm-user">
+                    <div class="mm-avatar">${initial}</div>
+                    <div class="mm-user-info">
+                        <strong>${escapeHtml(fullName)}</strong>
+                        <span>${escapeHtml(rankName)}</span>
                     </div>
-                    <div class="mobile-more-points-value">${parseInt(totalPoints).toLocaleString('fa-IR')}</div>
+                    <div class="mm-points">
+                        <b>${totalPoints.toLocaleString('fa-IR')}</b>
+                        <small>امتیاز</small>
+                    </div>
+                </div>
+                <div class="mm-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress)}">
+                    <span style="width:${progress}%"></span>
                 </div>
             `;
 
-            // بخش منوی اصلی
-            html += '<div class="mobile-more-section">';
-            html += '<div class="mobile-more-section-title">منوی اصلی</div>';
-            html += '<div class="mobile-more-list">';
-
+            html += '<div class="mm-grid">';
             if (userType === 'seller' && !sellerSiteView) {
-                // منوی پنل فروشنده
-                html += `<a href="{% url 'bazar:seller-dashboard' %}" class="mobile-more-item"><i class="fa-solid fa-gauge-high"></i><span>داشبورد فروشنده</span></a>`;
-                html += `<a href="{% url 'bazar:seller-product-list' %}" class="mobile-more-item"><i class="fa-solid fa-boxes-stacked"></i><span>محصولات من</span></a>`;
-                html += `<a href="{% url 'bazar:seller-order-list' %}" class="mobile-more-item"><i class="fa-solid fa-receipt"></i><span>سفارش‌های من</span></a>`;
+                html += tile("{% url 'bazar:seller-dashboard' %}", 'fa-gauge-high', 'داشبورد', 'seller-dashboard');
+                html += tile("{% url 'bazar:seller-product-list' %}", 'fa-boxes-stacked', 'محصولات', 'seller-products');
+                html += tile("{% url 'bazar:seller-order-list' %}", 'fa-receipt', 'سفارش‌ها', 'seller-orders');
             } else {
-                // منوی کاربر عادی
-                html += `<a href="{% url 'home' %}" class="mobile-more-item"><i class="fa-solid fa-house"></i><span>صفحه اصلی</span></a>`;
-                html += `<a href="{% url 'challenges' %}" class="mobile-more-item"><i class="fa-solid fa-trophy"></i><span>چالش‌ها</span></a>`;
-                html += `<a href="{% url 'learning:rank_cards' %}" class="mobile-more-item"><i class="fa-solid fa-map-location-dot"></i><span>سیر مطالعاتی</span></a>`;
-                html += `<a href="{% url 'bazar:product-list' %}" class="mobile-more-item"><i class="fa-solid fa-store"></i><span>جبهه بازار</span></a>`;
-                html += `<a href="{% url 'bazar:cart' %}" class="mobile-more-item"><i class="fa-solid fa-cart-shopping"></i><span>سبد خرید</span></a>`;
+                html += tile("{% url 'home' %}", 'fa-house', 'خانه', 'home');
+                html += tile("{% url 'challenges' %}", 'fa-trophy', 'چالش‌ها', 'challenges');
+                html += tile("{% url 'learning:rank_cards' %}", 'fa-map-location-dot', 'سیر مطالعاتی', 'learning-paths');
+                html += tile("{% url 'bazar:product-list' %}", 'fa-store', 'جبهه بازار', 'shop');
+                html += tile("{% url 'bazar:cart' %}", 'fa-cart-shopping', 'سبد خرید', 'cart', cartCount);
+                html += tile("{% url 'profile' %}", 'fa-user', 'پروفایل', null);
             }
+            html += '</div>';
 
-            html += '</div></div>';
-
-            // بخش حساب کاربری
             html += '<div class="mobile-more-section">';
             html += '<div class="mobile-more-section-title">حساب کاربری</div>';
             html += '<div class="mobile-more-list">';
-            html += `<a href="{% url 'profile' %}" class="mobile-more-item"><i class="fa-solid fa-user"></i><span>پروفایل من</span></a>`;
+
+            if (userType === 'seller' && !sellerSiteView) {
+                html += row("{% url 'profile' %}", 'fa-user', 'پروفایل من');
+            }
 
             if (userType === 'seller') {
                 if (sellerSiteView) {
-                    html += `<a href="{% url 'seller_view_panel' %}" class="mobile-more-item"><i class="fa-solid fa-arrow-rotate-left"></i><span>برگشت به پنل فروشنده</span></a>`;
+                    html += row("{% url 'seller_view_panel' %}", 'fa-arrow-rotate-left', 'برگشت به پنل فروشنده');
                 } else {
-                    html += `<a href="{% url 'seller_view_site' %}" class="mobile-more-item"><i class="fa-solid fa-eye"></i><span>مشاهده به عنوان کاربر</span></a>`;
+                    html += row("{% url 'seller_view_site' %}", 'fa-eye', 'مشاهده به عنوان کاربر');
                 }
             }
 
             if (isAdmin) {
-                html += `<a href="{% url 'admin:index' %}" class="mobile-more-item"><i class="fa-solid fa-user-shield"></i><span>پنل مدیریت</span></a>`;
+                html += row("{% url 'admin:index' %}", 'fa-user-shield', 'پنل مدیریت');
             }
 
-            html += `<a href="#" id="mobile-logout-btn" class="mobile-more-item logout-item"><i class="fa-solid fa-power-off"></i><span>خروج از حساب</span></a>`;
+            html += row('#', 'fa-power-off', 'خروج از حساب', 'logout-item', 'mobile-logout-btn');
             html += '</div></div>';
-
         } else {
-            // کاربر لاگین نکرده
-            html += '<div class="mobile-more-section">';
-            html += '<div class="mobile-more-list">';
-            html += `<a href="{% url 'login' %}" class="mobile-more-item"><i class="fa-solid fa-right-to-bracket"></i><span>ورود به حساب کاربری</span></a>`;
-            html += `<a href="{% url 'register' %}" class="mobile-more-item"><i class="fa-solid fa-user-plus"></i><span>ثبت‌نام</span></a>`;
-            html += '</div></div>';
+            html += `
+                <div class="mm-guest">
+                    <p>برای استفاده از چالش‌ها، سیر مطالعاتی و جبهه بازار وارد حساب کاربری خود شوید.</p>
+                    <div class="mm-guest-actions">
+                        <a href="{% url 'login' %}" class="btn-nav btn-login">ورود</a>
+                        <a href="{% url 'register' %}" class="btn-nav btn-register">ثبت‌نام</a>
+                    </div>
+                </div>
+            `;
         }
 
         moreBody.innerHTML = html;
 
-        // اضافه کردن event listener برای دکمه خروج
         const logoutBtn = document.getElementById('mobile-logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('user_type');
-                localStorage.removeItem('userSession');
-                sessionStorage.removeItem('userSession');
-                window.location.href = "{% url 'logout' %}";
+                performLogout();
             });
         }
     }
 
-    // باز و بسته کردن مودال "بیشتر"
+    // باز و بسته کردن شیت «بیشتر»
     const mobileNavMore = document.getElementById('mobile-nav-more');
     const mobileMoreModal = document.getElementById('mobile-more-modal');
     const mobileMoreClose = document.getElementById('mobile-more-close');
-    const mobileMoreBackdrop = mobileMoreModal?.querySelector('.mobile-more-backdrop');
+    const mobileMoreBackdrop = mobileMoreModal ? mobileMoreModal.querySelector('.mobile-more-backdrop') : null;
 
     function openMobileMoreModal() {
         if (!mobileMoreModal) return;
@@ -487,8 +552,52 @@
         mobileMoreBackdrop.addEventListener('click', closeMobileMoreModal);
     }
 
+    // بستن شیت با کشیدن به پایین (روی دستگیره و هدر)
+    (function setupSheetSwipeToClose() {
+        if (!mobileMoreModal) return;
+        const content = mobileMoreModal.querySelector('.mobile-more-content');
+        const handle = mobileMoreModal.querySelector('.mobile-more-head');
+        if (!content || !handle) return;
+
+        let startY = 0;
+        let deltaY = 0;
+        let dragging = false;
+
+        handle.addEventListener('touchstart', function(e) {
+            startY = e.touches[0].clientY;
+            deltaY = 0;
+            dragging = true;
+            content.style.transition = 'none';
+        }, { passive: true });
+
+        handle.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            deltaY = Math.max(0, e.touches[0].clientY - startY);
+            content.style.transform = `translateY(${deltaY}px)`;
+        }, { passive: true });
+
+        function endDrag() {
+            if (!dragging) return;
+            dragging = false;
+            content.style.transition = '';
+            content.style.transform = '';
+            if (deltaY > 90) {
+                closeMobileMoreModal();
+            }
+            deltaY = 0;
+        }
+
+        handle.addEventListener('touchend', endDrag);
+        handle.addEventListener('touchcancel', endDrag);
+    })();
+
     // اعمال active state هنگام لود صفحه
     document.addEventListener('DOMContentLoaded', updateMobileNavActive);
+
+    // اگر صفحه از حالت موبایل به دسکتاپ رفت (مثلاً چرخش صفحه) شیت باز نماند
+    window.matchMedia('(max-width: 850px)').addEventListener('change', function(e) {
+        if (!e.matches) closeMobileMoreModal();
+    });
 
     // بستن مودال با کلید Escape
     document.addEventListener('keydown', function(event) {
@@ -530,7 +639,7 @@
         }
         
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-    });
+    }, { passive: true });
     </script>
     {% block extra_js %}{% endblock %}
 
