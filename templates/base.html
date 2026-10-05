@@ -116,89 +116,19 @@
         const pointsBadge = document.getElementById('points-badge');
         
         if (isAuthenticated) {
-            const profileUrl = "{% url 'profile' %}";
-            const profileLabel = 'حساب کاربری';
-            const sellerToggleHtml = userType !== 'seller'
-                ? ''
-                : (sellerSiteView
-                    ? `<a href="{% url 'seller_view_panel' %}" role="menuitem">
-                            <i class="fa-solid fa-arrow-rotate-left"></i>
-                            <span>پنل فروشنده</span>
-                        </a>`
-                    : `<a href="{% url 'seller_view_site' %}" role="menuitem">
-                            <i class="fa-solid fa-eye"></i>
-                            <span>مشاهده سایت</span>
-                        </a>`);
-            const adminLinkHtml = isAdmin
-                ? `<a href="{% url 'admin:index' %}" role="menuitem">
-                        <i class="fa-solid fa-user-shield"></i>
-                        <span>ورود به ادمین</span>
-                    </a>`
-                : '';
-            const userFullName = (document.body.dataset.userFullName || '').trim() || 'حساب کاربری';
-            const userFullNameDisplay = smartTruncateName(userFullName);
-            authNav.innerHTML = `
-                <div class="profile-dropdown" id="profile-dropdown">
-                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
-                        <i class="fa-solid fa-user-astronaut"></i>
-                        <span class="profile-trigger-name" title="${escapeHtml(userFullName)}">${escapeHtml(userFullNameDisplay)}</span>
-                        <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
-                    </button>
-                    <div class="profile-menu" id="profile-menu" role="menu">
-                        <a href="${profileUrl}" role="menuitem">
-                            <i class="fa-solid fa-id-card"></i>
-                            <span>${profileLabel}</span>
-                        </a>
-                        ${sellerToggleHtml}
-                        ${adminLinkHtml}
-                        <a href="#" id="logout-btn" class="profile-menu-logout" role="menuitem">
-                            <i class="fa-solid fa-power-off"></i>
-                            <span>خروج</span>
-                        </a>
-                    </div>
-                </div>
-            `;
+            // حساب کاربری از هدر حذف شده است.
+            // حساب کاربری فقط از نوار ناوبری موبایل قابل دسترسی است.
+            if (authNav) {
+                authNav.innerHTML = '';
+            }
+
+            // نمایش امتیاز کاربر در هدر بدون نمایش منوی حساب
             if (pointsBadge) {
-                pointsBadge.style.display = (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
+                pointsBadge.style.display =
+                    (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
             }
-
-            const dropdown = document.getElementById('profile-dropdown');
-            const trigger = document.getElementById('profile-trigger');
-            
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    performLogout();
-                });
-            }
-
-            if (dropdown && trigger) {
-                trigger.addEventListener('click', function() {
-                    // روی موبایل منوی کشویی مخفی است؛ به‌جایش شیت پایین باز می‌شود
-                    if (isMobileViewport()) {
-                        openMobileMoreModal();
-                        return;
-                    }
-                    const isOpen = dropdown.classList.toggle('open');
-                    trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-                });
-
-                document.addEventListener('click', function(event) {
-                    if (!dropdown.classList.contains('open')) return;
-                    if (dropdown.contains(event.target)) return;
-                    dropdown.classList.remove('open');
-                    trigger.setAttribute('aria-expanded', 'false');
-                });
-
-                document.addEventListener('keydown', function(event) {
-                    if (event.key !== 'Escape') return;
-                    if (!dropdown.classList.contains('open')) return;
-                    dropdown.classList.remove('open');
-                    trigger.setAttribute('aria-expanded', 'false');
-                });
-            }
-        } else {
+        }
+         else {
             authNav.innerHTML = `
                 <a href="{% url 'login' %}" class="btn-nav btn-login" data-nav="login">
                     ورود
