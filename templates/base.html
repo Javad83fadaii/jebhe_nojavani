@@ -117,7 +117,7 @@
         
         if (isAuthenticated) {
             const profileUrl = "{% url 'profile' %}";
-            const profileLabel = 'پروفایل';
+            const profileLabel = 'حساب کاربری';
             const sellerToggleHtml = userType !== 'seller'
                 ? ''
                 : (sellerSiteView
@@ -139,11 +139,11 @@
             const userFullNameDisplay = smartTruncateName(userFullName);
             authNav.innerHTML = `
                 <div class="profile-dropdown" id="profile-dropdown">
-                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
+                    {% comment %} <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
                         <i class="fa-solid fa-user-astronaut"></i>
                         <span class="profile-trigger-name" title="${escapeHtml(userFullName)}">${escapeHtml(userFullNameDisplay)}</span>
                         <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
-                    </button>
+                    </button> {% endcomment %}
                     <div class="profile-menu" id="profile-menu" role="menu">
                         <a href="${profileUrl}" role="menuitem">
                             <i class="fa-solid fa-id-card"></i>
@@ -472,7 +472,7 @@
                 html += tile("{% url 'learning:rank_cards' %}", 'fa-map-location-dot', 'سیر مطالعاتی', 'learning-paths');
                 html += tile("{% url 'bazar:product-list' %}", 'fa-store', 'جبهه بازار', 'shop');
                 html += tile("{% url 'bazar:cart' %}", 'fa-cart-shopping', 'سبد خرید', 'cart', cartCount);
-                html += tile("{% url 'profile' %}", 'fa-user', 'پروفایل', null);
+                html += tile("{% url 'profile' %}", 'fa-user', 'حساب کاربری', null);
             }
             html += '</div>';
 
@@ -481,7 +481,7 @@
             html += '<div class="mobile-more-list">';
 
             if (userType === 'seller' && !sellerSiteView) {
-                html += row("{% url 'profile' %}", 'fa-user', 'پروفایل من');
+                html += row("{% url 'profile' %}", 'fa-user', 'حساب کاربری من');
             }
 
             if (userType === 'seller') {

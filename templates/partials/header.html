@@ -57,16 +57,18 @@
                         {% endif %}
                     </a>
                 {% endif %}
-                <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:100 }}" data-total-points="{{ user_total_points|default:0 }}">
-                    <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
-                        <i class="fa-regular fa-star star-outline"></i>
-                        <span class="star-fill-wrap" style="width: {{ user_level_progress_percent|default:0 }}%;">
-                            <i class="fa-solid fa-star star-fill"></i>
+                <div class="nav-account-group">
+                    <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:100 }}" data-total-points="{{ user_total_points|default:0 }}">
+                        <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
+                            <i class="fa-regular fa-star star-outline"></i>
+                            <span class="star-fill-wrap" style="width: {{ user_level_progress_percent|default:0 }}%;">
+                                <i class="fa-solid fa-star star-fill"></i>
+                            </span>
                         </span>
-                    </span>
-                    <span class="rank-name" id="user-rank-name">{{ user_current_rank|default:"بدون درجه" }}</span>
+                        <span class="rank-name" id="user-rank-name">{{ user_current_rank|default:"بدون درجه" }}</span>
+                    </div>
+                    <div id="auth-nav-links"></div>
                 </div>
-                <div id="auth-nav-links"></div>
             </div>
         </div>
     </div>
@@ -106,21 +108,21 @@
                 <span class="mobile-nav-label">بازار</span>
             </a>
         {% endif %}
-        <button class="mobile-nav-item mobile-nav-more" id="mobile-nav-more" type="button" aria-haspopup="dialog" aria-controls="mobile-more-modal">
-            <span class="mobile-nav-icon"><i class="fa-solid fa-grip"></i></span>
-            <span class="mobile-nav-label">بیشتر</span>
-        </button>
+        <a href="{% url 'profile' %}" class="mobile-nav-item" data-nav="profile" data-requires-auth="true" data-guest-section="حساب کاربری">
+            <span class="mobile-nav-icon"><i class="fa-solid fa-user"></i></span>
+            <span class="mobile-nav-label">حساب کاربری</span>
+        </a>
     </div>
 </nav>
 
-<!-- Mobile More Sheet -->
+<!-- Mobile More Sheet (برای خروج از حساب، پنل فروشنده و دسترسی ادمین — با تپ روی آواتار در نوار بالا باز می‌شود) -->
 <div class="mobile-more-modal" id="mobile-more-modal" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
     <div class="mobile-more-backdrop"></div>
     <div class="mobile-more-content">
         <div class="mobile-more-head">
             <div class="mobile-more-grabber" aria-hidden="true"></div>
             <div class="mobile-more-header">
-                <h3 id="mobile-more-title">منوی کامل</h3>
+                <h3 id="mobile-more-title">حساب کاربری</h3>
                 <button type="button" class="mobile-more-close" id="mobile-more-close" aria-label="بستن منو">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
