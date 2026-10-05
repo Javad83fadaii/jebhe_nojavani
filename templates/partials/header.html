@@ -108,9 +108,17 @@
                 <span class="mobile-nav-label">بازار</span>
             </a>
         {% endif %}
-        <a href="{% url 'profile' %}" class="mobile-nav-item" data-nav="profile" data-requires-auth="true" data-guest-section="حساب کاربری">
-            <span class="mobile-nav-icon"><i class="fa-solid fa-user"></i></span>
-            <span class="mobile-nav-label">حساب کاربری</span>
+        <a href="#"
+            class="mobile-nav-item"
+            id="mobile-nav-profile"
+            data-nav="profile"
+            data-requires-auth="true"
+            data-guest-section="حساب کاربری"
+            aria-label="حساب کاربری">
+                <span class="mobile-nav-icon">
+                    <i class="fa-solid fa-user"></i>
+                </span>
+                <span class="mobile-nav-label">حساب کاربری</span>
         </a>
     </div>
 </nav>

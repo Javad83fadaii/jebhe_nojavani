@@ -139,11 +139,11 @@
             const userFullNameDisplay = smartTruncateName(userFullName);
             authNav.innerHTML = `
                 <div class="profile-dropdown" id="profile-dropdown">
-                    {% comment %} <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
+                    <button type="button" class="btn-nav btn-login profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
                         <i class="fa-solid fa-user-astronaut"></i>
                         <span class="profile-trigger-name" title="${escapeHtml(userFullName)}">${escapeHtml(userFullNameDisplay)}</span>
                         <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
-                    </button> {% endcomment %}
+                    </button>
                     <div class="profile-menu" id="profile-menu" role="menu">
                         <a href="${profileUrl}" role="menuitem">
                             <i class="fa-solid fa-id-card"></i>
@@ -543,7 +543,25 @@
     if (mobileNavMore) {
         mobileNavMore.addEventListener('click', openMobileMoreModal);
     }
+    // باز کردن منوی حساب کاربری از آیکون پایین موبایل
+    const mobileNavProfile = document.getElementById('mobile-nav-profile');
 
+    if (mobileNavProfile) {
+        mobileNavProfile.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const isAuthenticated =
+                document.body.dataset.authenticated === 'true';
+
+            if (!isAuthenticated) {
+                closeMobileMoreModal();
+                openGuestModal('حساب کاربری');
+                return;
+            }
+
+            openMobileMoreModal();
+        });
+    }
     if (mobileMoreClose) {
         mobileMoreClose.addEventListener('click', closeMobileMoreModal);
     }
