@@ -44,7 +44,7 @@ _load_env_file(BASE_DIR / ".env")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
-    if os.environ.get("DJANGO_DEBUG", "True").strip().lower() in ("1", "true", "yes"):
+    if os.environ.get("DJANGO_DEBUG", "False").strip().lower() in ("1", "true", "yes"):
         # فقط برای توسعه‌ی محلی؛ هرگز در پروداکشن به این فال‌بک تکیه نکن
         SECRET_KEY = "django-insecure-dev-only-CHANGE-ME"
     else:
@@ -53,7 +53,7 @@ if not SECRET_KEY:
         )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").strip().lower() in ("1", "true", "yes")
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").strip().lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()]
 if DEBUG and not ALLOWED_HOSTS:
