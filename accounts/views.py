@@ -300,7 +300,7 @@ class PasswordResetConfirmView(APIView):
         )
 
 
-class UserProfileViewSet(viewsets.ModelViewSet):
+class UserProfileViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
     serializer_class = UserProfileSerializer
@@ -405,7 +405,7 @@ class SellerLoginView(APIView):
         )
 
 
-class SellerProfileViewSet(viewsets.ModelViewSet):
+class SellerProfileViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Seller.objects.select_related("user")
     serializer_class = SellerProfileSerializer
