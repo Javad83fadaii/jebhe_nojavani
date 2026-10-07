@@ -37,9 +37,20 @@ class ChallengeParticipationSerializer(serializers.ModelSerializer):
             'reward_awarded',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # بعد از ساخت، فیلد challenge غیرقابل تغییر می‌شود
+        if self.instance is not None:
+            self.fields['challenge'].read_only = True
+
     def validate(self, data):
+        # در حالت به‌روزرسانی، challenge تغییر نمی‌کند
+        if self.instance is not None:
+            return data
         user = self.context['request'].user
         challenge = data.get('challenge')
+        if challenge is None:
+            raise serializers.ValidationError("چالش مشخص نشده است.")
         
         if ChallengeParticipation.objects.filter(user=user, challenge=challenge).exists():
             raise serializers.ValidationError("شما قبلاً در این چالش شرکت کرده‌اید.")

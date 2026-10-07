@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, mixins, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
@@ -20,7 +20,7 @@ class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
             end_date__gte=now
         )
 
-class ParticipationViewSet(viewsets.ModelViewSet):
+class ParticipationViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = ChallengeParticipationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -53,9 +53,3 @@ class ParticipationViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-    @action(detail=False, methods=['get'], url_path='my-challenges')
-    def my_challenges(self, request):
-        participations = self.get_queryset()
-        serializer = self.get_serializer(participations, many=True)
-        return Response(serializer.data)

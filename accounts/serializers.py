@@ -691,3 +691,10 @@ class SellerProfileSerializer(serializers.ModelSerializer):
             "registered_at",
             "verified_at",
         ]
+        read_only_fields = [
+            "platform_commission_percent",
+            "is_active",
+            "sales_count",
+            "registered_at",
+            "verified_at",
+        ]
