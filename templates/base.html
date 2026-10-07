@@ -107,28 +107,23 @@
     }
 
     // مدیریت نوار ناوبری بر اساس وضعیت لاگین
-    function updateNavBar() {
-        const isAuthenticated = document.body.dataset.authenticated === 'true';
-        const userType = document.body.dataset.userType || localStorage.getItem('user_type') || 'user';
-        const sellerSiteView = document.body.dataset.sellerSiteView === 'true';
-        const isAdmin = document.body.dataset.isAdmin === 'true';
-        const authNav = document.getElementById('auth-nav-links');
-        const pointsBadge = document.getElementById('points-badge');
-        
-        if (isAuthenticated) {
-            // حساب کاربری از هدر حذف شده است.
-            // حساب کاربری فقط از نوار ناوبری موبایل قابل دسترسی است.
-            if (authNav) {
-                authNav.innerHTML = '';
-            }
+  // مدیریت نوار ناوبری بر اساس وضعیت لاگین
+function updateNavBar() {
+    const isAuthenticated = document.body.dataset.authenticated === 'true';
+    const userType = document.body.dataset.userType || localStorage.getItem('user_type') || 'user';
+    const sellerSiteView = document.body.dataset.sellerSiteView === 'true';
+    const authNav = document.getElementById('auth-nav-links');
+    const pointsBadge = document.getElementById('points-badge');
 
-            // نمایش امتیاز کاربر در هدر بدون نمایش منوی حساب
-            if (pointsBadge) {
-                pointsBadge.style.display =
-                    (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
-            }
+    if (isAuthenticated) {
+        // منوی پروفایل دسکتاپ از سمت سرور (header.html) داخل #auth-nav-links رندر شده؛
+        // پس دیگر آن را خالی نمی‌کنیم. در موبایل با CSS مخفی می‌شود.
+        if (pointsBadge) {
+            pointsBadge.style.display =
+                (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
         }
-         else {
+    } else {
+        if (authNav) {
             authNav.innerHTML = `
                 <a href="{% url 'login' %}" class="btn-nav btn-login" data-nav="login">
                     ورود
@@ -137,9 +132,45 @@
                     ثبت‌نام
                 </a>
             `;
-            if (pointsBadge) pointsBadge.style.display = 'none';
         }
+        if (pointsBadge) pointsBadge.style.display = 'none';
     }
+}
+
+// منوی کشویی پروفایل (دسکتاپ)
+function setupProfileDropdown() {
+    const dropdown = document.getElementById('profile-dropdown');
+    const trigger = document.getElementById('profile-trigger');
+    if (!dropdown || !trigger) return;
+
+    function setOpen(open) {
+        dropdown.classList.toggle('open', open);
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    trigger.addEventListener('click', function (event) {
+        event.stopPropagation();
+        setOpen(!dropdown.classList.contains('open'));
+    });
+
+    // کلیک بیرون از منو، آن را می‌بندد
+    document.addEventListener('click', function (event) {
+        if (!dropdown.contains(event.target)) setOpen(false);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') setOpen(false);
+    });
+
+    // خروج: توکن‌های localStorage را هم پاک می‌کند
+    const logoutBtn = document.getElementById('desktop-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            performLogout();
+        });
+    }
+}
 
     function openGuestModal(sectionName) {
         const modalBackdrop = document.getElementById('site-modal-backdrop');
@@ -180,6 +211,7 @@
     
     document.addEventListener('DOMContentLoaded', updateNavBar);
     document.addEventListener('DOMContentLoaded', setupGuestNavGuards);
+    document.addEventListener('DOMContentLoaded', setupProfileDropdown);
     document.addEventListener('DOMContentLoaded', function() {
         const badge = document.getElementById('points-badge');
         const isAuthenticated = document.body.dataset.authenticated === 'true';

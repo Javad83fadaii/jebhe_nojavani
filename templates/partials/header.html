@@ -67,7 +67,57 @@
                         </span>
                         <span class="rank-name" id="user-rank-name">{{ user_current_rank|default:"بدون درجه" }}</span>
                     </div>
-                    <div id="auth-nav-links"></div>
+
+                    <div id="auth-nav-links">
+                        {% if request.user.is_authenticated %}
+                            <!-- منوی پروفایل دسکتاپ (در موبایل با CSS مخفی می‌شود) -->
+                            <div class="profile-dropdown" id="profile-dropdown">
+                                <button type="button"
+                                        class="btn-nav btn-login profile-trigger"
+                                        id="profile-trigger"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        aria-controls="profile-menu">
+                                    <i class="fa-solid fa-circle-user"></i>
+                                    <span class="profile-trigger-name">{{ request.user.get_full_name|default:request.user.phone_number|truncatechars:16 }}</span>
+                                    <i class="fa-solid fa-chevron-down profile-trigger-caret"></i>
+                                </button>
+
+                                <div class="profile-menu" id="profile-menu" role="menu">
+                                    <a href="{% url 'profile' %}" role="menuitem">
+                                        <i class="fa-solid fa-user"></i>
+                                        <span>حساب کاربری من</span>
+                                    </a>
+
+                                    {% if request.user.is_seller %}
+                                        {% if seller_site_view %}
+                                            <a href="{% url 'seller_view_panel' %}" role="menuitem">
+                                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                                <span>برگشت به پنل فروشنده</span>
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'seller_view_site' %}" role="menuitem">
+                                                <i class="fa-solid fa-eye"></i>
+                                                <span>مشاهده به عنوان کاربر</span>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if request.user.is_staff %}
+                                        <a href="{% url 'admin:index' %}" role="menuitem">
+                                            <i class="fa-solid fa-user-shield"></i>
+                                            <span>پنل مدیریت</span>
+                                        </a>
+                                    {% endif %}
+
+                                    <a href="{% url 'logout' %}" id="desktop-logout-btn" class="profile-menu-logout" role="menuitem">
+                                        <i class="fa-solid fa-power-off"></i>
+                                        <span>خروج از حساب</span>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -123,7 +173,7 @@
     </div>
 </nav>
 
-<!-- Mobile More Sheet (برای خروج از حساب، پنل فروشنده و دسترسی ادمین — با تپ روی آواتار در نوار بالا باز می‌شود) -->
+<!-- Mobile More Sheet -->
 <div class="mobile-more-modal" id="mobile-more-modal" role="dialog" aria-modal="true" aria-labelledby="mobile-more-title">
     <div class="mobile-more-backdrop"></div>
     <div class="mobile-more-content">

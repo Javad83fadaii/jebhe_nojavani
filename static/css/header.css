@@ -1339,3 +1339,40 @@ body.mobile-menu-open .navbar.hide-nav {
         transition: none !important;
     }
 }
+/* ==========================================================================
+   منوی پروفایل دسکتاپ
+   ========================================================================== */
+
+.profile-trigger {
+    font-family: inherit;
+    color: #fff;
+}
+
+.profile-trigger i:first-child {
+    color: #a881ff;
+    font-size: 1.15rem;
+}
+
+.profile-menu a i {
+    width: 20px;
+    text-align: center;
+    color: #b794f6;
+}
+
+.profile-menu a.profile-menu-logout i {
+    color: #ff6b6b;
+}
+
+/* دسکتاپ‌های باریک‌تر: فقط آیکن و فلش (نام مخفی) */
+@media (max-width: 1100px) {
+    .profile-trigger .profile-trigger-name {
+        display: none;
+    }
+}
+
+/* موبایل: حساب کاربری از داک پایین و شیت «حساب کاربری» باز می‌شود، نه از نوبار */
+@media (max-width: 850px) {
+    .profile-dropdown {
+        display: none !important;
+    }
+}
