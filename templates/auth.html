@@ -320,9 +320,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                localStorage.setItem('access_token', data.access);
-                localStorage.setItem('refresh_token', data.refresh);
-                localStorage.setItem('user_type', data.user_type || 'user');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_type');
 
                 showMessage(loginMessageContainer, 'ورود با موفقیت انجام شد. در حال انتقال...', 'success');
                 window.location.href = data.redirect_url || nextUrl || "{% url 'home' %}";
@@ -639,9 +639,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 const data = res.data || {};
-                localStorage.setItem('access_token', data.access || data.access_token);
-                localStorage.setItem('refresh_token', data.refresh || data.refresh_token);
-                localStorage.setItem('user_type', 'user');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_type');
 
                 showMessage(registerMessageContainer, 'ثبت‌نام با موفقیت انجام شد. در حال انتقال...', 'success');
                 setTimeout(() => {

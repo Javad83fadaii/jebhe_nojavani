@@ -1,4 +1,4 @@
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from datetime import date
 from rest_framework.test import APIClient
 from unittest.mock import patch
@@ -466,3 +466,45 @@ class AccountsAPITestCase(TestCase):
             ).exists()
         )
 
+    def test_profile_patch_with_session_requires_csrf(self):
+        user = User.objects.create_user(
+            phone_number="09123330000",
+            password="StrongPass123!",
+            first_name="سشن",
+            last_name="بدون csrf",
+        )
+        client = Client(enforce_csrf_checks=True)
+        self.assertTrue(client.login(phone_number=user.phone_number, password="StrongPass123!"))
+
+        response = client.patch(
+            "/api/accounts/profile/me/",
+            data='{"first_name":"جدید"}',
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_profile_patch_with_session_and_csrf_succeeds(self):
+        user = User.objects.create_user(
+            phone_number="09124440000",
+            password="StrongPass123!",
+            first_name="سشن",
+            last_name="با csrf",
+        )
+        client = Client(enforce_csrf_checks=True)
+        self.assertTrue(client.login(phone_number=user.phone_number, password="StrongPass123!"))
+
+        page_response = client.get("/profile/")
+        self.assertEqual(page_response.status_code, 200)
+        csrf_token = client.cookies["csrftoken"].value
+
+        response = client.patch(
+            "/api/accounts/profile/me/",
+            data='{"first_name":"جدید"}',
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, "جدید")

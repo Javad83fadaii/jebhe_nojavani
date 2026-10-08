@@ -112,9 +112,9 @@
                     return;
                 }
 
-                localStorage.setItem('access_token', data.access);
-                localStorage.setItem('refresh_token', data.refresh);
-                localStorage.setItem('user_type', data.user_type || 'seller');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_type');
 
                 showMessage('ورود با موفقیت انجام شد. در حال انتقال...', 'success');
                 window.location.href = data.redirect_url || nextUrl || "{% url 'bazar:seller-dashboard' %}";

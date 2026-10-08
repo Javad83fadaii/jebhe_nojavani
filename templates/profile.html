@@ -795,12 +795,48 @@
 <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    const accessToken = localStorage.getItem('access_token');
-    
-    if (!accessToken) {
-        window.location.href = '/login/';
-        return;
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(';') : [];
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith(`${name}=`)) {
+                return decodeURIComponent(trimmed.substring(name.length + 1));
+            }
+        }
+        return '';
+    }
+
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+    }
+
+    function buildRequestOptions({ method = 'GET', body = null, includeCsrf = false } = {}) {
+        const headers = {};
+        if (body !== null) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (includeCsrf) {
+            headers['X-CSRFToken'] = getCsrfToken() || '';
+        }
+
+        return {
+            method,
+            headers,
+            credentials: 'same-origin',
+            ...(body !== null ? { body: JSON.stringify(body) } : {})
+        };
+    }
+
+    function redirectToLogin() {
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    }
+
+    async function parseJsonSafe(response) {
+        try {
+            return await response.json();
+        } catch (_) {
+            return null;
+        }
     }
 
     // DOM elements
@@ -962,11 +998,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load select options
     async function loadSelect(url, selectElement) {
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
+            const response = await fetch(url, buildRequestOptions());
             const data = await response.json();
             const items = data.results || data;
             
@@ -1106,13 +1138,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load profile
     async function loadProfile() {
         try {
-            const response = await fetch('/api/accounts/profile/me/', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
+            const response = await fetch('/api/accounts/profile/me/', buildRequestOptions());
 
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    redirectToLogin();
+                    return;
+                }
                 throw new Error('Failed to load profile');
             }
 
@@ -1215,18 +1247,20 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await fetch('/api/accounts/profile/me/', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                body: JSON.stringify(formData)
-            });
+            const response = await fetch(
+                '/api/accounts/profile/me/',
+                buildRequestOptions({ method: 'PATCH', body: formData, includeCsrf: true })
+            );
 
             if (!response.ok) {
-                const errorData = await response.json();
-                const errorMsg = errorData.detail || Object.values(errorData).flat().join(', ') || 'ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.';
+                if (response.status === 401 || response.status === 403) {
+                    redirectToLogin();
+                    return;
+                }
+                const errorData = await parseJsonSafe(response);
+                const errorMsg =
+                    (errorData && (errorData.detail || Object.values(errorData).flat().join(', '))) ||
+                    'ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.';
                 throw new Error(errorMsg);
             }
 
@@ -1306,13 +1340,13 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadConvertHistory() {
         if (!convertHistoryContainer) return;
         try {
-            const response = await fetch('/api/accounts/profile/convert-coins/', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                credentials: 'same-origin'
-            });
-            if (!response.ok) return;
+            const response = await fetch('/api/accounts/profile/convert-coins/', buildRequestOptions());
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    redirectToLogin();
+                }
+                return;
+            }
             const data = await response.json();
             userChallengeCoins = Number(data.challenge_coins || 0);
             if (currentCoinsDisplay) {
@@ -1371,7 +1405,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
             const submitBtn = document.getElementById('btn-submit-convert');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -1379,20 +1412,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
-                const response = await fetch('/api/accounts/profile/convert-coins/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`,
-                        'X-CSRFToken': csrfToken || ''
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ coin_amount: coinAmount })
-                });
+                const response = await fetch(
+                    '/api/accounts/profile/convert-coins/',
+                    buildRequestOptions({ method: 'POST', body: { coin_amount: coinAmount }, includeCsrf: true })
+                );
 
-                const resData = await response.json();
+                const resData = await parseJsonSafe(response);
                 if (!response.ok) {
-                    throw new Error(resData.detail || 'ثبت درخواست با خطا مواجه شد.');
+                    if (response.status === 401 || response.status === 403) {
+                        redirectToLogin();
+                        return;
+                    }
+                    throw new Error((resData && resData.detail) || 'ثبت درخواست با خطا مواجه شد.');
                 }
 
                 showMessage(resData.detail || 'درخواست با موفقیت ثبت شد.', 'success');
