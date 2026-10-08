@@ -35,7 +35,7 @@ class LearningPath(TimestampedModel):
         ARCHIVED = "archived", "آرشیو شده"
 
     DEFAULT_TOTAL_STAGES = 10
-    DEFAULT_STAGE_POINTS = 10
+    DEFAULT_STAGE_POINTS = 100
     DEFAULT_TOTAL_POINTS = DEFAULT_TOTAL_STAGES * DEFAULT_STAGE_POINTS
 
     rank = models.ForeignKey("accounts.Rank", on_delete=models.SET_NULL, null=True, blank=True, related_name="learning_paths", verbose_name="درجه مربوطه")

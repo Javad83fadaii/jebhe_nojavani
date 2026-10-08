@@ -71,10 +71,10 @@ class LearningProgressFlowTestCase(TestCase):
         stage_1 = self.stages[0]
         stage_6 = self.stages[5]
 
-        self.assertEqual(stage_1.stage_points, 10)
+        self.assertEqual(stage_1.stage_points, 100)
         self.assertEqual(stage_1.required_points, 0)
-        self.assertEqual(stage_6.stage_points, 10)
-        self.assertEqual(stage_6.required_points, 50)
+        self.assertEqual(stage_6.stage_points, 100)
+        self.assertEqual(stage_6.required_points, 500)
 
     def test_progress_unlocks_only_the_next_stage_in_order(self):
         user_progress = self.user.enroll_in_path(self.learning_path)
@@ -98,9 +98,9 @@ class LearningProgressFlowTestCase(TestCase):
         )
 
         self.assertEqual(user_progress.completed_stages_count, 5)
-        self.assertEqual(user_progress.total_score, 50)
+        self.assertEqual(user_progress.total_score, 500)
         self.assertEqual(user_progress.current_stage_id, self.stages[5].id)
-        self.assertEqual(self.user.total_points, 50)
+        self.assertEqual(self.user.total_points, 500)
         self.assertEqual(stage_6_progress.status, UserStageProgress.StageStatus.UNLOCKED)
         self.assertEqual(stage_7_progress.status, UserStageProgress.StageStatus.LOCKED)
 
@@ -147,10 +147,10 @@ class LearningProgressFlowTestCase(TestCase):
 
         self.assertEqual(exam.status, UserStageExam.ExamStatus.PASSED)
         self.assertEqual(stage_1_progress.status, UserStageProgress.StageStatus.PASSED)
-        self.assertEqual(stage_1_progress.score_earned, 10)
-        self.assertEqual(user_progress.total_score, 10)
+        self.assertEqual(stage_1_progress.score_earned, 100)
+        self.assertEqual(user_progress.total_score, 100)
         self.assertEqual(user_progress.completed_stages_count, 1)
-        self.assertEqual(self.user.total_points, 10)
+        self.assertEqual(self.user.total_points, 100)
         self.assertEqual(stage_2_progress.status, UserStageProgress.StageStatus.UNLOCKED)
         self.assertEqual(stage_3_progress.status, UserStageProgress.StageStatus.LOCKED)
 

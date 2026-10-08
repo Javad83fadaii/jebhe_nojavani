@@ -220,7 +220,7 @@ function setupProfileDropdown() {
         const fillWrap = badge.querySelector('.star-fill-wrap');
         const starMeter = badge.querySelector('.star-meter');
         const rankNameEl = document.getElementById('user-rank-name');
-        const pointsPerLevel = Number(badge.dataset.pointsPerLevel) || 100;
+        const pointsPerLevel = Number(badge.dataset.pointsPerLevel) || 1000;
 
         function applyProgress(data) {
             const nextPointsPerLevel = Number(data.points_per_level) || pointsPerLevel;

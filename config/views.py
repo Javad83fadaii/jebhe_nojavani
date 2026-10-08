@@ -371,19 +371,16 @@ def logout_view(request):
 @login_required
 def user_progress_api(request):
     total_points = int(getattr(request.user, "total_points", 0) or 0)
-    points_per_level = int(getattr(LearningPath, "DEFAULT_TOTAL_POINTS", 100) or 100)
-    level_points = total_points % points_per_level
-    level_number = (total_points // points_per_level) + 1
-    level_progress_percent = int(round((level_points / points_per_level) * 100)) if points_per_level else 0
-    current_rank = getattr(request.user, "current_rank", None)
+    progress_metrics = Rank.get_progress_metrics(total_points)
+    current_rank = progress_metrics["current_rank"]
 
     return JsonResponse(
         {
             "total_points": total_points,
-            "points_per_level": points_per_level,
-            "level_points": level_points,
-            "level_number": level_number,
-            "level_progress_percent": level_progress_percent,
+            "points_per_level": progress_metrics["points_per_level"],
+            "level_points": progress_metrics["level_points"],
+            "level_number": progress_metrics["level_number"],
+            "level_progress_percent": progress_metrics["level_progress_percent"],
             "current_rank": getattr(current_rank, "name", None),
         }
     )

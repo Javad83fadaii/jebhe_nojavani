@@ -127,6 +127,47 @@ class Rank(TimestampedModel):
             .last()
         )
 
+    @classmethod
+    def get_progress_metrics(cls, points: int | None) -> dict[str, int | Rank | None]:
+        normalized_points = max(points or 0, 0)
+        current_rank = cls.get_rank_for_points(normalized_points)
+
+        if current_rank is None:
+            points_per_level = cls.POINTS_PER_LEVEL
+            level_points = normalized_points
+            level_number = 1
+            level_progress_percent = int(round((level_points / points_per_level) * 100)) if points_per_level else 0
+            return {
+                "current_rank": None,
+                "points_per_level": points_per_level,
+                "level_points": level_points,
+                "level_number": level_number,
+                "level_progress_percent": min(max(level_progress_percent, 0), 100),
+            }
+
+        min_points = max(current_rank.min_points or 0, 0)
+        level_number = current_rank.level
+        level_points = max(normalized_points - min_points, 0)
+
+        if current_rank.max_points is None:
+            return {
+                "current_rank": current_rank,
+                "points_per_level": cls.POINTS_PER_LEVEL,
+                "level_points": level_points,
+                "level_number": level_number,
+                "level_progress_percent": 100,
+            }
+
+        points_per_level = cls.POINTS_PER_LEVEL
+        level_progress_percent = int(round((level_points / points_per_level) * 100))
+        return {
+            "current_rank": current_rank,
+            "points_per_level": points_per_level,
+            "level_points": level_points,
+            "level_number": level_number,
+            "level_progress_percent": min(max(level_progress_percent, 0), 100),
+        }
+
     def get_unlock_points(self) -> int:
         return max(self.min_points or 0, 0)
 
