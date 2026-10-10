@@ -13,7 +13,7 @@
             <p class="bazar-note">فهرست محصولات فروشگاه {{ seller_profile.shop_name }} را مدیریت کن.</p>
         </div>
         <div class="bazar-chip-list">
-            <span class="bazar-chip bazar-chip-highlight">تعداد محصولات: {{ products|length }}</span>
+            <span class="bazar-chip bazar-chip-highlight">تعداد محصولات: {{ page_obj.paginator.count|toman }}</span>
             <span class="bazar-chip">فروشگاه: {{ seller_profile.shop_name }}</span>
         </div>
     </div>
@@ -71,6 +71,18 @@
                 </article>
             {% endfor %}
         </div>
+
+        {% if is_paginated %}
+            <div class="bazar-pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?{% query_transform page=page_obj.previous_page_number %}" class="bazar-secondary-btn">صفحه قبل</a>
+                {% endif %}
+                <span class="bazar-chip">صفحه {{ page_obj.number|toman }} از {{ page_obj.paginator.num_pages|toman }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?{% query_transform page=page_obj.next_page_number %}" class="bazar-secondary-btn">صفحه بعد</a>
+                {% endif %}
+            </div>
+        {% endif %}
     {% else %}
         <div class="bazar-empty-state">
             <h3>هنوز محصولی ثبت نشده است</h3>

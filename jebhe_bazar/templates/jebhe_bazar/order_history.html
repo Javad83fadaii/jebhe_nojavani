@@ -42,6 +42,18 @@
                 </article>
             {% endfor %}
         </div>
+
+        {% if is_paginated %}
+            <div class="bazar-pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?{% query_transform page=page_obj.previous_page_number %}" class="bazar-secondary-btn">صفحه قبل</a>
+                {% endif %}
+                <span class="bazar-chip">صفحه {{ page_obj.number|toman }} از {{ page_obj.paginator.num_pages|toman }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?{% query_transform page=page_obj.next_page_number %}" class="bazar-secondary-btn">صفحه بعد</a>
+                {% endif %}
+            </div>
+        {% endif %}
     {% else %}
         <div class="bazar-empty-state">
             <h3>هنوز سفارشی ثبت نشده است</h3>

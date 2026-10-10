@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from accounts.models import CoinTransaction, Seller, User
 
-from .models import Cart, CartItem, Category, Order, Product, Transaction, WalletChargeRequest
+from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
 from .views import CHECKOUT_COINS_SESSION_KEY
 
 
@@ -305,6 +305,66 @@ class WalletChargeRequestTests(TestCase):
             Transaction.objects.filter(transaction_type=Transaction.TransactionType.CHARGE).count(),
             1,
         )
+
+
+class SellerProductManagementTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.seller_user = User.objects.create_user(
+            phone_number="09126667777",
+            password="StrongPass123!",
+            first_name="فروشنده",
+            last_name="مدیر",
+        )
+        self.buyer = User.objects.create_user(
+            phone_number="09126667778",
+            password="StrongPass123!",
+            first_name="خریدار",
+            last_name="محصول",
+        )
+        self.seller = Seller.objects.create(
+            user=self.seller_user,
+            shop_name="فروشگاه مدیریت",
+            shop_address="تهران",
+            platform_commission_percent=Decimal("10.00"),
+            verified=True,
+        )
+        self.category = Category.objects.create(name="مدیریت محصول")
+        self.product = Product.objects.create(
+            seller=self.seller,
+            category=self.category,
+            title="محصول فروخته شده",
+            description="برای تست حذف",
+            price=90000,
+            stock=2,
+            is_active=True,
+        )
+        self.order = Order.objects.create(
+            user=self.buyer,
+            total_amount=self.product.price,
+            status=Order.Status.PAID,
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            quantity=1,
+            unit_price=self.product.price,
+            unit_coins=0,
+            paid_with="money",
+        )
+        self.client.force_login(self.seller_user)
+
+    def test_delete_sold_product_deactivates_it_instead_of_raising_500(self):
+        response = self.client.post(
+            reverse("bazar:seller-product-edit", args=[self.product.pk]),
+            {"_delete": "1"},
+        )
+
+        self.assertRedirects(response, reverse("bazar:seller-product-list"))
+        self.product.refresh_from_db()
+
+        self.assertTrue(Product.objects.filter(pk=self.product.pk).exists())
+        self.assertFalse(self.product.is_active)
 
 
 class ProductListFilteringTests(TestCase):

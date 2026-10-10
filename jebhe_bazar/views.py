@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Case, Count, ExpressionWrapper, F, IntegerField, Prefetch, Q, Sum, Value, When
+from django.db.models.deletion import ProtectedError
 from django.db.models.functions import Coalesce
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -867,8 +868,14 @@ class SellerProductUpdateView(SellerContextMixin, UpdateView):
         self.object = self.get_object()
         if "_delete" in request.POST:
             product_title = self.object.title
-            self.object.delete()
-            messages.success(request, f"محصول {product_title} حذف شد.")
+            try:
+                self.object.delete()
+            except ProtectedError:
+                self.object.is_active = False
+                self.object.save(update_fields=["is_active"])
+                messages.warning(request, "این محصول سابقه فروش دارد؛ به جای حذف، غیرفعال شد.")
+            else:
+                messages.success(request, f"محصول {product_title} حذف شد.")
             return redirect(self.success_url)
         return super().post(request, *args, **kwargs)
 

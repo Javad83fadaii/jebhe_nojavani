@@ -17,6 +17,10 @@ body {
     color: #fff;
 }
 
+/* ==========================================================================
+   DESKTOP NAVBAR
+   ========================================================================== */
+
 .navbar {
     position: fixed;
     top: 20px;
@@ -66,7 +70,7 @@ body.mobile-menu-open .navbar.hide-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.8rem 1.5rem;
+    padding: 0.75rem 1.4rem;
     width: 100%;
 }
 
@@ -76,11 +80,11 @@ body.mobile-menu-open .navbar.hide-nav {
     gap: 0.75rem;
     text-decoration: none;
     color: #fff;
-    font-size: 1.5rem;
-    font-weight: var(--font-weight-display);
+    font-size: 1.45rem;
+    font-weight: var(--font-weight-display, 700);
     transition: transform 0.3s ease;
     flex-shrink: 0;
-    margin-left: 2rem;
+    margin-left: 1.5rem;
 }
 
 .logo .logo-text {
@@ -92,8 +96,8 @@ body.mobile-menu-open .navbar.hide-nav {
 }
 
 .logo-mark {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     display: block;
     object-fit: contain;
     flex-shrink: 0;
@@ -104,26 +108,28 @@ body.mobile-menu-open .navbar.hide-nav {
     flex-grow: 1;
     align-items: center;
     justify-content: space-between;
+    min-width: 0;
 }
 
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
+    flex-shrink: 0;
 }
 
 .nav-links a.nav-item {
     color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
-    padding: 0.6rem 1rem;
+    padding: 0.55rem 0.85rem;
     border-radius: 12px;
-    font-weight: var(--font-weight-ui);
-    font-size: 0.95rem;
+    font-weight: var(--font-weight-ui, 500);
+    font-size: 0.92rem;
     transition: all 0.3s ease;
     white-space: nowrap;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
 }
 
 .nav-links a.nav-item .nav-item-label {
@@ -131,7 +137,7 @@ body.mobile-menu-open .navbar.hide-nav {
 }
 
 .nav-links a.nav-item i {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     transition: transform 0.3s ease;
     color: #a881ff;
 }
@@ -150,85 +156,123 @@ body.mobile-menu-open .navbar.hide-nav {
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
-/* گروه راست: چیپ امتیاز/درجه + دکمه‌ی حساب کاربری (قبلاً مستقیم زیر nav-actions بودند) */
 .nav-account-group {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.65rem;
+    flex-shrink: 0;
 }
 
+/* ==========================================================================
+   ایده جدید سبد خرید (کپسولی، ظریف و فشرده)
+   ========================================================================== */
 .cart-nav-link {
     position: relative;
     white-space: nowrap;
     color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
-    padding: 0.6rem 1rem;
-    border-radius: 12px;
-    font-weight: var(--font-weight-ui);
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-    display: flex;
+    height: 40px;
+    padding: 0 0.85rem;
+    border-radius: 14px;
+    font-weight: var(--font-weight-ui, 500);
+    font-size: 0.88rem;
+    transition: all 0.25s ease;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    gap: 7px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
 }
 
 .cart-nav-link:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px);
 }
 
-.cart-nav-link .nav-item-label {
-    display: inline;
+.cart-nav-link i {
+    font-size: 1.05rem;
+    color: #c9b6ff;
 }
 
 .cart-nav-badge {
-    min-width: 1.7rem;
-    height: 1.7rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 0.45rem;
+    padding: 0 0.3rem;
     background: linear-gradient(135deg, #f5a623, #f97316);
     color: #111827;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     font-weight: 800;
-    box-shadow: 0 6px 16px rgba(245, 166, 35, 0.25);
+    box-shadow: 0 2px 8px rgba(245, 166, 35, 0.35);
 }
 
 #auth-nav-links {
     display: flex;
-    gap: 0.8rem;
+    gap: 0.6rem;
     align-items: center;
+    flex-shrink: 0;
 }
 
+/* ==========================================================================
+   محدودسازی و کنترل سایز نام کاربر در دسکتاپ
+   ========================================================================== */
 .profile-dropdown {
     position: relative;
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .profile-trigger {
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.05);
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    height: 40px;
+    padding: 0 0.85rem !important;
+    border-radius: 14px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 185px; /* مهار شکستن کادر هدر */
+    transition: all 0.25s ease;
+}
+
+.profile-trigger:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.profile-trigger i:first-child {
+    color: #a881ff;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
 .profile-trigger .profile-trigger-name {
-    max-width: 160px;
+    max-width: 115px; /* محدودیت طول نام و تبدیل اضافه آن به سه نقطه */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 0.88rem;
+    line-height: 1;
 }
 
 .profile-trigger .profile-trigger-caret {
-    font-size: 0.85rem;
-    opacity: 0.8;
-    margin-right: 4px;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-right: 2px;
+    flex-shrink: 0;
 }
 
 .profile-menu {
@@ -266,6 +310,12 @@ body.mobile-menu-open .navbar.hide-nav {
     transition: all 0.2s ease;
 }
 
+.profile-menu a i {
+    width: 20px;
+    text-align: center;
+    color: #b794f6;
+}
+
 .profile-menu a:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
@@ -277,22 +327,29 @@ body.mobile-menu-open .navbar.hide-nav {
     border: 1px solid rgba(255, 71, 87, 0.25);
 }
 
+.profile-menu a.profile-menu-logout i {
+    color: #ff6b6b;
+}
+
 .profile-menu a.profile-menu-logout:hover {
     background: rgba(255, 71, 87, 0.14);
     border-color: rgba(255, 71, 87, 0.35);
 }
 
 .btn-nav {
-    padding: 0.6rem 1.5rem !important;
+    padding: 0 1.25rem !important;
+    height: 40px;
     border-radius: 50px !important;
-    font-weight: var(--font-weight-ui) !important;
-    font-size: 0.95rem !important;
-    display: flex;
+    font-weight: var(--font-weight-ui, 600) !important;
+    font-size: 0.88rem !important;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 7px;
     text-decoration: none;
     transition: all 0.3s ease;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .btn-login {
@@ -324,10 +381,11 @@ body.mobile-menu-open .navbar.hide-nav {
     align-items: center;
     gap: 0.5rem;
     background: rgba(245, 166, 35, 0.15);
-    padding: 0.5rem 1rem;
+    padding: 0 0.85rem;
+    height: 40px;
     border-radius: 50px;
     color: #fff;
-    font-weight: var(--font-weight-heading);
+    font-weight: var(--font-weight-heading, 700);
     border: 1px solid rgba(245, 166, 35, 0.3);
     white-space: nowrap;
 }
@@ -364,7 +422,7 @@ body.mobile-menu-open .navbar.hide-nav {
 }
 
 .points-badge .rank-name {
-    font-weight: var(--font-weight-heading);
+    font-weight: var(--font-weight-heading, 700);
 }
 
 .points-badge .star-meter::after {
@@ -394,6 +452,7 @@ body.mobile-menu-open .navbar.hide-nav {
     transform: translateX(50%) translateY(2px);
 }
 
+/* Modals & Backdrop */
 .site-modal-backdrop {
     position: fixed;
     inset: 0;
@@ -452,7 +511,7 @@ body.mobile-menu-open .navbar.hide-nav {
 
 .site-modal-title {
     font-size: 1.5rem;
-    font-weight: var(--font-weight-heading);
+    font-weight: var(--font-weight-heading, 700);
     margin-bottom: 0.75rem;
     color: #fff;
 }
@@ -497,51 +556,51 @@ body.mobile-menu-open .navbar.hide-nav {
 
 .menu-toggle {
     display: none;
-    flex-direction: column;
-    gap: 5px;
-    cursor: pointer;
-    z-index: 1001;
-    padding: 5px;
 }
 
-.menu-toggle span {
-    width: 25px;
-    height: 2px;
-    background: #fff;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-}
+/* ==========================================================================
+   DESKTOP RESPONSIVE BREAKPOINTS (LAPTOP & TABLET)
+   ========================================================================== */
 
-.menu-toggle.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-}
+@media (max-width: 1200px) {
+    .profile-trigger .profile-trigger-name {
+        max-width: 90px; /* کوتاه‌تر شدن نام برای جلوگیری از سرریز منو در لپ‌تاپ‌های کوچک */
+    }
 
-.menu-toggle.active span:nth-child(2) {
-    opacity: 0;
-}
+    .cart-nav-link .nav-item-label {
+        display: none; /* در تبلت‌ها و لپ‌تاپ‌های متوسط فقط آیکن سبد و بج نمایش داده می‌شود */
+    }
 
-.menu-toggle.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(5px, -5px);
+    .cart-nav-link {
+        width: 40px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .cart-nav-badge {
+        position: absolute;
+        top: -4px;
+        left: -4px;
+    }
 }
 
 @media (max-width: 1024px) {
     .navbar-container {
-        padding: 0.8rem 1rem;
+        padding: 0.65rem 1rem;
     }
-
-    .logo { margin-left: 1rem; }
-    .logo-mark { width: 48px; height: 48px; }
-    .nav-links a.nav-item { padding: 0.5rem; font-size: 0.9rem; }
-    .btn-nav { padding: 0.5rem 1rem !important; }
+    .logo { margin-left: 0.75rem; }
+    .logo-mark { width: 44px; height: 44px; }
+    .nav-links a.nav-item { padding: 0.45rem 0.65rem; font-size: 0.85rem; }
+    .btn-nav { padding: 0 0.85rem !important; }
+    .profile-trigger .profile-trigger-name {
+        display: none; /* حذف کامل نام و نمایش فقط آواتار برای امنیت چیدمان */
+    }
 }
 
-
 /* ==========================================================================
-   MOBILE  (<= 850px)
-   همه‌ی استایل‌های موبایل از اینجا به بعد است؛ دسکتاپ دست‌نخورده می‌ماند.
+   MOBILE SHEETS & DOCK (DESKTOP DEFAULT HIDDEN)
    ========================================================================== */
 
-/* پیش‌فرض: داک و شیت در دسکتاپ نمایش داده نمی‌شوند */
 .mobile-bottom-nav { display: none; }
 
 .mobile-more-modal {
@@ -641,7 +700,7 @@ body.mobile-menu-open .navbar.hide-nav {
     padding: 0.5rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* کارت کاربر */
+/* User Card */
 .mm-user {
     display: flex;
     align-items: center;
@@ -720,7 +779,7 @@ body.mobile-menu-open .navbar.hide-nav {
     background: linear-gradient(90deg, #8e54e9, #F5A623);
 }
 
-/* گرید دسترسی سریع */
+/* Quick Access Grid */
 .mm-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -790,7 +849,7 @@ body.mobile-menu-open .navbar.hide-nav {
     font-weight: 800;
 }
 
-/* لیست‌ها */
+/* Lists */
 .mobile-more-section {
     margin-bottom: 1.1rem;
 }
@@ -860,7 +919,7 @@ body.mobile-menu-open .navbar.hide-nav {
     color: #ff6b6b;
 }
 
-/* مهمان */
+/* Guest Mode */
 .mm-guest {
     text-align: center;
     padding: 0.5rem 0 0.25rem;
@@ -884,19 +943,23 @@ body.mobile-menu-open .navbar.hide-nav {
     padding: 0.85rem 1rem !important;
 }
 
-@media (max-width: 850px) {
+/* ==========================================================================
+   MOBILE CORE (<= 850px)
+   لوگو در راست | سبد خرید و درجه ستاره در چپ (کاملاً هم‌تراز روی یک خط)
+   ========================================================================== */
 
+@media (max-width: 850px) {
     :root {
         --m-nav-h: 60px;
         --m-dock-h: 64px;
+        --m-item-h: 40px;
     }
 
     body {
-        padding-top: calc(var(--m-nav-h) + 12px);
-        padding-bottom: calc(var(--m-dock-h) + 34px + env(safe-area-inset-bottom, 0px));
+        padding-top: calc(var(--m-nav-h) + env(safe-area-inset-top, 0px) + 6px);
+        padding-bottom: calc(var(--m-dock-h) + env(safe-area-inset-bottom, 0px) + 24px);
     }
 
-    /* ---------------- Top bar ---------------- */
     .navbar {
         top: 0;
         left: 0;
@@ -907,11 +970,10 @@ body.mobile-menu-open .navbar.hide-nav {
         padding: env(safe-area-inset-top, 0px) 0 0;
         border: none;
         border-radius: 0;
-        background: rgba(12, 8, 24, 0.74);
-        backdrop-filter: blur(18px) saturate(160%);
-        -webkit-backdrop-filter: blur(18px) saturate(160%);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-        /* انیمیشن fadeSlideDown در style.css با forwards جلوی کار hide-nav را می‌گرفت */
+        background: rgba(12, 8, 24, 0.85);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.45);
         animation: none;
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
     }
@@ -924,12 +986,11 @@ body.mobile-menu-open .navbar.hide-nav {
         bottom: 0;
         height: 1px;
         pointer-events: none;
-        background: linear-gradient(90deg, transparent, rgba(142, 84, 233, 0.65), rgba(245, 166, 35, 0.5), transparent);
-        opacity: 0.7;
+        background: linear-gradient(90deg, transparent, rgba(142, 84, 233, 0.5), rgba(245, 166, 35, 0.4), transparent);
     }
 
     .navbar.scrolled {
-        background: rgba(10, 6, 20, 0.88);
+        background: rgba(9, 6, 18, 0.95);
         border: none;
     }
 
@@ -937,38 +998,41 @@ body.mobile-menu-open .navbar.hide-nav {
         transform: translateY(-100%);
     }
 
-    /* نوبار موبایل به سه ستون تقسیم می‌شود: راست = امتیاز/پروفایل، وسط = لوگو، چپ = سبد خرید.
-       ستون‌های کناری هر دو 1fr هستند تا عرض مساوی بگیرند و لوگو همیشه دقیقاً وسط بماند. */
     .navbar-container {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        display: flex;
+        flex-direction: row;
         align-items: center;
-        justify-items: stretch;
-        column-gap: 0.5rem;
+        justify-content: space-between;
         height: var(--m-nav-h);
         min-height: var(--m-nav-h);
-        padding: 0 0.9rem;
-        flex-wrap: nowrap;
-        white-space: nowrap;
+        padding: 0 0.85rem;
+        gap: 0.5rem;
     }
 
-    .menu-toggle {
-        display: none;
+    .nav-container-inner {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-grow: 1;
     }
 
-    /* لوگو: ستون وسط، همیشه سنتر و هم‌خط با سبد خرید و درجه */
+    .nav-links,
+    .menu-toggle,
+    .profile-dropdown,
+    #auth-nav-links .btn-register {
+        display: none !important;
+    }
+
+    /* ۱. سمت راست: لوگو و جبهه نوجوانی */
     .logo {
-        grid-column: 2;
-        justify-self: center;
-        align-self: center;
         display: inline-flex;
         align-items: center;
-        margin: 0;
         gap: 0.55rem;
-        min-width: 0;
-        flex-shrink: 0;
+        height: var(--m-item-h);
+        margin: 0 !important;
+        text-decoration: none;
         line-height: 1;
-        transition: opacity 0.2s ease;
+        flex-shrink: 0;
     }
 
     .logo:hover {
@@ -976,61 +1040,65 @@ body.mobile-menu-open .navbar.hide-nav {
     }
 
     .logo:active {
-        opacity: 0.75;
+        opacity: 0.8;
     }
 
     .logo-mark {
         width: 36px;
         height: 36px;
+        display: block;
+        object-fit: contain;
+        flex-shrink: 0;
     }
 
     .logo .logo-text {
-        display: inline;
-        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        height: 100%;
+        line-height: 1;
+        font-size: 1.05rem;
         font-weight: 800;
         white-space: nowrap;
         background: linear-gradient(135deg, #fff 30%, #F5A623 100%);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
+        transform: translateY(1px);
     }
 
-    /* اینر رپرها فقط برای چیدمان دسکتاپ بودند؛ در موبایل محو می‌شوند تا
-       فرزندانشان مستقیماً آیتم‌های گرید نوبار باشند */
-    .nav-container-inner,
+    /* ۲. سمت چپ: سبد خرید و درجه ستاره */
     .nav-actions {
-        display: contents;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: var(--m-item-h);
+        flex-shrink: 0;
     }
 
-    .nav-links {
-        display: none;
+    .nav-account-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: var(--m-item-h);
     }
 
-    /* سبد خرید: ستون چپ (سوم)، چسبیده به لبه‌ی بیرونی چپ و هم‌خط با لوگو و درجه */
-    .nav-actions .cart-nav-link {
-        grid-column: 3;
-        justify-self: end;
-        align-self: center;
+    .cart-nav-link {
+        width: var(--m-item-h);
+        height: var(--m-item-h);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
         padding: 0;
-        gap: 0;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.14);
+        position: relative;
+        box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
+        flex-shrink: 0;
     }
 
-    .nav-actions .cart-nav-link:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.14);
-    }
-
-    .nav-actions .cart-nav-link:active {
+    .cart-nav-link:active {
         transform: scale(0.92);
     }
 
@@ -1039,63 +1107,65 @@ body.mobile-menu-open .navbar.hide-nav {
     }
 
     .cart-nav-link i {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
+        line-height: 1;
+        display: block;
         color: #c9b6ff;
     }
 
     .cart-nav-badge {
         position: absolute;
-        top: -6px;
-        left: -6px;
-        min-width: 1.25rem;
-        height: 1.25rem;
-        padding: 0 0.3rem;
-        font-size: 0.68rem;
-        border: 2px solid #100a1e;
+        top: -4px;
+        left: -4px;
+        min-width: 1.15rem;
+        height: 1.15rem;
+        font-size: 0.65rem;
+        padding: 0 0.25rem;
+        border: 2px solid #0c0818;
         box-shadow: none;
     }
 
-    /* گروه راست (ستون اول): چیپ امتیاز/درجه + دکمه‌ی حساب کاربری،
-       چسبیده به لبه‌ی بیرونی راست و هم‌خط با لوگو و سبد خرید */
-    .nav-account-group {
-        grid-column: 1;
-        justify-self: start;
-        align-self: center;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: 0;
-        max-width: 100%;
-        flex-wrap: nowrap;
-        white-space: nowrap;
-    }
-
-    /* چیپ امتیاز/درجه (قبلاً روی موبایل کاملاً مخفی بود) — هم‌ارتفاع با سبد خرید و آواتار */
     .points-badge {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.4rem;
-        padding: 0 0.7rem 0 0.55rem;
-        height: 40px;
-        min-height: 40px;
-        max-height: 40px;
-        max-width: 128px;
-        min-width: 0;
-        flex: 0 1 auto;
-        font-size: 0.78rem;
-        line-height: 1;
+        gap: 0.35rem;
+        height: var(--m-item-h);
+        padding: 0 0.65rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
         background: rgba(245, 166, 35, 0.12);
         border: 1px solid rgba(245, 166, 35, 0.28);
+        box-sizing: border-box;
+        max-width: 125px;
+        flex-shrink: 0;
     }
 
     .points-badge .rank-name {
+        display: inline-flex;
+        align-items: center;
         max-width: 70px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 0.78rem;
-        line-height: 1.4;
+        line-height: 1;
+        transform: translateY(1px);
+    }
+
+    .points-badge .star-meter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+    }
+
+    .points-badge .star-meter i {
+        font-size: 1rem;
+        line-height: 1;
+        display: block;
     }
 
     .points-badge .star-meter::after {
@@ -1103,79 +1173,33 @@ body.mobile-menu-open .navbar.hide-nav {
     }
 
     #auth-nav-links {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
-        min-width: 0;
-    }
-
-    /* دکمه‌ی حساب کاربری: آواتار مربعی هم‌خط با درجه و سبد خرید که شیت حساب کاربری را باز می‌کند */
-    .profile-dropdown {
-        display: flex;
-        align-items: center;
-        flex-shrink: 0;
-    }
-
-    .profile-trigger {
-        width: 40px;
-        height: 40px;
-        min-width: 0;
-        flex-shrink: 0;
-        align-self: center;
-        padding: 0 !important;
         display: inline-flex;
         align-items: center;
+        height: var(--m-item-h);
+    }
+
+    #auth-nav-links .btn-nav {
+        height: var(--m-item-h);
+        padding: 0 0.85rem !important;
+        font-size: 0.82rem !important;
+        border-radius: 12px !important;
+        align-items: center;
         justify-content: center;
-        border-radius: 14px !important;
-        background: linear-gradient(135deg, rgba(108, 63, 197, 0.4), rgba(245, 166, 35, 0.22)) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        -webkit-tap-highlight-color: transparent;
     }
 
-    .profile-trigger:active {
-        transform: scale(0.92);
-    }
-
-    .profile-trigger i {
-        font-size: 1.05rem;
-    }
-
-    .profile-trigger .profile-trigger-name,
-    .profile-trigger .profile-trigger-caret {
-        display: none;
-    }
-
-    .profile-menu {
-        display: none !important;
-    }
-
-    /* دکمه‌های ورود/ثبت‌نام مهمان — هم‌خط با لوگو */
-    .btn-nav {
-        padding: 0.5rem 1rem !important;
-        font-size: 0.85rem !important;
-        height: 40px;
-        align-self: center;
-        justify-content: center;
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    /* ---------------- Bottom dock ---------------- */
+    /* ---------------- داک پایین صفحه ---------------- */
     .mobile-bottom-nav {
         display: block;
         position: fixed;
         left: 12px;
         right: 12px;
         bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-        padding: 0;
         z-index: 999;
         transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
     }
 
-    /* وقتی کیبورد باز است (فوکوس روی input) داک مخفی می‌شود */
     body:has(input:focus, textarea:focus, select:focus) .mobile-bottom-nav {
-        transform: translateY(calc(100% + 30px));
+        transform: translateY(calc(100% + 24px));
         opacity: 0;
         pointer-events: none;
     }
@@ -1186,32 +1210,28 @@ body.mobile-menu-open .navbar.hide-nav {
         justify-content: space-between;
         gap: 2px;
         height: var(--m-dock-h);
-        padding: 6px;
-        background: rgba(16, 11, 30, 0.84);
+        padding: 5px;
+        background: rgba(16, 11, 30, 0.86);
         backdrop-filter: blur(22px) saturate(170%);
         -webkit-backdrop-filter: blur(22px) saturate(170%);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 24px;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55),
+        border-radius: 22px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6),
                     inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .mobile-nav-item {
         flex: 1 1 0;
         min-width: 0;
-        max-width: none;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
-        padding: 0;
-        border: 0;
-        border-radius: 18px;
+        gap: 3px;
+        border-radius: 16px;
         background: transparent;
         color: rgba(255, 255, 255, 0.6);
         text-decoration: none;
-        font-family: inherit;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
         transition: color 0.25s ease;
@@ -1219,7 +1239,7 @@ body.mobile-menu-open .navbar.hide-nav {
 
     .mobile-nav-icon {
         position: relative;
-        width: 46px;
+        width: 44px;
         height: 28px;
         display: grid;
         place-items: center;
@@ -1228,12 +1248,12 @@ body.mobile-menu-open .navbar.hide-nav {
     }
 
     .mobile-nav-item i {
-        font-size: 1.12rem;
+        font-size: 1.1rem;
         transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
     }
 
     .mobile-nav-label {
-        font-size: 0.66rem;
+        font-size: 0.65rem;
         font-weight: 600;
         line-height: 1;
         white-space: nowrap;
@@ -1248,9 +1268,6 @@ body.mobile-menu-open .navbar.hide-nav {
 
     .mobile-nav-item.active {
         color: #fff;
-        background: transparent;
-        border: 0;
-        box-shadow: none;
     }
 
     .mobile-nav-item.active .mobile-nav-icon {
@@ -1261,55 +1278,41 @@ body.mobile-menu-open .navbar.hide-nav {
 
     .mobile-nav-item.active i {
         color: #fff;
-        filter: none;
-        transform: translateY(-1px) scale(1.08);
+        transform: translateY(-1px) scale(1.06);
     }
 
     .mobile-nav-item.active .mobile-nav-label {
         font-weight: 800;
     }
-
-    @media (hover: hover) {
-        .mobile-nav-item:hover:not(.active) {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.06);
-        }
-    }
 }
 
+/* ==========================================================================
+   EXTRA SMALL SCREENS (<= 400px & <= 340px)
+   ========================================================================== */
+
 @media (max-width: 400px) {
-    .logo .logo-text {
+    .points-badge .rank-name {
         display: none;
     }
 
-    .navbar-container {
-        padding: 0 0.75rem;
-        column-gap: 0.4rem;
-    }
-
-    /* حفظ تراز تک‌خطی لوگو، سبد خرید و درجه در گوشی‌های باریک */
-    .nav-account-group {
-        gap: 0.4rem;
-    }
-
     .points-badge {
-        max-width: 104px;
-        padding: 0 0.55rem 0 0.45rem;
+        padding: 0 0.55rem;
+        max-width: none;
     }
 
-    .points-badge .rank-name {
-        max-width: 56px;
-        font-size: 0.72rem;
+    .logo .logo-text {
+        font-size: 0.95rem;
+    }
+
+    .navbar-container {
+        padding: 0 0.65rem;
+        gap: 0.35rem;
     }
 }
 
 @media (max-width: 340px) {
-    .points-badge .rank-name {
+    .logo .logo-text {
         display: none;
-    }
-
-    .points-badge {
-        padding: 0 0.65rem;
     }
 
     .mobile-bottom-nav {
@@ -1318,17 +1321,17 @@ body.mobile-menu-open .navbar.hide-nav {
     }
 
     .mobile-nav-icon {
-        width: 40px;
+        width: 38px;
     }
 
     .mobile-nav-label {
         font-size: 0.6rem;
     }
-
-    .mm-tile {
-        font-size: 0.72rem;
-    }
 }
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
     .navbar,
@@ -1337,42 +1340,5 @@ body.mobile-menu-open .navbar.hide-nav {
     .mobile-nav-item i,
     .mobile-nav-icon {
         transition: none !important;
-    }
-}
-/* ==========================================================================
-   منوی پروفایل دسکتاپ
-   ========================================================================== */
-
-.profile-trigger {
-    font-family: inherit;
-    color: #fff;
-}
-
-.profile-trigger i:first-child {
-    color: #a881ff;
-    font-size: 1.15rem;
-}
-
-.profile-menu a i {
-    width: 20px;
-    text-align: center;
-    color: #b794f6;
-}
-
-.profile-menu a.profile-menu-logout i {
-    color: #ff6b6b;
-}
-
-/* دسکتاپ‌های باریک‌تر: فقط آیکن و فلش (نام مخفی) */
-@media (max-width: 1100px) {
-    .profile-trigger .profile-trigger-name {
-        display: none;
-    }
-}
-
-/* موبایل: حساب کاربری از داک پایین و شیت «حساب کاربری» باز می‌شود، نه از نوبار */
-@media (max-width: 850px) {
-    .profile-dropdown {
-        display: none !important;
     }
 }
