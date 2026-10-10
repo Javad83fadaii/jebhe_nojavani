@@ -596,9 +596,12 @@ class SellerRegistrationSerializer(serializers.Serializer):
     province = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def validate_phone_number(self, value: str) -> str:
-        if not re.fullmatch(r"09\d{9}", value or ""):
+        normalized_value = _normalize_digits(value) or ""
+        if not re.fullmatch(r"09\d{9}", normalized_value):
             raise serializers.ValidationError("شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.")
-        return value
+        if User.objects.filter(phone_number=normalized_value).exists():
+            raise serializers.ValidationError("این شماره تلفن قبلاً ثبت شده است.")
+        return normalized_value
 
     def create(self, validated_data):
         password = validated_data.pop("password")

@@ -140,6 +140,43 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.data["city"], "قم")
         self.assertEqual(res.data["province"], "قم")
 
+    def test_seller_registration_rejects_duplicate_phone_number_with_persian_digits(self):
+        User.objects.create_user(
+            phone_number="09112223344",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="تکراری",
+        )
+        seller_register_payload = {
+            "phone_number": "۰۹۱۱۲۲۲۳۳۴۴",
+            "first_name": "حسین",
+            "last_name": "محمدی",
+            "password": "StrongPass123!",
+            "seller_shop_name": "فروشگاه تکراری",
+            "seller_shop_address": "آدرس فروشگاه",
+        }
+
+        res = self.client.post("/api/accounts/seller/register/", seller_register_payload, format="json")
+
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("phone_number", res.data)
+        self.assertEqual(res.data["phone_number"][0], "این شماره تلفن قبلاً ثبت شده است.")
+
+    def test_seller_registration_accepts_phone_number_with_persian_digits(self):
+        seller_register_payload = {
+            "phone_number": "۰۹۱۳۳۳۳۳۳۳۳",
+            "first_name": "حسین",
+            "last_name": "محمدی",
+            "password": "StrongPass123!",
+            "seller_shop_name": "فروشگاه فارسی",
+            "seller_shop_address": "آدرس فروشگاه",
+        }
+
+        res = self.client.post("/api/accounts/seller/register/", seller_register_payload, format="json")
+
+        self.assertEqual(res.status_code, 201)
+        self.assertTrue(User.objects.filter(phone_number="09133333333").exists())
+
     def test_user_registration_rejects_mismatched_mosque_and_school(self):
         other_mosque = Mosque.objects.create(
             name="مسجد قم",
