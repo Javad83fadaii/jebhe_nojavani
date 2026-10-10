@@ -190,11 +190,18 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'password_reset_request_ip': '20/hour',
+        'password_reset_request_phone': '5/hour',
+        'password_reset_confirm_ip': '60/hour',
+        'password_reset_confirm_phone': '10/hour',
+    },
 }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'CHECK_REVOKE_TOKEN': True,
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -208,7 +215,7 @@ SMSIR_VERIFY_PARAMETER_NAME = os.environ.get("SMSIR_VERIFY_PARAMETER_NAME", "Cod
 SMSIR_TIMEOUT_SECONDS = os.environ.get("SMSIR_TIMEOUT_SECONDS", "15")
 PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "PASSWORD_RESET_SMS_TEXT",
-    "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۲ دقیقه معتبر است.",
+    "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۵ دقیقه معتبر است.",
 )
 
 if DEBUG and importlib.util.find_spec('silk') is not None:

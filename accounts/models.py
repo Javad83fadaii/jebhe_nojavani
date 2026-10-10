@@ -607,6 +607,8 @@ class Seller(TimestampedModel):
 
 
 class PasswordResetRequest(TimestampedModel):
+    MAX_ATTEMPTS = 5
+
     class Status(models.TextChoices):
         PENDING = "pending", "در انتظار"
         USED = "used", "استفاده شده"
@@ -614,9 +616,9 @@ class PasswordResetRequest(TimestampedModel):
 
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="password_reset_requests")
     phone_number = models.CharField(max_length=11, db_index=True)
-    code = models.CharField(max_length=6)
     code_salt = models.CharField(max_length=32)
     code_hash = models.CharField(max_length=64, db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
     requested_at = models.DateTimeField(default=timezone.now, db_index=True)
     expires_at = models.DateTimeField(db_index=True)
@@ -719,7 +721,6 @@ class PasswordResetRequest(TimestampedModel):
 
     def set_code(self, code: str) -> None:
         code = str(code).strip()
-        self.code = code
         self.code_salt = token_hex(16)
         payload = f"{self.code_salt}:{code}".encode("utf-8")
         self.code_hash = hashlib.sha256(payload).hexdigest()

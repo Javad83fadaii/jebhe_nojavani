@@ -417,6 +417,7 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
         "phone_number",
         "user",
         "status",
+        "attempts",
         "send_status_display",
         "expiration_status_display",
         "requested_at",
@@ -448,6 +449,7 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
         "user",
         "phone_number",
         "status",
+        "attempts",
         "send_status_display",
         "expiration_status_display",
         "requested_at",
@@ -469,7 +471,10 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
     ordering = ("-requested_at", "-created_at")
 
     fieldsets = (
-        ("اطلاعات درخواست", {"fields": ("user", "phone_number", "status", "send_status_display", "expiration_status_display")}),
+        (
+            "اطلاعات درخواست",
+            {"fields": ("user", "phone_number", "status", "attempts", "send_status_display", "expiration_status_display")},
+        ),
         ("زمان‌بندی", {"fields": ("requested_at", "send_attempted_at", "expires_at", "used_at")}),
         ("وضعیت ارسال", {"fields": ("provider", "provider_message_id", "provider_status_display", "send_error_display")}),
         ("جزئیات فنی", {"fields": ("provider_response_pretty", "ip_address", "user_agent"), "classes": ("collapse",)}),

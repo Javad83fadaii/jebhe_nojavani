@@ -5,6 +5,7 @@ import logging
 from secrets import randbelow
 
 from django.contrib.auth import login as auth_login
+from django.db import transaction
 from django.utils import timezone
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -13,10 +14,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import PasswordResetRequest, Seller, User
 from accounts.serializers import (
+    PasswordAwareTokenRefreshSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     SellerLoginSerializer,
@@ -27,8 +30,10 @@ from accounts.serializers import (
     UserRegistrationSerializer,
 )
 from accounts.services.sms import send_password_reset_code
+from accounts.throttles import IPScopedRateThrottle, PhoneNumberScopedRateThrottle
 
-PASSWORD_RESET_CODE_TTL_SECONDS = 2 * 60
+PASSWORD_RESET_CODE_TTL_SECONDS = 5 * 60
+PASSWORD_RESET_REQUEST_DETAIL = "اگر حسابی با این شماره وجود داشته باشد، کد بازیابی برای آن ارسال خواهد شد."
 logger = logging.getLogger(__name__)
 
 
@@ -123,6 +128,9 @@ class UserLoginView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "password_reset_request_ip"
+    phone_throttle_scope = "password_reset_request_phone"
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -130,9 +138,20 @@ class PasswordResetRequestView(APIView):
 
         phone_number = serializer.validated_data["phone_number"]
         now = timezone.now()
+        confirm_url = f"{reverse('password_reset_confirm')}?phone={phone_number}"
+        response_payload = {
+            "detail": PASSWORD_RESET_REQUEST_DETAIL,
+            "phone_number": phone_number,
+            "expires_in_seconds": PASSWORD_RESET_CODE_TTL_SECONDS,
+            "redirect_url": confirm_url,
+        }
 
         active_request = (
-            PasswordResetRequest.objects.filter(phone_number=phone_number, expires_at__gt=now)
+            PasswordResetRequest.objects.filter(
+                phone_number=phone_number,
+                status=PasswordResetRequest.Status.PENDING,
+                expires_at__gt=now,
+            )
             .order_by("-requested_at")
             .first()
         )
@@ -146,10 +165,13 @@ class PasswordResetRequestView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
+        user = User.objects.filter(phone_number=phone_number).first()
+        if not user:
+            return Response(response_payload, status=status.HTTP_200_OK)
+
         verification_code = f"{100000 + randbelow(900000)}"
         expires_at = now + timedelta(seconds=PASSWORD_RESET_CODE_TTL_SECONDS)
 
-        user = User.objects.filter(phone_number=phone_number).first()
         reset_request = PasswordResetRequest(
             user=user,
             phone_number=phone_number,
@@ -242,20 +264,14 @@ class PasswordResetRequestView(APIView):
             ]
         )
 
-        confirm_url = f"{reverse('password_reset_confirm')}?phone={phone_number}"
-        return Response(
-            {
-                "detail": "کد بازیابی ارسال شد.",
-                "phone_number": phone_number,
-                "expires_in_seconds": PASSWORD_RESET_CODE_TTL_SECONDS,
-                "redirect_url": confirm_url,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(response_payload, status=status.HTTP_200_OK)
 
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "password_reset_confirm_ip"
+    phone_throttle_scope = "password_reset_confirm_phone"
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -263,28 +279,56 @@ class PasswordResetConfirmView(APIView):
 
         phone_number = serializer.validated_data["phone_number"]
         verification_code = serializer.validated_data["code"]
-
-        reset_request = (
-            PasswordResetRequest.objects.filter(phone_number=phone_number).order_by("-requested_at").first()
-        )
-        if not reset_request or reset_request.is_expired or reset_request.status != PasswordResetRequest.Status.PENDING:
-            return Response(
-                {"detail": "درخواست بازیابی معتبر نیست یا زمان آن منقضی شده است. دوباره تلاش کنید."},
-                status=status.HTTP_400_BAD_REQUEST,
+        with transaction.atomic():
+            reset_request = (
+                PasswordResetRequest.objects.select_for_update()
+                .filter(phone_number=phone_number)
+                .order_by("-requested_at")
+                .first()
             )
+            if (
+                not reset_request
+                or reset_request.is_expired
+                or reset_request.status != PasswordResetRequest.Status.PENDING
+            ):
+                return Response(
+                    {"detail": "درخواست بازیابی معتبر نیست یا زمان آن منقضی شده است. دوباره تلاش کنید."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        if not reset_request.check_code(verification_code):
-            return Response(
-                {"code": ["کد تایید وارد شده صحیح نیست."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            if not reset_request.check_code(verification_code):
+                reset_request.attempts += 1
+                update_fields = ["attempts", "updated_at"]
+                if reset_request.attempts >= PasswordResetRequest.MAX_ATTEMPTS:
+                    reset_request.status = PasswordResetRequest.Status.FAILED
+                    update_fields.append("status")
+                reset_request.save(update_fields=update_fields)
 
-        user = User.objects.get(phone_number=phone_number)
-        user.set_password(serializer.validated_data["new_password"])
-        user.save(update_fields=["password", "updated_at"])
-        reset_request.status = PasswordResetRequest.Status.USED
-        reset_request.used_at = timezone.now()
-        reset_request.save(update_fields=["status", "used_at", "updated_at"])
+                if reset_request.status == PasswordResetRequest.Status.FAILED:
+                    return Response(
+                        {"detail": "تعداد تلاش‌های مجاز به پایان رسید. دوباره درخواست بازیابی ثبت کنید."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                return Response(
+                    {"code": ["کد تایید وارد شده صحیح نیست."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user = User.objects.filter(phone_number=phone_number).first()
+            if user is None:
+                reset_request.status = PasswordResetRequest.Status.FAILED
+                reset_request.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "درخواست بازیابی معتبر نیست یا زمان آن منقضی شده است. دوباره تلاش کنید."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.set_password(serializer.validated_data["new_password"])
+            user.save(update_fields=["password", "updated_at"])
+            reset_request.status = PasswordResetRequest.Status.USED
+            reset_request.used_at = timezone.now()
+            reset_request.save(update_fields=["status", "used_at", "updated_at"])
 
         auth_login(request, user)
         refresh = RefreshToken.for_user(user)
@@ -298,6 +342,10 @@ class PasswordResetConfirmView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class PasswordAwareTokenRefreshView(TokenRefreshView):
+    serializer_class = PasswordAwareTokenRefreshSerializer
 
 
 class UserProfileViewSet(viewsets.GenericViewSet):

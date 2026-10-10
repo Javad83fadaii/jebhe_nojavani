@@ -7,7 +7,11 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.utils import get_md5_hash_password
 
 from accounts.models import Rank, Seller, User, validate_birth_date_range
 from geography.models import Mosque, School
@@ -427,8 +431,6 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         normalized_value = _normalize_digits(value) or ""
         if not re.fullmatch(r"09\d{9}", normalized_value):
             raise serializers.ValidationError("شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.")
-        if not User.objects.filter(phone_number=normalized_value).exists():
-            raise serializers.ValidationError("کاربری با این شماره تلفن یافت نشد.")
         return normalized_value
 
 
@@ -470,8 +472,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         normalized_value = _normalize_digits(value) or ""
         if not re.fullmatch(r"09\d{9}", normalized_value):
             raise serializers.ValidationError("شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.")
-        if not User.objects.filter(phone_number=normalized_value).exists():
-            raise serializers.ValidationError("کاربری با این شماره تلفن یافت نشد.")
         return normalized_value
 
     def validate_code(self, value: str) -> str:
@@ -484,6 +484,23 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if attrs["new_password"] != attrs["new_password_confirm"]:
             raise serializers.ValidationError({"new_password_confirm": "رمز عبور و تکرار آن باید یکسان باشند."})
         return attrs
+
+
+class PasswordAwareTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        refresh = RefreshToken(attrs["refresh"])
+        user_id = refresh.payload.get(api_settings.USER_ID_CLAIM)
+        user = User.objects.filter(**{api_settings.USER_ID_FIELD: user_id}).first()
+
+        if user is None or not api_settings.USER_AUTHENTICATION_RULE(user):
+            raise AuthenticationFailed(self.error_messages["no_active_account"], "no_active_account")
+
+        if api_settings.CHECK_REVOKE_TOKEN:
+            password_hash_claim = refresh.payload.get(api_settings.REVOKE_TOKEN_CLAIM)
+            if password_hash_claim != get_md5_hash_password(user.password):
+                raise AuthenticationFailed("رمز عبور این حساب تغییر کرده است. دوباره وارد شوید.", "password_changed")
+
+        return super().validate(attrs)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

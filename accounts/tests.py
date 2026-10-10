@@ -1,5 +1,8 @@
 from django.test import Client, TestCase, override_settings
-from datetime import date
+from datetime import date, timedelta
+from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
@@ -12,6 +15,7 @@ from geography.models import City, Mosque, Province, School
 class AccountsAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
+        cache.clear()
         location_value = {"type": "Point", "coordinates": [51.3890, 35.6892]}
         self.province = Province.objects.create(name="تهران")
         self.city = City.objects.create(province=self.province, name="تهران")
@@ -291,7 +295,8 @@ class AccountsAPITestCase(TestCase):
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
 
-    def test_password_reset_flow_creates_db_request_and_updates_password(self):
+    @patch("accounts.views.randbelow", return_value=23456)
+    def test_password_reset_flow_creates_hashed_request_and_updates_password(self, mocked_randbelow):
         user = User.objects.create_user(
             phone_number="09123334444",
             password="OldStrongPass123!",
@@ -306,10 +311,19 @@ class AccountsAPITestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data["phone_number"], user.phone_number)
+        self.assertEqual(res.data["detail"], "اگر حسابی با این شماره وجود داشته باشد، کد بازیابی برای آن ارسال خواهد شد.")
+        self.assertEqual(res.data["expires_in_seconds"], 300)
 
         reset_request = PasswordResetRequest.objects.filter(phone_number=user.phone_number).order_by("-requested_at").first()
         self.assertIsNotNone(reset_request)
-        verification_code = reset_request.code
+        self.assertEqual(reset_request.attempts, 0)
+        self.assertTrue(reset_request.code_hash)
+        self.assertNotIn("code", [field.name for field in PasswordResetRequest._meta.fields])
+        self.assertLessEqual(
+            abs((reset_request.expires_at - reset_request.requested_at) - timedelta(minutes=5)),
+            timedelta(seconds=5),
+        )
+        verification_code = "123456"
         new_password = "NewStrongPass123!"
         res = self.client.post(
             "/api/accounts/password-reset/confirm/",
@@ -337,7 +351,8 @@ class AccountsAPITestCase(TestCase):
             {"phone_number": user.phone_number},
             format="json",
         )
-        self.assertEqual(res.status_code, 429)
+        self.assertEqual(res.status_code, 200)
+        mocked_randbelow.assert_called()
 
         too_new_payload = {
             "phone_number": "09120000002",
@@ -377,6 +392,168 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(reset_request.expiration_status_label, "نامعتبر")
         self.assertEqual(reset_request.provider_response["error"], "SMS.ir connection error: timeout")
         mocked_send.assert_called_once()
+
+    def test_password_reset_request_is_generic_for_unknown_phone(self):
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": "09129998877"},
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["detail"], "اگر حسابی با این شماره وجود داشته باشد، کد بازیابی برای آن ارسال خواهد شد.")
+        self.assertFalse(PasswordResetRequest.objects.filter(phone_number="09129998877").exists())
+
+    @patch("accounts.views.send_password_reset_code", side_effect=RuntimeError("SMS.ir connection error: timeout"))
+    def test_failed_password_reset_delivery_does_not_block_retry(self, mocked_send):
+        user = User.objects.create_user(
+            phone_number="09127778899",
+            password="StrongPass123!",
+            first_name="ارسال",
+            last_name="ناموفق",
+        )
+
+        first_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        second_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+
+        self.assertEqual(first_response.status_code, 503)
+        self.assertEqual(second_response.status_code, 503)
+        self.assertEqual(
+            PasswordResetRequest.objects.filter(phone_number=user.phone_number).count(),
+            2,
+        )
+        mocked_send.assert_called()
+
+    @patch("accounts.views.randbelow", return_value=23456)
+    def test_password_reset_confirm_fails_request_after_five_invalid_attempts(self, mocked_randbelow):
+        user = User.objects.create_user(
+            phone_number="09123335555",
+            password="StrongPass123!",
+            first_name="تلاش",
+            last_name="نمونه",
+        )
+
+        request_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(request_response.status_code, 200)
+
+        last_response = None
+        for _ in range(5):
+            last_response = self.client.post(
+                "/api/accounts/password-reset/confirm/",
+                {
+                    "phone_number": user.phone_number,
+                    "code": "000000",
+                    "new_password": "AnotherStrongPass123!",
+                    "new_password_confirm": "AnotherStrongPass123!",
+                },
+                format="json",
+            )
+
+        self.assertIsNotNone(last_response)
+        self.assertEqual(last_response.status_code, 400)
+        self.assertEqual(last_response.data["detail"], "تعداد تلاش‌های مجاز به پایان رسید. دوباره درخواست بازیابی ثبت کنید.")
+
+        reset_request = PasswordResetRequest.objects.filter(phone_number=user.phone_number).order_by("-requested_at").first()
+        self.assertIsNotNone(reset_request)
+        self.assertEqual(reset_request.attempts, 5)
+        self.assertEqual(reset_request.status, PasswordResetRequest.Status.FAILED)
+
+        valid_after_failure = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {
+                "phone_number": user.phone_number,
+                "code": "123456",
+                "new_password": "AnotherStrongPass123!",
+                "new_password_confirm": "AnotherStrongPass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(valid_after_failure.status_code, 400)
+        mocked_randbelow.assert_called_once()
+
+    @patch("accounts.views.randbelow", return_value=23456)
+    def test_password_reset_invalidates_previous_jwt_tokens(self, mocked_randbelow):
+        user = User.objects.create_user(
+            phone_number="09128889900",
+            password="OldStrongPass123!",
+            first_name="توکن",
+            last_name="نمونه",
+        )
+
+        login_response = self.client.post(
+            "/api/accounts/login/",
+            {"phone_number": user.phone_number, "password": "OldStrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, 200)
+        old_access = login_response.data["access"]
+        old_refresh = login_response.data["refresh"]
+
+        request_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(request_response.status_code, 200)
+
+        confirm_response = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {
+                "phone_number": user.phone_number,
+                "code": "123456",
+                "new_password": "NewStrongPass123!",
+                "new_password_confirm": "NewStrongPass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(confirm_response.status_code, 200)
+
+        access_client = APIClient()
+        access_client.credentials(HTTP_AUTHORIZATION=f"Bearer {old_access}")
+        old_access_response = access_client.get("/api/accounts/profile/me/")
+        self.assertEqual(old_access_response.status_code, 401)
+
+        refresh_client = APIClient()
+        old_refresh_response = refresh_client.post(
+            "/api/accounts/token/refresh/",
+            {"refresh": old_refresh},
+            format="json",
+        )
+        self.assertEqual(old_refresh_response.status_code, 401)
+        mocked_randbelow.assert_called_once()
+
+    def test_password_reset_request_is_throttled_by_phone_number(self):
+        rest_framework_settings = dict(settings.REST_FRAMEWORK)
+        throttle_rates = dict(rest_framework_settings.get("DEFAULT_THROTTLE_RATES", {}))
+        throttle_rates["password_reset_request_phone"] = "1/hour"
+        rest_framework_settings["DEFAULT_THROTTLE_RATES"] = throttle_rates
+
+        with override_settings(REST_FRAMEWORK=rest_framework_settings):
+            first_response = self.client.post(
+                "/api/accounts/password-reset/request/",
+                {"phone_number": "09120001122"},
+                format="json",
+            )
+            second_response = self.client.post(
+                "/api/accounts/password-reset/request/",
+                {"phone_number": "۰۹۱۲۰۰۰۱۱۲۲"},
+                format="json",
+            )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 429)
 
     @override_settings(SMS_BACKEND="smsir", SMSIR_TEMPLATE_ID="321", SMSIR_LINE_NUMBER="300000")
     @patch(

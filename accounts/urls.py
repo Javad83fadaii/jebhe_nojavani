@@ -1,10 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from accounts.views import (
     PasswordResetConfirmView,
     PasswordResetRequestView,
+    PasswordAwareTokenRefreshView,
     SellerLoginView,
     SellerProfileViewSet,
     SellerRegistrationView,
@@ -24,6 +24,6 @@ urlpatterns = [
     path("password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("seller/register/", SellerRegistrationView.as_view(), name="seller-register"),
     path("seller/login/", SellerLoginView.as_view(), name="seller-login"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    path("token/refresh/", PasswordAwareTokenRefreshView.as_view(), name="token-refresh"),
     path("", include(router.urls)),
 ]
