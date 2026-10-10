@@ -21,6 +21,8 @@ class GeographyAPITestCase(TestCase):
             province_ref=self.province,
             city_ref=self.city,
             location=location_value,
+            phone="09120000000",
+            principal_name="مدیر مدرسه",
         )
         self.mosque = Mosque.objects.create(
             name="مسجد تهران",
@@ -30,6 +32,8 @@ class GeographyAPITestCase(TestCase):
             province_ref=self.province,
             city_ref=self.city,
             location=location_value,
+            phone="09123333333",
+            imam_name="امام مسجد",
         )
         School.objects.create(
             name="مدرسه قم",
@@ -61,5 +65,27 @@ class GeographyAPITestCase(TestCase):
 
         self.assertEqual(school_res.status_code, 200)
         self.assertEqual(mosque_res.status_code, 200)
-        self.assertEqual([item["id"] for item in school_res.data], [self.school.pk])
-        self.assertEqual([item["id"] for item in mosque_res.data], [self.mosque.pk])
+        self.assertEqual([item["id"] for item in school_res.data["results"]], [self.school.pk])
+        self.assertEqual([item["id"] for item in mosque_res.data["results"]], [self.mosque.pk])
+
+    def test_school_list_hides_sensitive_fields_and_location(self):
+        res = self.client.get("/api/geography/schools/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("count", res.data)
+        self.assertIn("results", res.data)
+        self.assertEqual(
+            set(res.data["results"][0].keys()),
+            {"id", "name", "city", "province"},
+        )
+
+    def test_mosque_list_hides_sensitive_fields_and_location(self):
+        res = self.client.get("/api/geography/mosques/")
+
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("count", res.data)
+        self.assertIn("results", res.data)
+        self.assertEqual(
+            set(res.data["results"][0].keys()),
+            {"id", "name", "city", "province"},
+        )

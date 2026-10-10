@@ -998,16 +998,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load select options
     async function loadSelect(url, selectElement) {
         try {
-            const response = await fetch(url, buildRequestOptions());
-            const data = await response.json();
-            const items = data.results || data;
-            
-            items.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = item.name;
-                selectElement.appendChild(option);
-            });
+            let nextUrl = url;
+
+            while (nextUrl) {
+                const response = await fetch(nextUrl, buildRequestOptions());
+                const data = await response.json();
+                const items = data.results || data;
+
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    selectElement.appendChild(option);
+                });
+
+                nextUrl = data.next || null;
+            }
         } catch (error) {
             console.error('Error loading select:', error);
         }

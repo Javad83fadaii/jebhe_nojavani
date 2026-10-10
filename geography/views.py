@@ -1,4 +1,5 @@
 from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -6,6 +7,12 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from geography.models import City, Mosque, Province, School
 from geography.serializers import MosqueSerializer, SchoolSerializer
+
+
+class PublicPlacePagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 200
 
 
 def _resolve_province_filter_data(province_name: str, province_id: str):
@@ -66,6 +73,7 @@ class SchoolViewSet(ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     queryset = School.objects.all().order_by("name")
     serializer_class = SchoolSerializer
+    pagination_class = PublicPlacePagination
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -86,6 +94,7 @@ class MosqueViewSet(ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     queryset = Mosque.objects.all().order_by("name")
     serializer_class = MosqueSerializer
+    pagination_class = PublicPlacePagination
 
     def get_queryset(self):
         queryset = super().get_queryset()
