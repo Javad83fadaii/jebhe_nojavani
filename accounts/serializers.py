@@ -551,6 +551,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "province",
             "date_joined",
         ]
+        read_only_fields = [
+            "phone_number",
+        ]
 
     def validate(self, attrs):
         return _sync_user_geography(attrs, instance=self.instance)

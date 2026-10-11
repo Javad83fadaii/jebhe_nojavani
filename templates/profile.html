@@ -859,10 +859,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let userChallengeCoins = 0;
     const schoolSelect = document.getElementById('school');
     const mosqueSelect = document.getElementById('mosque');
+    const cityInput = document.getElementById('city');
+    const provinceInput = document.getElementById('province');
     const birthDateHidden = document.getElementById('birth_date');
     const birthDateDisplay = document.getElementById('birth_date_display');
     const openBirthDatePickerBtn = document.getElementById('open_birth_date_picker');
     const clearBirthDateBtn = document.getElementById('clear_birth_date');
+    let placeLoadSequence = 0;
+    let placeReloadTimeout = null;
 
     function normalizeDigits(value) {
         const map = {
@@ -995,28 +999,132 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Load select options
-    async function loadSelect(url, selectElement) {
-        try {
-            let nextUrl = url;
+    function resetSelect(selectElement, placeholderText = 'انتخاب کنید', disabled = false) {
+        if (!selectElement) return;
+        selectElement.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = placeholderText;
+        selectElement.appendChild(option);
+        selectElement.disabled = disabled;
+    }
 
-            while (nextUrl) {
-                const response = await fetch(nextUrl, buildRequestOptions());
-                const data = await response.json();
-                const items = data.results || data;
+    function fillSelectItems(selectElement, items, placeholderText = 'انتخاب کنید') {
+        resetSelect(selectElement, placeholderText, false);
+        (items || []).forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            selectElement.appendChild(option);
+        });
+    }
 
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.name;
-                    selectElement.appendChild(option);
-                });
-
-                nextUrl = data.next || null;
-            }
-        } catch (error) {
-            console.error('Error loading select:', error);
+    function setSelectValueIfExists(selectElement, value) {
+        const normalizedValue = String(value || '').trim();
+        if (!normalizedValue) {
+            selectElement.value = '';
+            return;
         }
+
+        const hasOption = Array.from(selectElement.options).some(option => String(option.value) === normalizedValue);
+        selectElement.value = hasOption ? normalizedValue : '';
+    }
+
+    function buildPlaceQuery(province, city) {
+        const params = new URLSearchParams();
+        if (String(province || '').trim()) {
+            params.set('province', String(province).trim());
+        }
+        if (String(city || '').trim()) {
+            params.set('city', String(city).trim());
+        }
+        return params.toString();
+    }
+
+    async function fetchSelectItems(url) {
+        const items = [];
+        let nextUrl = url;
+
+        while (nextUrl) {
+            const response = await fetch(nextUrl, buildRequestOptions());
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    redirectToLogin();
+                    return [];
+                }
+                throw new Error('Failed to load select items');
+            }
+
+            const data = await response.json();
+            const pageItems = Array.isArray(data) ? data : (data.results || []);
+            items.push(...pageItems);
+            nextUrl = Array.isArray(data) ? null : (data.next || null);
+        }
+
+        return items;
+    }
+
+    async function loadPlaceSelects({ province = '', city = '', schoolId = '', mosqueId = '' } = {}) {
+        const requestId = ++placeLoadSequence;
+        const normalizedProvince = String(province || '').trim();
+        const normalizedCity = String(city || '').trim();
+
+        if (!normalizedProvince && !normalizedCity) {
+            resetSelect(schoolSelect, 'ابتدا شهر یا استان را وارد کنید (اختیاری)', false);
+            resetSelect(mosqueSelect, 'ابتدا شهر یا استان را وارد کنید (اختیاری)', false);
+            return;
+        }
+
+        resetSelect(schoolSelect, 'در حال بارگذاری مدارس...', true);
+        resetSelect(mosqueSelect, 'در حال بارگذاری مساجد...', true);
+
+        try {
+            const query = buildPlaceQuery(normalizedProvince, normalizedCity);
+            const [schools, mosques] = await Promise.all([
+                fetchSelectItems(`/api/geography/schools/?${query}`),
+                fetchSelectItems(`/api/geography/mosques/?${query}`),
+            ]);
+
+            if (requestId !== placeLoadSequence) {
+                return;
+            }
+
+            fillSelectItems(
+                schoolSelect,
+                schools,
+                schools.length ? 'انتخاب مدرسه (اختیاری)' : 'مدرسه‌ای یافت نشد (اختیاری)'
+            );
+            fillSelectItems(
+                mosqueSelect,
+                mosques,
+                mosques.length ? 'انتخاب مسجد (اختیاری)' : 'مسجدی یافت نشد (اختیاری)'
+            );
+
+            setSelectValueIfExists(schoolSelect, schoolId);
+            setSelectValueIfExists(mosqueSelect, mosqueId);
+        } catch (error) {
+            if (requestId !== placeLoadSequence) {
+                return;
+            }
+            resetSelect(schoolSelect, 'خطا در دریافت مدارس (اختیاری)', false);
+            resetSelect(mosqueSelect, 'خطا در دریافت مساجد (اختیاری)', false);
+            console.error('Error loading places:', error);
+        }
+    }
+
+    function schedulePlaceReload() {
+        if (placeReloadTimeout) {
+            clearTimeout(placeReloadTimeout);
+        }
+
+        placeReloadTimeout = setTimeout(() => {
+            loadPlaceSelects({
+                province: provinceInput.value,
+                city: cityInput.value,
+                schoolId: schoolSelect.value,
+                mosqueId: mosqueSelect.value,
+            });
+        }, 250);
     }
 
     // Render stats
@@ -1122,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Fill form
-    function fillForm(profile) {
+    async function fillForm(profile) {
         document.getElementById('first_name').value = profile.first_name || '';
         document.getElementById('last_name').value = profile.last_name || '';
         document.getElementById('national_code').value = profile.national_code || '';
@@ -1130,15 +1238,15 @@ document.addEventListener('DOMContentLoaded', function() {
         birthDateDisplay.value = formatBirthDateForInput(profile.birth_date);
         document.getElementById('gender').value = profile.gender || '';
         document.getElementById('grade_level').value = profile.grade_level || '12';
-        document.getElementById('city').value = profile.city || '';
-        document.getElementById('province').value = profile.province || '';
-        
-        if (profile.school) {
-            document.getElementById('school').value = profile.school.id;
-        }
-        if (profile.mosque) {
-            document.getElementById('mosque').value = profile.mosque.id;
-        }
+        cityInput.value = profile.city || '';
+        provinceInput.value = profile.province || '';
+
+        await loadPlaceSelects({
+            province: profile.province,
+            city: profile.city,
+            schoolId: profile.school && profile.school.id,
+            mosqueId: profile.mosque && profile.mosque.id,
+        });
     }
 
     // Load profile
@@ -1156,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const data = await response.json();
             renderProfile(data);
-            fillForm(data);
+            await fillForm(data);
         } catch (error) {
             showMessage('دریافت اطلاعات انجام نشد. دوباره تلاش کنید.', 'error');
             console.error('Error loading profile:', error);
@@ -1221,6 +1329,10 @@ document.addEventListener('DOMContentLoaded', function() {
     birthDateDisplay.addEventListener('blur', syncBirthDateHidden);
     openBirthDatePickerBtn.addEventListener('click', openBirthDatePicker);
     clearBirthDateBtn.addEventListener('click', clearBirthDate);
+    cityInput.addEventListener('change', schedulePlaceReload);
+    cityInput.addEventListener('blur', schedulePlaceReload);
+    provinceInput.addEventListener('change', schedulePlaceReload);
+    provinceInput.addEventListener('blur', schedulePlaceReload);
 
     // Submit form
     profileEditForm.addEventListener('submit', async function(e) {
@@ -1239,6 +1351,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        await loadPlaceSelects({
+            province: provinceInput.value,
+            city: cityInput.value,
+            schoolId: schoolSelect.value,
+            mosqueId: mosqueSelect.value,
+        });
+
         const formData = {
             first_name: document.getElementById('first_name').value,
             last_name: document.getElementById('last_name').value,
@@ -1246,10 +1365,10 @@ document.addEventListener('DOMContentLoaded', function() {
             birth_date: birthDate || null,
             grade_level: Number(gradeLevel),
             gender: document.getElementById('gender').value,
-            school: document.getElementById('school').value || null,
-            mosque: document.getElementById('mosque').value || null,
-            city: document.getElementById('city').value,
-            province: document.getElementById('province').value
+            school: schoolSelect.value || null,
+            mosque: mosqueSelect.value || null,
+            city: cityInput.value,
+            province: provinceInput.value
         };
 
         try {
@@ -1273,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             showMessage('اطلاعات با موفقیت ذخیره شد.', 'success');
             renderProfile(data);
-            fillForm(data);
+            await fillForm(data);
             editSection.classList.remove('active');
             toggleEditBtn.innerHTML = '<i class="fas fa-edit"></i> ویرایش پروفایل';
         } catch (error) {
@@ -1449,8 +1568,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize
-    loadSelect('/api/geography/schools/', schoolSelect);
-    loadSelect('/api/geography/mosques/', mosqueSelect);
+    resetSelect(schoolSelect, 'در حال آماده‌سازی...', true);
+    resetSelect(mosqueSelect, 'در حال آماده‌سازی...', true);
     loadProfile();
 });
 </script>

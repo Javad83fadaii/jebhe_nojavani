@@ -89,6 +89,36 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.data["school"]["id"], self.other_school.pk)
         self.assertIsNone(res.data["mosque"])
 
+    def test_profile_me_patch_does_not_allow_phone_number_change(self):
+        user = User.objects.create_user(
+            phone_number="09121234567",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="نمونه",
+        )
+        login_res = self.client.post(
+            "/api/accounts/login/",
+            {"phone_number": "09121234567", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_res.status_code, 200)
+        access = login_res.data["access"]
+
+        res = self.client.patch(
+            "/api/accounts/profile/me/",
+            {"phone_number": "09120000000", "first_name": "جدید"},
+            format="json",
+            HTTP_AUTHORIZATION=f"Bearer {access}",
+        )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["phone_number"], "09121234567")
+        self.assertEqual(res.data["first_name"], "جدید")
+
+        user.refresh_from_db()
+        self.assertEqual(user.phone_number, "09121234567")
+        self.assertEqual(user.first_name, "جدید")
+
     def test_seller_registration_requires_admin_verification(self):
         seller_register_payload = {
             "phone_number": "09111111111",

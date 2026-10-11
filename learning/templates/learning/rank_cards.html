@@ -341,9 +341,9 @@
                 <span>{{ user_points }}</span>
                 <span>امتیاز کل شما</span>
             </div>
-            {% if user_current_rank %}
+            {% if current_rank_obj %}
                 <div style="margin-top: 0.75rem; color: #F5A623; font-weight: 600;">
-                    درجه فعلی شما: {{ user_current_rank.name }}
+                    درجه فعلی شما: {{ current_rank_obj.name }}
                 </div>
             {% endif %}
         </div>

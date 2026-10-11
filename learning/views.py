@@ -405,9 +405,9 @@ class RankCardsView(SellerSiteAccessMixin, ListView):
         user = self.request.user
         user_points = user.total_points if user.is_authenticated else 0
         ranks = list(context["ranks"])
-        user_current_rank = _get_active_rank_for_points(user_points, ranks)
+        current_rank_obj = _get_active_rank_for_points(user_points, ranks)
 
-        context["user_current_rank"] = user_current_rank
+        context["current_rank_obj"] = current_rank_obj
         context["user_points"] = user_points
 
         user_progresses = {}

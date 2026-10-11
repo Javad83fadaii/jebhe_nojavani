@@ -180,3 +180,25 @@ class LearningProgressFlowTestCase(TestCase):
 
         self.assertEqual(len(set(chosen_set_ids)), 3)
         self.assertEqual(set(chosen_set_ids), {qs.pk for qs in question_sets})
+
+
+class RankCardsViewContextTestCase(TestCase):
+    def setUp(self):
+        Rank.ensure_default_ranks()
+        self.user = User.objects.create_user(
+            phone_number="09123332222",
+            password="StrongPass123!",
+            first_name="درجه",
+            last_name="آزمایشی",
+        )
+        self.user.total_points = 0
+        self.user.save(update_fields=["total_points", "updated_at"])
+
+    def test_rank_cards_view_uses_separate_current_rank_object_context_key(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/learning/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["user_current_rank"], "افسر 6")
+        self.assertEqual(response.context["current_rank_obj"].name, "افسر 6")
