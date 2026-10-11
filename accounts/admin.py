@@ -2,6 +2,7 @@ import json
 
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.db.models import Q
 from django.utils import timezone
@@ -275,7 +276,7 @@ def reject_transfers(modeladmin, request, queryset):
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     form = UserAdminForm
     add_form = UserCreationForm
     inlines = [SellerInline, ExamRecordInline, CoinTransactionInline]
@@ -293,9 +294,10 @@ class UserAdmin(admin.ModelAdmin):
         "current_rank",
     )
     list_filter = ("is_active", "is_staff", "gender", "grade_level", "province", "current_rank")
-    search_fields = ("phone_number", "first_name", "last_name", "national_code")
-    ordering = ("-date_joined",)
+    search_fields = ("phone_number__exact", "first_name", "last_name", "national_code__exact")
+    ordering = ("phone_number",)
     readonly_fields = ("current_rank", "city", "province", "date_joined", "updated_at", "last_login")
+    filter_horizontal = ("groups", "user_permissions")
 
     fieldsets = (
         (
@@ -306,6 +308,15 @@ class UserAdmin(admin.ModelAdmin):
         ("جغرافیایی", {"fields": (("province_ref", "city_ref"), ("school", "mosque"), ("province", "city"))}),
         ("دسترسی‌ها", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("تاریخ‌ها", {"fields": ("last_login", "date_joined", "updated_at")}),
+    )
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("phone_number", "first_name", "last_name", "grade_level", "birth_date", "password1", "password2"),
+            },
+        ),
     )
 
     @admin.display(boolean=True, description="فروشنده")
