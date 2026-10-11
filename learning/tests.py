@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from accounts.models import Rank, User
@@ -154,6 +155,72 @@ class LearningProgressFlowTestCase(TestCase):
         self.assertEqual(stage_2_progress.status, UserStageProgress.StageStatus.UNLOCKED)
         self.assertEqual(stage_3_progress.status, UserStageProgress.StageStatus.LOCKED)
 
+    def test_pass_stage_is_idempotent_for_stale_instances(self):
+        user_progress = self.user.enroll_in_path(self.learning_path)
+        original_progress = UserStageProgress.objects.get(
+            user_learning_progress=user_progress,
+            learning_stage=self.stages[0],
+        )
+        stale_first = UserStageProgress.objects.get(pk=original_progress.pk)
+        stale_second = UserStageProgress.objects.get(pk=original_progress.pk)
+
+        stale_first.pass_stage(20)
+        stale_second.pass_stage(20)
+
+        original_progress.refresh_from_db()
+        user_progress.refresh_from_db()
+        self.user.refresh_from_db()
+
+        self.assertEqual(original_progress.status, UserStageProgress.StageStatus.PASSED)
+        self.assertEqual(original_progress.score_earned, 100)
+        self.assertEqual(user_progress.total_score, 100)
+        self.assertEqual(user_progress.completed_stages_count, 1)
+        self.assertEqual(self.user.total_points, 100)
+
+    def test_finish_exam_is_protected_against_stale_double_submit(self):
+        user_progress = self.user.enroll_in_path(self.learning_path)
+        stage_1_progress = UserStageProgress.objects.get(
+            user_learning_progress=user_progress,
+            learning_stage=self.stages[0],
+        )
+        question_set = StageQuestionSet.objects.create(
+            learning_stage=self.stages[0],
+            set_number=1,
+            title="نمونه سوال مرحله 1",
+        )
+        question = StageQuestion.objects.create(
+            question_set=question_set,
+            text="پایتخت ایران چیست؟",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.MULTIPLE_CHOICE,
+            option1="تهران",
+            option2="قم",
+            option3="اصفهان",
+            option4="شیراز",
+            correct_answer="تهران",
+            question_points=20,
+        )
+        exam = stage_1_progress.start_exam(question_set)
+        exam.submit_answer(question, "تهران")
+
+        stale_first = UserStageExam.objects.get(pk=exam.pk)
+        stale_second = UserStageExam.objects.get(pk=exam.pk)
+
+        stale_first.finish_exam()
+        with self.assertRaises(ValidationError):
+            stale_second.finish_exam()
+
+        exam.refresh_from_db()
+        stage_1_progress.refresh_from_db()
+        user_progress.refresh_from_db()
+        self.user.refresh_from_db()
+
+        self.assertEqual(exam.status, UserStageExam.ExamStatus.PASSED)
+        self.assertEqual(stage_1_progress.status, UserStageProgress.StageStatus.PASSED)
+        self.assertEqual(user_progress.total_score, 100)
+        self.assertEqual(user_progress.completed_stages_count, 1)
+        self.assertEqual(self.user.total_points, 100)
+
     def test_each_stage_uses_three_random_question_sets_without_repeating_until_all_used(self):
         user_progress = self.user.enroll_in_path(self.learning_path)
         stage_1_progress = UserStageProgress.objects.get(
@@ -202,3 +269,53 @@ class RankCardsViewContextTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["user_current_rank"], "افسر 6")
         self.assertEqual(response.context["current_rank_obj"].name, "افسر 6")
+
+
+class LearningStageQuestionsAccessTestCase(TestCase):
+    def setUp(self):
+        Rank.ensure_default_ranks()
+        self.rank_afsar_6 = Rank.objects.get(level=1)
+        self.user = User.objects.create_user(
+            phone_number="09124445555",
+            password="StrongPass123!",
+            first_name="سوال",
+            last_name="آزمایشی",
+        )
+        self.learning_path = LearningPath.objects.create(
+            rank=self.rank_afsar_6,
+            title="سیر دسترسی سوالات",
+            publish_status=LearningPath.PublishStatus.PUBLISHED,
+        )
+        self.stage_1 = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله 1",
+            stage_number=1,
+            content_type=LearningStage.ContentType.ARTICLE,
+        )
+        self.stage_2 = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله 2",
+            stage_number=2,
+            content_type=LearningStage.ContentType.ARTICLE,
+        )
+
+    def test_questions_view_redirects_to_stages_when_user_not_enrolled(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"/learning/stages/{self.stage_1.pk}/questions/")
+
+        self.assertRedirects(
+            response,
+            f"/learning/paths/{self.learning_path.pk}/stages/",
+        )
+
+    def test_questions_view_redirects_to_stages_when_stage_is_locked(self):
+        self.client.force_login(self.user)
+        self.user.enroll_in_path(self.learning_path)
+
+        response = self.client.get(f"/learning/stages/{self.stage_2.pk}/questions/")
+
+        self.assertRedirects(
+            response,
+            f"/learning/paths/{self.learning_path.pk}/stages/",
+        )

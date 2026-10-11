@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -227,6 +228,26 @@ class LearningStageQuestionsView(SellerSiteAccessMixin, DetailView):
         learning_stage = self.get_object()
         if not learning_stage.learning_path.can_user_access(request.user):
             return _redirect_for_locked_path(request, learning_stage.learning_path)
+
+        user_progress = UserLearningProgress.objects.filter(
+            user=request.user,
+            learning_path=learning_stage.learning_path,
+        ).first()
+        if not user_progress:
+            return redirect("learning:learning_path_stages", pk=learning_stage.learning_path.pk)
+
+        user_progress.sync_stage_progresses()
+        user_progress.refresh_from_db()
+        user_stage_progress = UserStageProgress.objects.filter(
+            user=request.user,
+            learning_stage=learning_stage,
+        ).first()
+        if (
+            not user_stage_progress
+            or user_stage_progress.status == UserStageProgress.StageStatus.LOCKED
+        ):
+            return redirect("learning:learning_path_stages", pk=learning_stage.learning_path.pk)
+
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -381,7 +402,11 @@ def finish_exam(request, pk):
     )
 
     if request.method == "POST":
-        exam.finish_exam()
+        try:
+            exam.finish_exam()
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect("learning:user_learning_progress_detail", pk=exam.user_stage_progress.user_learning_progress.pk)
         if exam.status == UserStageExam.ExamStatus.PASSED:
             messages.success(request, f"تبریک! شما آزمون مرحله {exam.user_stage_progress.learning_stage.title} را با موفقیت پشت سر گذاشتید.")
         else:

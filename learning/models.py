@@ -457,27 +457,38 @@ class UserStageProgress(TimestampedModel):
     def pass_stage(self, score: int):
         from accounts.models import Rank
 
-        if self.status == self.StageStatus.PASSED:
-            return
-
         if score >= self.learning_stage.min_passing_score:
             with transaction.atomic():
-                self.status = self.StageStatus.PASSED
-                self.passed_at = timezone.now()
-                self.score_earned = self.learning_stage.stage_points
-
-                self.user.__class__.objects.filter(pk=self.user_id).update(
-                    total_points=F("total_points") + self.learning_stage.stage_points,
-                    updated_at=timezone.now(),
+                stage_progress = (
+                    self.__class__.objects.select_for_update()
+                    .select_related("learning_stage", "user")
+                    .get(pk=self.pk)
                 )
-                self.user.refresh_from_db(fields=["total_points"])
+                if stage_progress.status == self.StageStatus.PASSED:
+                    self.refresh_from_db()
+                    return
 
-                self.user.__class__.objects.filter(pk=self.user_id).update(
-                    current_rank=Rank.get_rank_for_points(self.user.total_points),
-                    updated_at=timezone.now(),
+                now = timezone.now()
+                stage_progress.status = self.StageStatus.PASSED
+                stage_progress.passed_at = now
+                stage_progress.score_earned = stage_progress.learning_stage.stage_points
+
+                user = stage_progress.user.__class__.objects.select_for_update().get(pk=stage_progress.user_id)
+                user.__class__.objects.filter(pk=user.pk).update(
+                    total_points=F("total_points") + stage_progress.learning_stage.stage_points,
+                    updated_at=now,
+                )
+                user.refresh_from_db(fields=["total_points"])
+
+                user.__class__.objects.filter(pk=user.pk).update(
+                    current_rank=Rank.get_rank_for_points(user.total_points),
+                    updated_at=now,
                 )
 
-                self.save(update_fields=["status", "passed_at", "score_earned", "updated_at"])
+                stage_progress.save(update_fields=["status", "passed_at", "score_earned", "updated_at"])
+                self.status = stage_progress.status
+                self.passed_at = stage_progress.passed_at
+                self.score_earned = stage_progress.score_earned
         else:
             self.status = self.StageStatus.FAILED_PREVIOUSLY
             self.save(update_fields=["status", "updated_at"])
@@ -544,35 +555,53 @@ class UserStageExam(TimestampedModel):
         return total_score
 
     def finish_exam(self):
-        if self.status != self.ExamStatus.IN_PROGRESS:
-            raise ValidationError("آزمون در حال انجام نیست.")
+        with transaction.atomic():
+            exam = (
+                self.__class__.objects.select_for_update()
+                .select_related("user_stage_progress__learning_stage")
+                .get(pk=self.pk)
+            )
+            stage_progress = (
+                UserStageProgress.objects.select_for_update()
+                .select_related("learning_stage")
+                .get(pk=exam.user_stage_progress_id)
+            )
 
-        self.completed_at = timezone.now()
-        if self.started_at and self.completed_at:
-            self.time_spent = int((self.completed_at - self.started_at).total_seconds())
-        
-        self.calculate_score() # Calculate final score
+            if exam.status != self.ExamStatus.IN_PROGRESS:
+                self.refresh_from_db()
+                raise ValidationError("آزمون در حال انجام نیست.")
 
-        min_passing_score = self.user_stage_progress.learning_stage.min_passing_score
-        if self.score >= min_passing_score:
-            self.status = self.ExamStatus.PASSED
-            # Update best_score in UserStageProgress
-            if self.score > self.user_stage_progress.best_score:
-                self.user_stage_progress.best_score = self.score
-                self.user_stage_progress.save(update_fields=["best_score", "updated_at"])
-            
-            self.user_stage_progress.pass_stage(self.score) # Pass the stage and update overall progress
-        else:
-            self.status = self.ExamStatus.FAILED
-            # Update best_score if this attempt is better, even if failed
-            if self.score > self.user_stage_progress.best_score:
-                self.user_stage_progress.best_score = self.score
-                self.user_stage_progress.save(update_fields=["best_score", "updated_at"])
-            self.user_stage_progress.status = UserStageProgress.StageStatus.FAILED_PREVIOUSLY
-            self.user_stage_progress.save(update_fields=["status", "updated_at"])
+            exam.user_stage_progress = stage_progress
+            exam.completed_at = timezone.now()
+            if exam.started_at and exam.completed_at:
+                exam.time_spent = int((exam.completed_at - exam.started_at).total_seconds())
 
-        self.save(update_fields=["completed_at", "time_spent", "status", "updated_at"])
-        self.answers.all().delete()
+            exam.calculate_score()
+
+            min_passing_score = stage_progress.learning_stage.min_passing_score
+            if exam.score >= min_passing_score:
+                exam.status = self.ExamStatus.PASSED
+                if exam.score > stage_progress.best_score:
+                    stage_progress.best_score = exam.score
+                    stage_progress.save(update_fields=["best_score", "updated_at"])
+
+                stage_progress.pass_stage(exam.score)
+            else:
+                exam.status = self.ExamStatus.FAILED
+                if exam.score > stage_progress.best_score:
+                    stage_progress.best_score = exam.score
+                    stage_progress.save(update_fields=["best_score", "updated_at"])
+                stage_progress.status = UserStageProgress.StageStatus.FAILED_PREVIOUSLY
+                stage_progress.save(update_fields=["status", "updated_at"])
+
+            exam.save(update_fields=["completed_at", "time_spent", "status", "updated_at"])
+            exam.answers.all().delete()
+
+            self.status = exam.status
+            self.score = exam.score
+            self.completed_at = exam.completed_at
+            self.time_spent = exam.time_spent
+            self.user_stage_progress = stage_progress
 
 
 class UserExamAnswer(TimestampedModel):
