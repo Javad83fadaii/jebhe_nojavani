@@ -4,6 +4,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
@@ -258,11 +259,24 @@ def verify_sellers(modeladmin, request, queryset):
 @admin.action(description="تایید درخواست‌های انتقال انتخاب‌شده")
 def approve_transfers(modeladmin, request, queryset):
     updated = 0
+    failed = 0
     for transfer in queryset.exclude(status=CoinToWalletTransfer.TransferStatus.APPROVED):
-        transfer.status = CoinToWalletTransfer.TransferStatus.APPROVED
-        transfer.save(update_fields=["status", "updated_at"])
-        updated += 1
-    modeladmin.message_user(request, f"{updated} درخواست انتقال تایید شد.", level=messages.SUCCESS)
+        try:
+            transfer.status = CoinToWalletTransfer.TransferStatus.APPROVED
+            transfer.save(update_fields=["status", "updated_at"])
+            updated += 1
+        except ValidationError as exc:
+            failed += 1
+            error_message = exc.messages[0] if exc.messages else "تایید این درخواست ممکن نیست."
+            modeladmin.message_user(
+                request,
+                f"درخواست انتقال {transfer.pk} تایید نشد: {error_message}",
+                level=messages.ERROR,
+            )
+    if updated:
+        modeladmin.message_user(request, f"{updated} درخواست انتقال تایید شد.", level=messages.SUCCESS)
+    if failed and not updated:
+        modeladmin.message_user(request, f"{failed} درخواست انتقال تایید نشد.", level=messages.WARNING)
 
 
 @admin.action(description="رد درخواست‌های انتقال انتخاب‌شده")

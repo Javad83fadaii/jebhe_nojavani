@@ -66,3 +66,19 @@ class ChallengeParticipationAdminTests(TestCase):
         self.assertEqual(self.participant_user.coin_transactions.count(), 1)
         success_mock.assert_called_once()
         error_mock.assert_not_called()
+
+    def test_approve_and_award_is_idempotent_for_stale_instances(self):
+        stale_first = ChallengeParticipation.objects.get(pk=self.participation.pk)
+        stale_second = ChallengeParticipation.objects.get(pk=self.participation.pk)
+
+        stale_first.approve_and_award()
+        stale_second.approve_and_award()
+
+        self.participation.refresh_from_db()
+        self.participant_user.refresh_from_db()
+
+        self.assertEqual(self.participation.status, ChallengeParticipation.Status.APPROVED)
+        self.assertTrue(self.participation.reward_awarded)
+        self.assertEqual(self.participation.coins_received, 25)
+        self.assertEqual(self.participant_user.challenge_coins, 25)
+        self.assertEqual(self.participant_user.coin_transactions.count(), 1)

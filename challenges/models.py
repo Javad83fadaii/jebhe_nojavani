@@ -102,29 +102,37 @@ class ChallengeParticipation(models.Model):
         self.save(update_fields=["status", "submitted_at", "submission_text", "attended", "evidence"])
 
     def approve_and_award(self):
-        if self.reward_awarded:
-            return
-
-        if timezone.now() < self.challenge.end_date:
-            raise ValidationError("این چالش هنوز به پایان نرسیده است.")
-
-        if self.status != self.Status.SUBMITTED:
-            raise ValidationError("ابتدا باید ارسال کاربر ثبت شده باشد تا بتوان آن را تایید کرد.")
-
-        coins = int(self.challenge.coin_reward or 0)
-        now = timezone.now()
-
         with transaction.atomic():
-            if coins > 0:
-                self.user.add_coins(coins, f"پاداش چالش: {self.challenge.title}", challenge=self.challenge)
+            participation = (
+                self.__class__.objects.select_for_update()
+                .select_related("challenge", "user")
+                .get(pk=self.pk)
+            )
+            user = participation.user.__class__.objects.select_for_update().get(pk=participation.user_id)
 
-            self.status = self.Status.APPROVED
-            self.reviewed_at = now
-            self.is_completed = True
-            self.completed_at = now
-            self.reward_awarded = True
-            self.coins_received = coins
-            self.save(
+            if participation.reward_awarded:
+                self.refresh_from_db()
+                return
+
+            if timezone.now() < participation.challenge.end_date:
+                raise ValidationError("این چالش هنوز به پایان نرسیده است.")
+
+            if participation.status != self.Status.SUBMITTED:
+                raise ValidationError("ابتدا باید ارسال کاربر ثبت شده باشد تا بتوان آن را تایید کرد.")
+
+            coins = int(participation.challenge.coin_reward or 0)
+            now = timezone.now()
+
+            if coins > 0:
+                user.add_coins(coins, f"پاداش چالش: {participation.challenge.title}", challenge=participation.challenge)
+
+            participation.status = self.Status.APPROVED
+            participation.reviewed_at = now
+            participation.is_completed = True
+            participation.completed_at = now
+            participation.reward_awarded = True
+            participation.coins_received = coins
+            participation.save(
                 update_fields=[
                     "status",
                     "reviewed_at",
@@ -134,6 +142,12 @@ class ChallengeParticipation(models.Model):
                     "coins_received",
                 ]
             )
+            self.status = participation.status
+            self.reviewed_at = participation.reviewed_at
+            self.is_completed = participation.is_completed
+            self.completed_at = participation.completed_at
+            self.reward_awarded = participation.reward_awarded
+            self.coins_received = participation.coins_received
 
     def reject(self):
         if self.reward_awarded:

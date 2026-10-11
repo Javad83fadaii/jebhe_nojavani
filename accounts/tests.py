@@ -2,11 +2,14 @@ from django.test import Client, TestCase, override_settings
 from datetime import date, timedelta
 from django.conf import settings
 from django.core.cache import cache
+from django.contrib import messages
 from django.utils import timezone
 from rest_framework.test import APIClient
 from unittest.mock import patch
 
-from accounts.models import PasswordResetRequest, User
+from accounts.admin import approve_transfers
+from accounts.models import CoinToWalletTransfer, PasswordResetRequest, User
+from accounts.signals import process_approved_transfer
 from accounts.services.smsir import SMSIRSendResult
 from geography.models import City, Mosque, Province, School
 
@@ -709,6 +712,107 @@ class AccountsAPITestCase(TestCase):
                 transaction_type=CoinTransaction.TransactionType.WALLET_TRANSFER,
             ).exists()
         )
+
+    def test_convert_coins_api_rejects_amount_reserved_by_pending_transfers(self):
+        user = User.objects.create_user(
+            phone_number="09127770000",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="رزرو",
+            challenge_coins=500,
+        )
+        CoinToWalletTransfer.objects.create(
+            user=user,
+            coin_amount=300,
+            amount_toman=300,
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/accounts/profile/convert-coins/",
+            {"coin_amount": 250},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data["detail"],
+            "موجودی سکه چالش قابل تبدیل شما کافی نیست. موجودی قابل تبدیل شما: 200 سکه است.",
+        )
+        self.assertEqual(CoinToWalletTransfer.objects.filter(user=user).count(), 1)
+
+    def test_approve_transfers_admin_action_handles_validation_error(self):
+        user = User.objects.create_user(
+            phone_number="09128880000",
+            password="StrongPass123!",
+            first_name="ادمین",
+            last_name="انتقال",
+            challenge_coins=100,
+        )
+        transfer = CoinToWalletTransfer.objects.create(
+            user=user,
+            coin_amount=200,
+            amount_toman=200,
+        )
+        logged_messages = []
+
+        class DummyAdmin:
+            def message_user(self, request, message, level=None):
+                logged_messages.append((message, level))
+
+        approve_transfers(
+            DummyAdmin(),
+            object(),
+            CoinToWalletTransfer.objects.filter(pk=transfer.pk),
+        )
+
+        transfer.refresh_from_db()
+        self.assertEqual(transfer.status, CoinToWalletTransfer.TransferStatus.PENDING)
+        self.assertIn(
+            (
+                f"درخواست انتقال {transfer.pk} تایید نشد: موجودی سکه کاربر برای تایید این انتقال کافی نیست.",
+                messages.ERROR,
+            ),
+            logged_messages,
+        )
+        self.assertIn(
+            ("1 درخواست انتقال تایید نشد.", messages.WARNING),
+            logged_messages,
+        )
+
+    def test_process_approved_transfer_is_idempotent_for_stale_instances(self):
+        user = User.objects.create_user(
+            phone_number="09129990000",
+            password="StrongPass123!",
+            first_name="انتقال",
+            last_name="همزمان",
+            challenge_coins=500,
+            wallet_balance=1000,
+        )
+        transfer = CoinToWalletTransfer.objects.create(
+            user=user,
+            coin_amount=200,
+            amount_toman=200,
+        )
+        processed_at = timezone.now()
+        stale_first = CoinToWalletTransfer.objects.get(pk=transfer.pk)
+        stale_second = CoinToWalletTransfer.objects.get(pk=transfer.pk)
+        stale_first.status = CoinToWalletTransfer.TransferStatus.APPROVED
+        stale_second.status = CoinToWalletTransfer.TransferStatus.APPROVED
+        stale_first._previous_status = CoinToWalletTransfer.TransferStatus.PENDING
+        stale_second._previous_status = CoinToWalletTransfer.TransferStatus.PENDING
+        CoinToWalletTransfer.objects.filter(pk=transfer.pk).update(
+            status=CoinToWalletTransfer.TransferStatus.APPROVED,
+            processed_at=processed_at,
+        )
+
+        process_approved_transfer(CoinToWalletTransfer, stale_first, created=False)
+        process_approved_transfer(CoinToWalletTransfer, stale_second, created=False)
+
+        user.refresh_from_db()
+        self.assertEqual(user.challenge_coins, 300)
+        self.assertEqual(user.wallet_balance, 1200)
+        self.assertEqual(user.coin_transactions.filter(transaction_type="wallet_transfer").count(), 1)
 
     def test_profile_patch_with_session_requires_csrf(self):
         user = User.objects.create_user(

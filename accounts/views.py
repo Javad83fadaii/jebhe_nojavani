@@ -5,6 +5,7 @@ import logging
 from secrets import randbelow
 
 from django.contrib.auth import login as auth_login
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.urls import reverse
@@ -400,13 +401,18 @@ class UserProfileViewSet(viewsets.GenericViewSet):
         if coin_amount <= 0:
             return Response({"detail": "تعداد سکه باید بیشتر از صفر باشد."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if coin_amount > user.challenge_coins:
+        available_coins = user.get_available_challenge_coins_for_transfer()
+        if coin_amount > available_coins:
             return Response(
-                {"detail": f"موجودی سکه چالش شما کافی نیست. موجودی شما: {user.challenge_coins} سکه است."},
+                {"detail": f"موجودی سکه چالش قابل تبدیل شما کافی نیست. موجودی قابل تبدیل شما: {available_coins} سکه است."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        transfer = user.transfer_coins_to_wallet(coin_amount)
+        try:
+            transfer = user.transfer_coins_to_wallet(coin_amount)
+        except ValidationError as exc:
+            return Response({"detail": exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+
         return Response(
             {
                 "detail": f"درخواست تبدیل {coin_amount} سکه به {coin_amount:,} تومان ثبت شد و پس از بررسی ادمین به کیف پول شما واریز می‌شود.",

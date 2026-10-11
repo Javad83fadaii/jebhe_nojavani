@@ -67,19 +67,29 @@ def process_approved_transfer(sender, instance: CoinToWalletTransfer, created: b
         return
 
     with transaction.atomic():
+        transfer = CoinToWalletTransfer.objects.select_for_update().get(pk=instance.pk)
         user = User.objects.select_for_update().get(pk=instance.user_id)
-        if user.challenge_coins < instance.coin_amount:
+        transaction_description = f"انتقال {transfer.coin_amount} سکه به کیف پول. شناسه درخواست: {transfer.pk}"
+
+        if CoinTransaction.objects.filter(
+            user_id=user.pk,
+            transaction_type=CoinTransaction.TransactionType.WALLET_TRANSFER,
+            description=transaction_description,
+        ).exists():
+            return
+
+        if user.challenge_coins < transfer.coin_amount:
             raise ValidationError("موجودی سکه کاربر برای انتقال کافی نیست.")
 
         User.objects.filter(pk=user.pk).update(
-            challenge_coins=F("challenge_coins") - instance.coin_amount,
-            wallet_balance=F("wallet_balance") + Decimal(instance.amount_toman),
+            challenge_coins=F("challenge_coins") - transfer.coin_amount,
+            wallet_balance=F("wallet_balance") + Decimal(transfer.amount_toman),
         )
 
         CoinTransaction.objects.create(
             user=user,
-            amount=-instance.coin_amount,
+            amount=-transfer.coin_amount,
             transaction_type=CoinTransaction.TransactionType.WALLET_TRANSFER,
-            description=f"انتقال {instance.coin_amount} سکه به کیف پول. شناسه درخواست: {instance.pk}",
-            transaction_date=instance.processed_at or timezone.now(),
+            description=transaction_description,
+            transaction_date=transfer.processed_at or timezone.now(),
         )

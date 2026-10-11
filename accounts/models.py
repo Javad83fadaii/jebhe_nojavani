@@ -367,16 +367,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     def transfer_coins_to_wallet(self, amount: int):
         if amount <= 0:
             raise ValidationError("مقدار انتقال باید بیشتر از صفر باشد.")
-        if amount > self.challenge_coins:
-            raise ValidationError("موجودی سکه چالش کافی نیست.")
         if not self.pk:
             raise ValidationError("کاربر باید ذخیره شده باشد.")
 
-        return CoinToWalletTransfer.objects.create(
-            user=self,
-            coin_amount=amount,
-            amount_toman=amount,
+        with transaction.atomic():
+            available_coins = self.get_available_challenge_coins_for_transfer(lock=True)
+            if amount > available_coins:
+                raise ValidationError("موجودی سکه چالش قابل تبدیل شما کافی نیست.")
+
+            return CoinToWalletTransfer.objects.create(
+                user=self,
+                coin_amount=amount,
+                amount_toman=amount,
+            )
+
+    def get_available_challenge_coins_for_transfer(self, *, lock: bool = False) -> int:
+        if not self.pk:
+            return max(self.challenge_coins or 0, 0)
+
+        user_queryset = User.objects.filter(pk=self.pk)
+        if lock:
+            user_queryset = user_queryset.select_for_update()
+
+        current_coins = user_queryset.values_list("challenge_coins", flat=True).first() or 0
+        pending_total = (
+            CoinToWalletTransfer.objects.filter(
+                user_id=self.pk,
+                status=CoinToWalletTransfer.TransferStatus.PENDING,
+            ).aggregate(total=models.Sum("coin_amount"))["total"]
+            or 0
         )
+        return max(current_coins - pending_total, 0)
 
     def get_exam_history(self):
         return self.exam_records.select_related("rank_at_exam").all()
