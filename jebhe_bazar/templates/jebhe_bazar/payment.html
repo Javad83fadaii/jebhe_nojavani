@@ -9,8 +9,8 @@
 <section class="bazar-page">
     {% if status == "success" %}
         <div class="bazar-empty-state">
-            <h1>پرداخت با سکه با موفقیت انجام شد</h1>
-            <p class="bazar-note">سفارش شما با شماره {{ order.id|toman }} ثبت شد و موجودی محصولات به‌روزرسانی شد.</p>
+            <h1>{{ success_title }}</h1>
+            <p class="bazar-note">{{ success_description }}</p>
             <div class="bazar-summary-grid" style="margin-top: 1.5rem;">
                 <div class="bazar-card">
                     <strong>مبلغ کل</strong>

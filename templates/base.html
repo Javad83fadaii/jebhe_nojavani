@@ -45,6 +45,9 @@
     </main>
 
     {% include "partials/footer.html" %}
+    <form id="logout-form" method="post" action="{% url 'logout' %}" hidden>
+        {% csrf_token %}
+    </form>
 
     <script src="{% static 'js/main.js' %}"></script>
     <div class="site-modal-backdrop" id="site-modal-backdrop">
@@ -77,12 +80,15 @@
     }
 
     // خروج از حساب (یک‌جا تعریف شده تا در منوی دسکتاپ و موبایل تکرار نشود)
-    function performLogout() {
+    function performLogout(formEl) {
         ['access_token', 'refresh_token', 'user_type', 'userSession'].forEach(function (key) {
             localStorage.removeItem(key);
         });
         sessionStorage.removeItem('userSession');
-        window.location.href = "{% url 'logout' %}";
+        const logoutForm = formEl || document.getElementById('logout-form');
+        if (logoutForm) {
+            logoutForm.submit();
+        }
     }
 
     // تابع کوتاه‌سازی هوشمند نام کاربری (تا 12 کاراکتر، اگه کلمه ناقص بود تا 15 چک می‌کنه)
@@ -167,7 +173,7 @@ function setupProfileDropdown() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function (event) {
             event.preventDefault();
-            performLogout();
+            performLogout(logoutBtn.form);
         });
     }
 }
@@ -458,7 +464,15 @@ function setupProfileDropdown() {
                 html += row("{% url 'admin:index' %}", 'fa-user-shield', 'پنل مدیریت');
             }
 
-            html += row('#', 'fa-power-off', 'خروج از حساب', 'logout-item', 'mobile-logout-btn');
+            html += `
+                <form method="post" action="{% url 'logout' %}" class="mobile-more-logout-form">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <button type="submit" id="mobile-logout-btn" class="mobile-more-item logout-item">
+                        <i class="fa-solid fa-power-off"></i>
+                        <span>خروج از حساب</span>
+                        <i class="fa-solid fa-chevron-left mm-chevron"></i>
+                    </button>
+                </form>`;
             html += '</div></div>';
         } else {
             html += `
@@ -478,7 +492,7 @@ function setupProfileDropdown() {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                performLogout();
+                performLogout(logoutBtn.form);
             });
         }
     }

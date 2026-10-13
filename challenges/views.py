@@ -1,10 +1,15 @@
 from rest_framework import viewsets, mixins, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.conf import settings
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.http import FileResponse, Http404
+from pathlib import Path
 from .models import Challenge, ChallengeParticipation
 from .serializers import ChallengeSerializer, ChallengeParticipationSerializer
 from django.core.exceptions import ValidationError
+from config.upload_security import private_challenge_evidence_storage
 
 class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Challenge.objects.all()
@@ -53,3 +58,45 @@ class ParticipationViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, views
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+@login_required
+def challenge_evidence_download(request):
+    file_name = (request.GET.get("name") or "").strip()
+    if not file_name:
+        raise Http404("File not found.")
+
+    participation = (
+        ChallengeParticipation.objects.select_related("challenge", "user", "challenge__creator")
+        .filter(evidence=file_name)
+        .first()
+    )
+    if participation is None:
+        raise Http404("File not found.")
+
+    user = request.user
+    can_access = (
+        user.is_staff
+        or participation.user_id == user.id
+        or participation.challenge.creator_id == user.id
+    )
+    if not can_access:
+        raise Http404("File not found.")
+
+    if private_challenge_evidence_storage.exists(file_name):
+        file_handle = private_challenge_evidence_storage.open(file_name, "rb")
+    else:
+        legacy_file_path = Path(settings.MEDIA_ROOT) / file_name
+        if not legacy_file_path.exists() or not legacy_file_path.is_file():
+            raise Http404("File not found.")
+        file_handle = legacy_file_path.open("rb")
+
+    response = FileResponse(
+        file_handle,
+        as_attachment=True,
+        filename=Path(file_name).name,
+        content_type="application/octet-stream",
+    )
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private, no-store"
+    return response

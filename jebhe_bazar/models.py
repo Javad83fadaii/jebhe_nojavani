@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from accounts.models import CoinTransaction, Seller, User
+from config.upload_security import UploadPolicyValidator
 
 
 def _build_unique_slug(instance: models.Model, source_value: str, slug_field: str = "slug") -> str:
@@ -38,7 +39,13 @@ class Category(models.Model):
         related_name="children",
         verbose_name="دسته والد",
     )
-    image = models.ImageField(upload_to="bazar/categories/", null=True, blank=True, verbose_name="تصویر")
+    image = models.ImageField(
+        upload_to="bazar/categories/",
+        null=True,
+        blank=True,
+        verbose_name="تصویر",
+        validators=[UploadPolicyValidator("public_image")],
+    )
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
     class Meta:
@@ -107,7 +114,13 @@ class Product(models.Model):
     )
     discount_active = models.BooleanField(default=False, verbose_name="تخفیف فعال")
     is_ticket = models.BooleanField(default=False, verbose_name="بلیط تفریحی")
-    image = models.ImageField(upload_to="bazar/products/", null=True, blank=True, verbose_name="تصویر")
+    image = models.ImageField(
+        upload_to="bazar/products/",
+        null=True,
+        blank=True,
+        verbose_name="تصویر",
+        validators=[UploadPolicyValidator("public_image")],
+    )
     is_active = models.BooleanField(default=True, verbose_name="فعال")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
@@ -304,18 +317,31 @@ class OrderItem(models.Model):
         return self.quantity * self.unit_price
 
     @property
+    def seller_revenue_amount(self) -> int:
+        # Coin purchases are settled to the seller with a 1:1 conversion.
+        if self.paid_with == "coin":
+            return self.quantity * self.unit_coins
+        return self.quantity * self.unit_price
+
+    @property
     def seller_commission(self) -> int:
         commission_percent = Decimal(self.product.seller.platform_commission_percent)
-        base_amount = self.quantity * self.unit_price
+        base_amount = self.seller_revenue_amount
         commission_value = Decimal(base_amount) * commission_percent / Decimal(100)
         return int(commission_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+    @property
+    def seller_net_settlement(self) -> int:
+        return max(self.seller_revenue_amount - self.seller_commission, 0)
 
 
 class Transaction(models.Model):
     class TransactionType(models.TextChoices):
         CHARGE = "charge", "شارژ"
         PURCHASE = "purchase", "خرید"
+        WALLET_TRANSFER = "wallet_transfer", "تبدیل سکه به کیف پول"
         COMMISSION = "commission", "کمیسیون"
+        SETTLEMENT = "settlement", "تسویه فروشنده"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -449,7 +475,7 @@ def record_coin_spend(user, amount: int, description: str):
     CoinTransaction.objects.create(
         user=user,
         amount=-amount,
-        transaction_type=CoinTransaction.TransactionType.PENALTY,
+        transaction_type=CoinTransaction.TransactionType.SPEND,
         description=description,
         challenge="bazar-checkout",
     )

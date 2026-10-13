@@ -110,10 +110,13 @@
                                         </a>
                                     {% endif %}
 
-                                    <a href="{% url 'logout' %}" id="desktop-logout-btn" class="profile-menu-logout" role="menuitem">
-                                        <i class="fa-solid fa-power-off"></i>
-                                        <span>خروج از حساب</span>
-                                    </a>
+                                    <form method="post" action="{% url 'logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" id="desktop-logout-btn" class="profile-menu-logout" role="menuitem">
+                                            <i class="fa-solid fa-power-off"></i>
+                                            <span>خروج از حساب</span>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         {% endif %}

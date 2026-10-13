@@ -81,3 +81,27 @@ class UserProgressSyncTests(TestCase):
                 "current_rank": "افسر 5",
             },
         )
+
+
+class LogoutViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            phone_number="09120001111",
+            password="StrongPass123!",
+            first_name="خروج",
+            last_name="تست",
+        )
+        self.client.force_login(self.user)
+
+    def test_logout_requires_post(self):
+        response = self.client.get(reverse("logout"))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_logout_post_logs_user_out(self):
+        response = self.client.post(reverse("logout"))
+
+        self.assertRedirects(response, "/?logout=true")
+        self.assertNotIn("_auth_user_id", self.client.session)

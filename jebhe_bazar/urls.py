@@ -16,6 +16,7 @@ urlpatterns = [
     path("checkout/", views.checkout_view, name="checkout"),
     path("checkout/apply-coins/", views.apply_coins_view, name="checkout-apply-coins"),
     path("checkout/pay/", views.pay_view, name="checkout-pay"),
+    path("checkout/result/", views.payment_result_view, name="payment-result"),
     path("wallet/charge/", views.wallet_charge_view, name="wallet-charge"),
     path("orders/", views.OrderHistoryView.as_view(), name="order-history"),
     path("seller/dashboard/", views.SellerDashboardView.as_view(), name="seller-dashboard"),

@@ -50,7 +50,10 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                <a href="{% url 'bazar:cart-remove' item.id %}" class="bazar-danger-btn bazar-cart-remove">حذف</a>
+                                <form method="post" action="{% url 'bazar:cart-remove' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="bazar-danger-btn bazar-cart-remove">حذف</button>
+                                </form>
                             </div>
 
                             <div class="bazar-cart-item-foot">

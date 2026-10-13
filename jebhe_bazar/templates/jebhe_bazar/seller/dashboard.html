@@ -49,6 +49,10 @@
             <div class="bazar-price">{{ commission_paid|toman }} تومان</div>
         </div>
         <div class="bazar-card bazar-stat-card">
+            <span class="bazar-stat-label">تسویه واریزشده</span>
+            <div class="bazar-price">{{ settlement_paid|toman }} تومان</div>
+        </div>
+        <div class="bazar-card bazar-stat-card">
             <span class="bazar-stat-label">تعداد سفارش</span>
             <div class="bazar-price">{{ seller_orders_count|toman }}</div>
         </div>
@@ -97,7 +101,14 @@
             {% for item in recent_items %}
                 <div class="bazar-order-item">
                     <strong>{{ item.product.title }}</strong>
-                    <div class="bazar-note">خریدار: {{ item.order.user.get_full_name|default:item.order.user.phone_number }} | تعداد: {{ item.quantity }} | مبلغ: {{ item.line_total|toman }} تومان</div>
+                    <div class="bazar-note">
+                        خریدار: {{ item.order.user.get_full_name|default:item.order.user.phone_number }} | تعداد: {{ item.quantity }} |
+                        {% if item.paid_with == "coin" %}
+                            مبلغ: {{ item.line_total|toman }} سکه
+                        {% else %}
+                            مبلغ: {{ item.line_total|toman }} تومان
+                        {% endif %}
+                    </div>
                 </div>
             {% empty %}
                 <div class="bazar-order-item">هنوز فروشی برای این فروشگاه ثبت نشده است.</div>

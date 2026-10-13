@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Case, Count, ExpressionWrapper, F, IntegerField, Prefetch, Q, Sum, Value, When
 from django.db.models.deletion import ProtectedError
 from django.db.models.functions import Coalesce
@@ -22,6 +22,7 @@ from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transac
 
 
 CHECKOUT_COINS_SESSION_KEY = "bazar_checkout_coins"
+PAYMENT_RESULT_SESSION_KEY = "bazar_payment_result"
 _PERSIAN_DIGITS_TRANSLATION = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 
 
@@ -44,6 +45,28 @@ def _get_available_coins(user: User, cart_total: int) -> int:
 
 def _format_toman(value: int) -> str:
     return f"{int(value):,}".translate(_PERSIAN_DIGITS_TRANSLATION)
+
+
+def _parse_int(value, *, default: int | None = None, minimum: int | None = None) -> int | None:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+
+    if minimum is not None and parsed < minimum:
+        return default
+    return parsed
+
+
+def _get_safe_redirect_target(request: HttpRequest, url: str | None) -> str:
+    candidate = str(url or "").strip()
+    if candidate and url_has_allowed_host_and_scheme(
+        url=candidate,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return candidate
+    return ""
 
 
 def _build_cart_item_response(cart: Cart, item: CartItem, message: str, *, status: int = 200) -> JsonResponse:
@@ -84,6 +107,87 @@ def _get_applied_coins(request: HttpRequest, user: User, cart_total: int) -> int
 
 def _clear_checkout_session(request: HttpRequest):
     request.session.pop(CHECKOUT_COINS_SESSION_KEY, None)
+
+
+def _get_select_for_update_items_kwargs() -> dict:
+    if connection.features.has_select_for_update_of:
+        return {"of": ("self", "product")}
+    return {}
+
+
+def _store_payment_result(request: HttpRequest, payload: dict):
+    request.session[PAYMENT_RESULT_SESSION_KEY] = payload
+    request.session.modified = True
+
+
+def _build_payment_success_context(order: Order) -> dict:
+    if order.coins_used and order.wallet_used:
+        success_title = "پرداخت سفارش با موفقیت انجام شد"
+        success_description = f"سفارش شما با شماره {order.id} ثبت شد و بخش سکه‌ای و کیف پولی آن با موفقیت تسویه شد."
+    elif order.coins_used:
+        success_title = "پرداخت با سکه با موفقیت انجام شد"
+        success_description = f"سفارش شما با شماره {order.id} ثبت شد و مبلغ سکه‌ای آن با موفقیت پرداخت شد."
+    else:
+        success_title = "پرداخت با کیف پول با موفقیت انجام شد"
+        success_description = f"سفارش شما با شماره {order.id} ثبت شد و مبلغ کیف پولی آن با موفقیت پرداخت شد."
+
+    return {
+        "status": "success",
+        "order_id": order.pk,
+        "success_title": success_title,
+        "success_description": success_description,
+    }
+
+
+def _build_payment_context_from_session(request: HttpRequest) -> dict:
+    payload = request.session.get(PAYMENT_RESULT_SESSION_KEY) or {}
+    status_value = payload.get("status")
+    context = {
+        "status": status_value or "error",
+        "page_name": "bazar",
+        "page_title": "نتیجه پرداخت | جبهه بازار",
+    }
+
+    if status_value == "success":
+        order_id = _parse_int(payload.get("order_id"), minimum=1)
+        order = Order.objects.filter(pk=order_id, user=request.user).first() if order_id else None
+        if not order:
+            context["status"] = "error"
+            return context
+        context.update(
+            {
+                "order": order,
+                "success_title": payload.get("success_title") or "پرداخت سفارش با موفقیت انجام شد",
+                "success_description": payload.get("success_description") or f"سفارش شما با شماره {order.id} ثبت شد.",
+            }
+        )
+        return context
+
+    if status_value == "insufficient_coins":
+        context.update(
+            {
+                "shortage": payload.get("shortage", 0),
+                "total_needed": payload.get("total_needed", 0),
+                "current_balance": payload.get("current_balance", 0),
+                "page_title": "عدم کفایت سکه چالش | جبهه بازار",
+            }
+        )
+        return context
+
+    if status_value == "insufficient_wallet":
+        shortage = payload.get("shortage", 0)
+        context.update(
+            {
+                "shortage": shortage,
+                "total_needed": payload.get("total_needed", 0),
+                "current_balance": payload.get("current_balance", 0),
+                "charge_request_url": f"{reverse('bazar:wallet-charge')}?amount={shortage}",
+                "page_title": "عدم کفایت موجودی کیف پول | جبهه بازار",
+            }
+        )
+        return context
+
+    return context
 
 
 def _redirect_seller_to_panel(request: HttpRequest):
@@ -329,7 +433,12 @@ def cart_view(request: HttpRequest) -> HttpResponse:
     cart = _get_cart(request.user)
 
     if request.method == "POST":
-        item = get_object_or_404(CartItem, pk=request.POST.get("item_id"), cart=cart)
+        item_id = _parse_int(request.POST.get("item_id"), minimum=1)
+        if item_id is None:
+            messages.error(request, "آیتم انتخاب شده معتبر نیست.")
+            return redirect("bazar:cart")
+
+        item = get_object_or_404(CartItem, pk=item_id, cart=cart)
         form = CartQuantityForm(request.POST)
         if form.is_valid():
             new_quantity = form.cleaned_data["quantity"]
@@ -393,8 +502,7 @@ def add_to_cart(request: HttpRequest, product_id: int) -> HttpResponse:
         return seller_redirect
     cart = _get_cart(request.user)
     product = get_object_or_404(Product, pk=product_id, is_active=True, seller__is_active=True, category__is_active=True)
-    quantity = int(request.POST.get("quantity", 1) or 1)
-    quantity = max(1, quantity)
+    quantity = _parse_int(request.POST.get("quantity", 1), default=1, minimum=1) or 1
 
     if product.stock <= 0:
         messages.error(request, "این محصول در حال حاضر موجود نیست.")
@@ -426,7 +534,7 @@ def add_to_cart(request: HttpRequest, product_id: int) -> HttpResponse:
     else:
         messages.success(request, "تعداد محصول در سبد خرید بروزرسانی شد.")
 
-    next_url = request.POST.get("next")
+    next_url = _get_safe_redirect_target(request, request.POST.get("next"))
     return redirect(next_url or "bazar:cart")
 
 
@@ -449,6 +557,7 @@ def update_cart_item_payment_method(request: HttpRequest, item_id: int) -> HttpR
 
 
 @login_required
+@require_POST
 def remove_from_cart(request: HttpRequest, item_id: int) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:
@@ -555,6 +664,14 @@ def apply_coins_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def payment_result_view(request: HttpRequest) -> HttpResponse:
+    seller_redirect = _redirect_seller_to_panel(request)
+    if seller_redirect:
+        return seller_redirect
+    return render(request, "jebhe_bazar/payment.html", _build_payment_context_from_session(request))
+
+
+@login_required
 @require_POST
 def pay_view(request: HttpRequest) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
@@ -568,7 +685,7 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             _clear_checkout_session(request)
             return redirect("bazar:cart")
         cart_items = list(
-            cart.items.select_for_update()
+            cart.items.select_for_update(**_get_select_for_update_items_kwargs())
             .select_related("product", "product__seller", "product__seller__user", "product__category")
             .order_by("id")
         )
@@ -595,29 +712,30 @@ def pay_view(request: HttpRequest) -> HttpResponse:
         # بررسی موجودی سکه چالش
         if user_coins < total_coins_needed:
             shortage = total_coins_needed - user_coins
-            context = {
-                "status": "insufficient_coins",
-                "shortage": shortage,
-                "total_needed": total_coins_needed,
-                "current_balance": user_coins,
-                "page_name": "bazar",
-                "page_title": "عدم کفایت سکه چالش | جبهه بازار",
-            }
-            return render(request, "jebhe_bazar/payment.html", context)
+            _store_payment_result(
+                request,
+                {
+                    "status": "insufficient_coins",
+                    "shortage": shortage,
+                    "total_needed": total_coins_needed,
+                    "current_balance": user_coins,
+                },
+            )
+            return redirect("bazar:payment-result")
 
         # بررسی موجودی کیف پول تومانی
         if user_wallet < total_money_needed:
             shortage = total_money_needed - user_wallet
-            context = {
-                "status": "insufficient_wallet",
-                "shortage": shortage,
-                "total_needed": total_money_needed,
-                "current_balance": user_wallet,
-                "charge_request_url": f"{reverse('bazar:wallet-charge')}?amount={shortage}",
-                "page_name": "bazar",
-                "page_title": "عدم کفایت موجودی کیف پول | جبهه بازار",
-            }
-            return render(request, "jebhe_bazar/payment.html", context)
+            _store_payment_result(
+                request,
+                {
+                    "status": "insufficient_wallet",
+                    "shortage": shortage,
+                    "total_needed": total_money_needed,
+                    "current_balance": user_wallet,
+                },
+            )
+            return redirect("bazar:payment-result")
 
         # کسر مقادیر از حساب کاربر
         if total_coins_needed > 0:
@@ -647,10 +765,10 @@ def pay_view(request: HttpRequest) -> HttpResponse:
                 description=f"پرداخت نقدی سفارش #{order.pk} از موجودی کیف پول.",
             )
 
-        commission_totals: dict[int, int] = {}
+        seller_totals: dict[int, dict[str, int]] = {}
         for item in cart_items:
             paid_with = "coin" if item.is_paid_with_coins else "money"
-            OrderItem.objects.create(
+            order_item = OrderItem.objects.create(
                 order=order,
                 product=item.product,
                 quantity=item.quantity,
@@ -662,33 +780,53 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             item.product.save(update_fields=["stock"])
 
             seller_id = item.product.seller_id
-            item_total = item.quantity * item.product.final_price
-            commission_value = Decimal(item_total) * Decimal(item.product.seller.platform_commission_percent) / Decimal(100)
-            commission_totals[seller_id] = commission_totals.get(seller_id, 0) + int(
-                commission_value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+            seller_summary = seller_totals.setdefault(
+                seller_id,
+                {"quantity": 0, "gross": 0, "commission": 0, "net": 0},
             )
+            seller_summary["quantity"] += order_item.quantity
+            seller_summary["gross"] += order_item.seller_revenue_amount
+            seller_summary["commission"] += order_item.seller_commission
+            seller_summary["net"] += order_item.seller_net_settlement
 
-        for seller_id, commission_amount in commission_totals.items():
-            seller = Seller.objects.select_related("user").get(pk=seller_id)
-            Transaction.objects.create(
-                user=seller.user,
-                order=order,
-                amount=commission_amount,
-                transaction_type=Transaction.TransactionType.COMMISSION,
-                description=f"کمیسیون سفارش #{order.pk} برای فروشگاه {seller.shop_name}",
+        sellers = {
+            seller.pk: seller
+            for seller in Seller.objects.select_for_update().select_related("user").filter(pk__in=seller_totals.keys())
+        }
+        list(User.objects.select_for_update().filter(pk__in=[seller.user_id for seller in sellers.values()]).values_list("pk", flat=True))
+
+        for seller_id, seller_summary in seller_totals.items():
+            seller = sellers[seller_id]
+            if seller_summary["net"] > 0:
+                User.objects.filter(pk=seller.user_id).update(
+                    wallet_balance=F("wallet_balance") + Decimal(seller_summary["net"])
+                )
+                Transaction.objects.create(
+                    user=seller.user,
+                    order=order,
+                    amount=seller_summary["net"],
+                    transaction_type=Transaction.TransactionType.SETTLEMENT,
+                    description=f"تسویه سفارش #{order.pk} برای فروشگاه {seller.shop_name}",
+                )
+            if seller_summary["commission"] > 0:
+                Transaction.objects.create(
+                    user=seller.user,
+                    order=order,
+                    amount=seller_summary["commission"],
+                    transaction_type=Transaction.TransactionType.COMMISSION,
+                    description=f"کمیسیون سفارش #{order.pk} برای فروشگاه {seller.shop_name}",
+                )
+            Seller.objects.filter(pk=seller_id).update(
+                sales_count=F("sales_count") + seller_summary["quantity"],
+                total_revenue=F("total_revenue") + Decimal(seller_summary["gross"]),
             )
 
         cart.items.all().delete()
         _clear_checkout_session(request)
 
+    _store_payment_result(request, _build_payment_success_context(order))
     messages.success(request, "پرداخت سفارش با موفقیت انجام شد.")
-    context = {
-        "status": "success",
-        "order": order,
-        "page_name": "bazar",
-        "page_title": "پرداخت موفق | جبهه بازار",
-    }
-    return render(request, "jebhe_bazar/payment.html", context)
+    return redirect("bazar:payment-result")
 
 
 @login_required
@@ -697,16 +835,11 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:
         return seller_redirect
-    suggested_amount = int(request.GET.get("amount", 0) or 0)
+    suggested_amount = _parse_int(request.GET.get("amount", 0), default=0, minimum=0) or 0
     recent_requests = WalletChargeRequest.objects.filter(user=request.user).order_by("-created_at")[:5]
 
-    next_url = request.POST.get("next") or request.GET.get("next") or ""
-    is_safe_next = bool(next_url) and url_has_allowed_host_and_scheme(
-        url=next_url,
-        allowed_hosts={request.get_host()},
-        require_https=request.is_secure(),
-    )
-    safe_next_url = next_url if is_safe_next else ""
+    next_url = request.POST.get("next") or request.GET.get("next")
+    safe_next_url = _get_safe_redirect_target(request, next_url)
 
     if request.method == "POST":
         form = WalletChargeRequestForm(request.POST, suggested_amount=suggested_amount)
@@ -794,7 +927,11 @@ class SellerDashboardView(SellerContextMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         paid_items = OrderItem.objects.filter(product__seller=self.seller, order__status=Order.Status.PAID)
-        revenue_expression = ExpressionWrapper(F("quantity") * F("unit_price"), output_field=IntegerField())
+        revenue_expression = Case(
+            When(paid_with="coin", then=ExpressionWrapper(F("quantity") * F("unit_coins"), output_field=IntegerField())),
+            default=ExpressionWrapper(F("quantity") * F("unit_price"), output_field=IntegerField()),
+            output_field=IntegerField(),
+        )
         totals = paid_items.aggregate(
             total_sales=Coalesce(Sum("quantity"), 0),
             total_revenue=Coalesce(Sum(revenue_expression), 0),
@@ -806,12 +943,20 @@ class SellerDashboardView(SellerContextMixin, ListView):
             ).aggregate(total=Coalesce(Sum("amount"), 0))["total"]
             or 0
         )
+        settlement_paid = (
+            Transaction.objects.filter(
+                user=self.seller.user,
+                transaction_type=Transaction.TransactionType.SETTLEMENT,
+            ).aggregate(total=Coalesce(Sum("amount"), 0))["total"]
+            or 0
+        )
         context.update(
             {
                 "page_title": "پنل فروشنده | جبهه بازار",
                 "total_sales": totals["total_sales"],
                 "total_revenue": totals["total_revenue"],
                 "commission_paid": commission_paid,
+                "settlement_paid": settlement_paid,
                 "seller_orders_count": paid_items.values("order_id").distinct().count(),
                 "qr_code": getattr(self.seller, "qr_code", None),
             }

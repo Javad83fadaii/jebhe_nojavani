@@ -488,6 +488,7 @@ class ExamRecord(TimestampedModel):
 class CoinTransaction(TimestampedModel):
     class TransactionType(models.TextChoices):
         CHALLENGE_EARNED = "challenge_earned", "کسب از چالش"
+        SPEND = "spend", "خرج خرید"
         WALLET_TRANSFER = "wallet_transfer", "انتقال به کیف پول"
         REWARD = "reward", "جایزه"
         PENALTY = "penalty", "جریمه"
@@ -607,16 +608,28 @@ class Seller(TimestampedModel):
 
     def update_total_sales(self, sales_count: int | None = None, revenue=None):
         if sales_count is None or revenue is None:
-            related_orders = getattr(self, "orders", None)
-            if related_orders is not None and hasattr(related_orders, "aggregate"):
-                aggregates = related_orders.aggregate(
-                    calculated_sales_count=models.Count("id"),
-                    calculated_revenue=models.Sum("total_amount"),
-                )
-                if sales_count is None:
-                    sales_count = aggregates["calculated_sales_count"] or 0
-                if revenue is None:
-                    revenue = aggregates["calculated_revenue"] or 0
+            from jebhe_bazar.models import Order, OrderItem
+
+            seller_items = OrderItem.objects.filter(
+                product__seller=self,
+                order__status=Order.Status.PAID,
+            )
+            revenue_expression = models.Case(
+                models.When(
+                    paid_with="coin",
+                    then=models.F("quantity") * models.F("unit_coins"),
+                ),
+                default=models.F("quantity") * models.F("unit_price"),
+                output_field=models.DecimalField(max_digits=14, decimal_places=0),
+            )
+            aggregates = seller_items.aggregate(
+                calculated_sales_count=models.Sum("quantity"),
+                calculated_revenue=models.Sum(revenue_expression),
+            )
+            if sales_count is None:
+                sales_count = aggregates["calculated_sales_count"] or 0
+            if revenue is None:
+                revenue = aggregates["calculated_revenue"] or 0
 
         self.sales_count = sales_count if sales_count is not None else self.sales_count
         self.total_revenue = revenue if revenue is not None else self.total_revenue

@@ -688,6 +688,7 @@ class AccountsAPITestCase(TestCase):
         transfer_id = ok_res.data["transfer_id"]
 
         from accounts.models import CoinToWalletTransfer, CoinTransaction
+        from jebhe_bazar.models import Transaction
         transfer = CoinToWalletTransfer.objects.get(pk=transfer_id)
         self.assertEqual(transfer.status, CoinToWalletTransfer.TransferStatus.PENDING)
         self.assertEqual(transfer.coin_amount, 200)
@@ -710,6 +711,13 @@ class AccountsAPITestCase(TestCase):
             CoinTransaction.objects.filter(
                 user=user,
                 transaction_type=CoinTransaction.TransactionType.WALLET_TRANSFER,
+            ).exists()
+        )
+        self.assertTrue(
+            Transaction.objects.filter(
+                user=user,
+                transaction_type=Transaction.TransactionType.WALLET_TRANSFER,
+                amount=200,
             ).exists()
         )
 
@@ -781,6 +789,8 @@ class AccountsAPITestCase(TestCase):
         )
 
     def test_process_approved_transfer_is_idempotent_for_stale_instances(self):
+        from jebhe_bazar.models import Transaction
+
         user = User.objects.create_user(
             phone_number="09129990000",
             password="StrongPass123!",
@@ -813,6 +823,13 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(user.challenge_coins, 300)
         self.assertEqual(user.wallet_balance, 1200)
         self.assertEqual(user.coin_transactions.filter(transaction_type="wallet_transfer").count(), 1)
+        self.assertEqual(
+            Transaction.objects.filter(
+                user=user,
+                transaction_type=Transaction.TransactionType.WALLET_TRANSFER,
+            ).count(),
+            1,
+        )
 
     def test_profile_patch_with_session_requires_csrf(self):
         user = User.objects.create_user(

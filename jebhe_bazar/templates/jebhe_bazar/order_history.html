@@ -25,7 +25,14 @@
                         {% for item in order.items.all %}
                             <div class="bazar-order-item">
                                 <strong>{{ item.product.title }}</strong>
-                                <div class="bazar-note">تعداد: {{ item.quantity|toman }} | قیمت واحد: {{ item.unit_price|toman }} تومان</div>
+                                <div class="bazar-note">
+                                    تعداد: {{ item.quantity|toman }} |
+                                    {% if item.paid_with == "coin" %}
+                                        قیمت واحد: {{ item.unit_coins|toman }} سکه | جمع: {{ item.line_total|toman }} سکه
+                                    {% else %}
+                                        قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان
+                                    {% endif %}
+                                </div>
                             </div>
                         {% endfor %}
                     </div>

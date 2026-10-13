@@ -8,4 +8,5 @@ router.register(r'participations', views.ParticipationViewSet, basename='challen
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    path("evidence/download/", views.challenge_evidence_download, name="challenge-evidence-download"),
 ]

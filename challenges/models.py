@@ -3,6 +3,13 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
+from config.upload_security import (
+    UploadPolicyValidator,
+    private_challenge_evidence_storage,
+    private_challenge_evidence_upload_to,
+    validate_uploaded_file,
+)
+
 class Challenge(models.Model):
     class SubmissionType(models.TextChoices):
         ATTENDANCE = "attendance", "ثبت حضور"
@@ -12,7 +19,13 @@ class Challenge(models.Model):
 
     title = models.CharField(max_length=255, verbose_name="عنوان چالش")
     description = models.TextField(verbose_name="توضیحات")
-    image = models.ImageField(upload_to='challenges/', null=True, blank=True, verbose_name="تصویر چالش")
+    image = models.ImageField(
+        upload_to='challenges/',
+        null=True,
+        blank=True,
+        verbose_name="تصویر چالش",
+        validators=[UploadPolicyValidator("public_image")],
+    )
     start_date = models.DateTimeField(verbose_name="تاریخ شروع")
     end_date = models.DateTimeField(verbose_name="تاریخ پایان")
     coin_reward = models.PositiveIntegerField(verbose_name="مقدار سکه")
@@ -58,7 +71,14 @@ class ChallengeParticipation(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="تاریخ تکمیل")
     coins_received = models.PositiveIntegerField(default=0, verbose_name="سکه دریافتی")
     reward_awarded = models.BooleanField(default=False, verbose_name="پاداش پرداخت شده")
-    evidence = models.FileField(upload_to='challenge_evidence/', null=True, blank=True, verbose_name="فایل ارسالی")
+    evidence = models.FileField(
+        upload_to=private_challenge_evidence_upload_to,
+        storage=private_challenge_evidence_storage,
+        null=True,
+        blank=True,
+        verbose_name="فایل ارسالی",
+        validators=[UploadPolicyValidator("challenge_evidence_any")],
+    )
 
     class Meta:
         verbose_name = "شرکت در چالش"
@@ -88,10 +108,13 @@ class ChallengeParticipation(models.Model):
         elif submission_type in {Challenge.SubmissionType.IMAGE, Challenge.SubmissionType.VIDEO}:
             if not evidence:
                 raise ValidationError("فایل ارسالی الزامی است.")
-            content_type = getattr(evidence, "content_type", "") or ""
-            if submission_type == Challenge.SubmissionType.IMAGE and content_type and not content_type.startswith("image/"):
+            detected_type = validate_uploaded_file(
+                evidence,
+                "challenge_evidence_image" if submission_type == Challenge.SubmissionType.IMAGE else "challenge_evidence_video",
+            )
+            if submission_type == Challenge.SubmissionType.IMAGE and detected_type not in {"jpeg", "png", "webp"}:
                 raise ValidationError("برای این چالش باید فایل عکس ارسال کنید.")
-            if submission_type == Challenge.SubmissionType.VIDEO and content_type and not content_type.startswith("video/"):
+            if submission_type == Challenge.SubmissionType.VIDEO and detected_type not in {"mp4", "mov", "webm"}:
                 raise ValidationError("برای این چالش باید فایل ویدئو ارسال کنید.")
             self.evidence = evidence
         else:

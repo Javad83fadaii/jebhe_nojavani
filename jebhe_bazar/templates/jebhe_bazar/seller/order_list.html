@@ -58,7 +58,14 @@
                             {% if item.product.seller_id == seller_profile.id %}
                                 <div class="bazar-order-item">
                                     <strong>{{ item.product.title }}</strong>
-                                    <div class="bazar-note">تعداد: {{ item.quantity }} | قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان</div>
+                                    <div class="bazar-note">
+                                        تعداد: {{ item.quantity }} |
+                                        {% if item.paid_with == "coin" %}
+                                            قیمت واحد: {{ item.unit_coins|toman }} سکه | جمع: {{ item.line_total|toman }} سکه
+                                        {% else %}
+                                            قیمت واحد: {{ item.unit_price|toman }} تومان | جمع: {{ item.line_total|toman }} تومان
+                                        {% endif %}
+                                    </div>
                                 </div>
                             {% endif %}
                         {% endfor %}
