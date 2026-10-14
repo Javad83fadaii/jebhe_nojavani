@@ -54,7 +54,7 @@ class ParticipationViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, views
             return Response(
                 {
                     "status": "error",
-                    "message": str(e),
+                    "message": "; ".join(e.messages),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

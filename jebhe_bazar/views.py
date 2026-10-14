@@ -5,9 +5,9 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import connection, transaction
-from django.db.models import Case, Count, ExpressionWrapper, F, IntegerField, Prefetch, Q, Sum, Value, When
+from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, IntegerField, Prefetch, Q, Sum, Value, When
 from django.db.models.deletion import ProtectedError
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Cast, Coalesce, Round
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -17,11 +17,10 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import Seller, User
 
-from .forms import CartQuantityForm, CoinApplyForm, ProductForm, WalletChargeRequestForm
+from .forms import CartQuantityForm, ProductForm, WalletChargeRequestForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest, record_coin_spend
 
 
-CHECKOUT_COINS_SESSION_KEY = "bazar_checkout_coins"
 PAYMENT_RESULT_SESSION_KEY = "bazar_payment_result"
 _PERSIAN_DIGITS_TRANSLATION = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 
@@ -37,10 +36,6 @@ def _get_cart_items(cart: Cart):
 
 def _get_cart_total(cart: Cart) -> int:
     return sum(item.item_total for item in _get_cart_items(cart))
-
-
-def _get_available_coins(user: User, cart_total: int) -> int:
-    return min(int(user.challenge_coins or 0), int(cart_total))
 
 
 def _format_toman(value: int) -> str:
@@ -96,19 +91,6 @@ def _build_cart_item_response(cart: Cart, item: CartItem, message: str, *, statu
     return JsonResponse(payload, status=status)
 
 
-def _get_applied_coins(request: HttpRequest, user: User, cart_total: int) -> int:
-    available = _get_available_coins(user, cart_total)
-    applied = int(request.session.get(CHECKOUT_COINS_SESSION_KEY, 0) or 0)
-    if applied > available:
-        applied = available
-        request.session[CHECKOUT_COINS_SESSION_KEY] = applied
-    return applied
-
-
-def _clear_checkout_session(request: HttpRequest):
-    request.session.pop(CHECKOUT_COINS_SESSION_KEY, None)
-
-
 def _get_select_for_update_items_kwargs() -> dict:
     if connection.features.has_select_for_update_of:
         return {"of": ("self", "product")}
@@ -118,6 +100,19 @@ def _get_select_for_update_items_kwargs() -> dict:
 def _store_payment_result(request: HttpRequest, payload: dict):
     request.session[PAYMENT_RESULT_SESSION_KEY] = payload
     request.session.modified = True
+
+
+def _build_discounted_price_expression(base_expression) -> Cast:
+    rounded_discounted_price = Round(
+        ExpressionWrapper(
+            Cast(base_expression, DecimalField(max_digits=14, decimal_places=2))
+            * (Value(Decimal("100.00")) - Cast(F("discount_percent"), DecimalField(max_digits=5, decimal_places=2)))
+            / Value(Decimal("100.00")),
+            output_field=DecimalField(max_digits=14, decimal_places=2),
+        ),
+        precision=0,
+    )
+    return Cast(rounded_discounted_price, IntegerField())
 
 
 def _build_payment_success_context(order: Order) -> dict:
@@ -278,25 +273,45 @@ class ProductListView(ListView):
             return None
 
     def get_queryset(self):
-        discounted_price = ExpressionWrapper(
-            F("price") - (F("price") * F("discount_percent") / Value(100)),
+        base_coin_price = Case(
+            When(coin_price__gt=0, then=F("coin_price")),
+            default=F("price"),
             output_field=IntegerField(),
         )
-        queryset = (
-            Product.objects.select_related("category", "seller", "seller__user")
-            .annotate(
-                final_price_sort=Case(
-                    When(
-                        discount_active=True,
-                        discount_percent__gt=0,
-                        then=discounted_price,
-                    ),
-                    default=F("price"),
-                    output_field=IntegerField(),
+        discounted_money_price = _build_discounted_price_expression(F("price"))
+        discounted_coin_price = _build_discounted_price_expression(base_coin_price)
+
+        queryset = Product.objects.select_related("category", "seller", "seller__user").annotate(
+            final_money_price_sort=Case(
+                When(
+                    discount_active=True,
+                    discount_percent__gt=0,
+                    then=discounted_money_price,
                 ),
-                total_orders=Count("order_items"),
+                default=F("price"),
+                output_field=IntegerField(),
+            ),
+            final_coin_price_sort=Case(
+                When(
+                    discount_active=True,
+                    discount_percent__gt=0,
+                    then=discounted_coin_price,
+                ),
+                default=base_coin_price,
+                output_field=IntegerField(),
+            ),
+            total_orders=Count("order_items"),
+        )
+        queryset = queryset.annotate(
+            final_price_sort=Case(
+                When(payment_method=Product.PaymentMethod.COIN, then=F("final_coin_price_sort")),
+                default=F("final_money_price_sort"),
+                output_field=IntegerField(),
             )
-            .filter(is_active=True, category__is_active=True, seller__is_active=True)
+        ).filter(
+            is_active=True,
+            category__is_active=True,
+            seller__is_active=True,
         )
 
         category_slug = self.kwargs.get("slug")
@@ -570,49 +585,6 @@ def remove_from_cart(request: HttpRequest, item_id: int) -> HttpResponse:
 
 
 @login_required
-@require_POST
-def update_cart_quantity(request: HttpRequest, item_id: int) -> HttpResponse:
-    seller_redirect = _redirect_seller_to_panel(request)
-    if seller_redirect:
-        return seller_redirect
-
-    cart = _get_cart(request.user)
-    item = get_object_or_404(CartItem, pk=item_id, cart=cart)
-    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
-
-    try:
-        quantity = int(request.POST.get("quantity", item.quantity))
-    except (TypeError, ValueError):
-        quantity = item.quantity
-
-    quantity = max(quantity, 1)
-    error = None
-    if quantity > item.product.stock:
-        quantity = max(item.product.stock, 1)
-        error = "تعداد انتخابی بیشتر از موجودی محصول است."
-
-    item.quantity = quantity
-    item.save(update_fields=["quantity"])
-
-    if is_ajax:
-        cart_items = list(_get_cart_items(cart))
-        return JsonResponse({
-            "ok": error is None,
-            "error": error,
-            "item_id": item.id,
-            "quantity": item.quantity,
-            "item_total": item.item_total,
-            "cart_total": sum(i.item_total for i in cart_items),
-        })
-
-    if error:
-        messages.error(request, error)
-    else:
-        messages.success(request, "سبد خرید بروزرسانی شد.")
-    return redirect("bazar:cart")
-
-
-@login_required
 def checkout_view(request: HttpRequest) -> HttpResponse:
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:
@@ -625,42 +597,6 @@ def checkout_view(request: HttpRequest) -> HttpResponse:
     context["page_name"] = "bazar"
     context["page_title"] = "تسویه حساب | جبهه بازار"
     return render(request, "jebhe_bazar/checkout.html", context)
-
-
-@login_required
-@require_http_methods(["GET", "POST"])
-def apply_coins_view(request: HttpRequest) -> HttpResponse:
-    seller_redirect = _redirect_seller_to_panel(request)
-    if seller_redirect:
-        return seller_redirect
-    cart = _get_cart(request.user)
-    cart_items = list(_get_cart_items(cart))
-    cart_total = sum(item.item_total for item in cart_items)
-    if not cart_items:
-        messages.error(request, "سبد خرید شما خالی است.")
-        return redirect("bazar:cart")
-
-    max_coins = _get_available_coins(request.user, cart_total)
-    initial_value = _get_applied_coins(request, request.user, cart_total)
-
-    if request.method == "POST":
-        form = CoinApplyForm(request.POST, max_coins=max_coins)
-        if form.is_valid():
-            request.session[CHECKOUT_COINS_SESSION_KEY] = form.cleaned_data["coins_to_use"]
-            messages.success(request, "مقدار سکه مصرفی ثبت شد.")
-            return redirect("bazar:checkout")
-    else:
-        form = CoinApplyForm(initial={"coins_to_use": initial_value}, max_coins=max_coins)
-
-    context = {
-        "cart_items": cart_items,
-        "cart_total": cart_total,
-        "available_coins": max_coins,
-        "form": form,
-        "page_name": "bazar",
-        "page_title": "استفاده از سکه | جبهه بازار",
-    }
-    return render(request, "jebhe_bazar/checkout_coins.html", context)
 
 
 @login_required
@@ -682,7 +618,6 @@ def pay_view(request: HttpRequest) -> HttpResponse:
         cart = Cart.objects.select_for_update().filter(user=user).first()
         if cart is None:
             messages.error(request, "سبد خرید شما خالی است.")
-            _clear_checkout_session(request)
             return redirect("bazar:cart")
         cart_items = list(
             cart.items.select_for_update(**_get_select_for_update_items_kwargs())
@@ -692,7 +627,6 @@ def pay_view(request: HttpRequest) -> HttpResponse:
 
         if not cart_items:
             messages.error(request, "سبد خرید شما خالی است.")
-            _clear_checkout_session(request)
             return redirect("bazar:cart")
 
         for item in cart_items:
@@ -822,7 +756,6 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             )
 
         cart.items.all().delete()
-        _clear_checkout_session(request)
 
     _store_payment_result(request, _build_payment_success_context(order))
     messages.success(request, "پرداخت سفارش با موفقیت انجام شد.")

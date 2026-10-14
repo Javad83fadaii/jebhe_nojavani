@@ -12,7 +12,7 @@
         <section class="glass-card exam-hero">
             <div class="exam-hero__content">
                 <h1 class="text-gold exam-hero__title">آزمون مرحله: {{ exam.user_stage_progress.learning_stage.title }}</h1>
-                <p class="exam-hero__subtitle">به سوالات پاسخ بده و هر سوال را جداگانه ذخیره کن، در پایان آزمون را تمام کن.</p>
+                <p class="exam-hero__subtitle">همه پاسخ‌ها در یک فرم نگه داشته می‌شوند. هر زمان خواستی ذخیره کن و پیش از پایان {{ exam_duration_minutes }} دقیقه‌ای آزمون، نتیجه را ثبت کن.</p>
             </div>
 
             <div class="exam-hero__meta">
@@ -24,27 +24,29 @@
                     <span class="exam-meta-chip__label">زمان شروع</span>
                     <strong class="exam-meta-chip__value">{{ exam.started_at|jalali_datetime }}</strong>
                 </div>
+                <div class="exam-meta-chip">
+                    <span class="exam-meta-chip__label">زمان باقی‌مانده</span>
+                    <strong
+                        id="exam-countdown"
+                        class="exam-meta-chip__value"
+                        data-remaining-seconds="{{ remaining_seconds }}"
+                    >
+                        --
+                    </strong>
+                </div>
             </div>
         </section>
 
-        {% if messages %}
-            <ul class="messages exam-messages">
-                {% for message in messages %}
-                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+        <form action="{% url 'learning:submit_answer' exam_pk=exam.pk %}" method="post" class="exam-answer-sheet">
+            {% csrf_token %}
 
-        <section class="exam-questions">
-            {% for question in questions %}
-                <article class="glass-card exam-question">
-                    <header class="exam-question__header">
-                        <div class="exam-question__number">{{ question.question_number }}</div>
-                        <h2 class="exam-question__text">{{ question.text }}</h2>
-                    </header>
-
-                    <form action="{% url 'learning:submit_answer' exam_pk=exam.pk question_pk=question.pk %}" method="post" class="exam-answer-form">
-                        {% csrf_token %}
+            <section class="exam-questions">
+                {% for question in questions %}
+                    <article class="glass-card exam-question">
+                        <header class="exam-question__header">
+                            <div class="exam-question__number">{{ question.question_number }}</div>
+                            <h2 class="exam-question__text">{{ question.text }}</h2>
+                        </header>
 
                         {% if question.question_type == 'multiple_choice' %}
                             <div class="exam-options">
@@ -91,7 +93,7 @@
                         <div class="exam-question__actions">
                             <button type="submit" class="btn btn-secondary exam-save-btn">
                                 <i class="fa-solid fa-floppy-disk"></i>
-                                ذخیره پاسخ
+                                ذخیره پاسخ‌ها
                             </button>
                             {% if user_answers|get_item:question.pk %}
                                 <span class="exam-saved-indicator">
@@ -100,23 +102,61 @@
                                 </span>
                             {% endif %}
                         </div>
-                    </form>
-                </article>
-            {% empty %}
-                <div class="glass-card exam-empty">
-                    <h2 class="text-gold">هیچ سوالی برای این آزمون وجود ندارد.</h2>
-                </div>
-            {% endfor %}
-        </section>
+                    </article>
+                {% empty %}
+                    <div class="glass-card exam-empty">
+                        <h2 class="text-gold">هیچ سوالی برای این آزمون وجود ندارد.</h2>
+                    </div>
+                {% endfor %}
+            </section>
 
-        <section class="exam-finish">
-            <form action="{% url 'learning:finish_exam' pk=exam.pk %}" method="post" class="exam-finish__form">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-primary exam-finish-btn">
-                    <i class="fa-solid fa-flag-checkered"></i>
-                    اتمام آزمون و مشاهده نتیجه
-                </button>
-            </form>
-        </section>
+            <section class="exam-finish">
+                <div class="exam-finish__form">
+                    <button type="submit" class="btn btn-secondary exam-save-btn">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        ذخیره همه پاسخ‌ها
+                    </button>
+                    <button type="submit" formaction="{% url 'learning:finish_exam' pk=exam.pk %}" class="btn btn-primary exam-finish-btn">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        اتمام آزمون و مشاهده نتیجه
+                    </button>
+                </div>
+            </section>
+        </form>
     </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const countdown = document.getElementById('exam-countdown');
+        if (!countdown) {
+            return;
+        }
+
+        let remainingSeconds = Number(countdown.dataset.remainingSeconds || 0);
+
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function renderCountdown() {
+            countdown.textContent = formatTime(Math.max(remainingSeconds, 0));
+        }
+
+        renderCountdown();
+
+        const timerId = window.setInterval(function () {
+            remainingSeconds -= 1;
+            renderCountdown();
+
+            if (remainingSeconds <= 0) {
+                window.clearInterval(timerId);
+                window.location.reload();
+            }
+        }, 1000);
+    });
+</script>
 {% endblock %}

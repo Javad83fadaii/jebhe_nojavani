@@ -34,6 +34,7 @@ urlpatterns = [
     path("stages/<int:pk>/complete-study/", complete_study, name="complete_study"),
     path("progress/<int:pk>/start-exam/", start_exam, name="start_exam"),
     path("exams/<int:pk>/", TakeExamView.as_view(), name="take_exam"),
-    path("exams/<int:exam_pk>/question/<int:question_pk>/submit/", submit_answer, name="submit_answer"),
+    path("exams/<int:exam_pk>/submit/", submit_answer, name="submit_answer"),
+    path("exams/<int:exam_pk>/question/<int:question_pk>/submit/", submit_answer, name="submit_single_answer"),
     path("exams/<int:pk>/finish/", finish_exam, name="finish_exam"),
 ]

@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 
 from accounts.models import Rank
@@ -42,6 +43,52 @@ def _redirect_seller_to_panel(request):
     if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
         return redirect("bazar:seller-dashboard")
     return None
+
+
+def _redirect_to_exam_progress(exam):
+    return redirect(
+        "learning:user_learning_progress_detail",
+        pk=exam.user_stage_progress.user_learning_progress.pk,
+    )
+
+
+def _ensure_active_exam(request, exam):
+    if exam.status != UserStageExam.ExamStatus.IN_PROGRESS:
+        messages.error(request, "این آزمون دیگر فعال نیست.")
+        return _redirect_to_exam_progress(exam)
+
+    if exam.expire_if_needed():
+        messages.error(request, "زمان آزمون به پایان رسید و نتیجه بر اساس پاسخ‌های ذخیره‌شده ثبت شد.")
+        return _redirect_to_exam_progress(exam)
+
+    return None
+
+
+def _save_exam_answers_from_request(exam, post_data):
+    questions = list(exam.question_set.questions.order_by("question_number"))
+    existing_answers = {
+        answer.question_id: answer
+        for answer in exam.answers.select_related("question")
+    }
+    saved_count = 0
+    cleared_count = 0
+
+    for question in questions:
+        answer_key = f"question_{question.pk}"
+        user_answer_text = post_data.get(answer_key)
+        user_answer_text = (user_answer_text or "").strip()
+        existing_answer = existing_answers.get(question.pk)
+
+        if user_answer_text:
+            exam.submit_answer(question, user_answer_text)
+            saved_count += 1
+            continue
+
+        if existing_answer:
+            existing_answer.delete()
+            cleared_count += 1
+
+    return saved_count, cleared_count
 
 
 class SellerSiteAccessMixin(LoginRequiredMixin):
@@ -323,6 +370,13 @@ def start_exam(request, pk):
 
         # Ensure no active exam exists for this stage progress
         active_exam = user_stage_progress.exams.filter(status=UserStageExam.ExamStatus.IN_PROGRESS).first()
+        if active_exam and active_exam.expire_if_needed():
+            active_exam.refresh_from_db()
+            user_stage_progress.refresh_from_db()
+            if not user_stage_progress.can_take_exam():
+                messages.warning(request, "آزمون فعال قبلی منقضی شد و وضعیت مرحله شما به‌روزرسانی شد.")
+                return redirect("learning:user_learning_progress_detail", pk=user_stage_progress.user_learning_progress.pk)
+            active_exam = None
         if active_exam:
             messages.warning(request, "شما در حال حاضر یک آزمون فعال برای این مرحله دارید.")
             return redirect("learning:take_exam", pk=active_exam.pk)
@@ -342,11 +396,21 @@ class TakeExamView(SellerSiteAccessMixin, DetailView):
     context_object_name = "exam"
 
     def get_queryset(self):
-        # Ensure only the current user's active exam can be viewed
         return UserStageExam.objects.filter(
             user=self.request.user,
-            status=UserStageExam.ExamStatus.IN_PROGRESS,
-        )
+        ).select_related("user_stage_progress__learning_stage", "question_set")
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        exam_redirect = _ensure_active_exam(request, self.object)
+        if exam_redirect:
+            return exam_redirect
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        if hasattr(self, "object"):
+            return self.object
+        return super().get_object(queryset)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -355,11 +419,14 @@ class TakeExamView(SellerSiteAccessMixin, DetailView):
         context["user_answers"] = {
             ans.question.pk: ans.user_answer for ans in exam.answers.all()
         }
+        context["remaining_seconds"] = exam.get_remaining_seconds(now=timezone.now())
+        context["exam_duration_minutes"] = int(exam.EXAM_DURATION.total_seconds() // 60)
+        context["expires_at"] = exam.get_expires_at()
         return context
 
 
 @login_required
-def submit_answer(request, exam_pk, question_pk):
+def submit_answer(request, exam_pk, question_pk=None):
     seller_redirect = _redirect_seller_to_panel(request)
     if seller_redirect:
         return seller_redirect
@@ -367,22 +434,24 @@ def submit_answer(request, exam_pk, question_pk):
         UserStageExam,
         pk=exam_pk,
         user=request.user,
-        status=UserStageExam.ExamStatus.IN_PROGRESS,
     )
-    question = get_object_or_404(exam.question_set.questions, pk=question_pk)
+    exam_redirect = _ensure_active_exam(request, exam)
+    if exam_redirect:
+        return exam_redirect
+
+    if question_pk is not None:
+        get_object_or_404(exam.question_set.questions, pk=question_pk)
 
     if request.method == "POST":
-        user_answer_text = request.POST.get(f"question_{question_pk}")
-        if user_answer_text is None:
-            user_answer_text = request.POST.get("answer")
-        user_answer_text = (user_answer_text or "").strip()
-        if not user_answer_text:
-            messages.error(request, "لطفاً یک پاسخ وارد کنید.")
+        saved_count, cleared_count = _save_exam_answers_from_request(exam, request.POST)
+        if saved_count == 0 and cleared_count == 0:
+            messages.error(request, "لطفاً حداقل یک پاسخ وارد یا ویرایش کنید.")
             return redirect("learning:take_exam", pk=exam.pk)
 
-        # Call the submit_answer method on the exam instance
-        exam.submit_answer(question, user_answer_text)
-        messages.success(request, "پاسخ شما با موفقیت ثبت شد.")
+        if cleared_count:
+            messages.success(request, f"{saved_count} پاسخ ذخیره شد و {cleared_count} پاسخ پاک شد.")
+        else:
+            messages.success(request, f"{saved_count} پاسخ با موفقیت ذخیره شد.")
         return redirect("learning:take_exam", pk=exam.pk)
 
     messages.error(request, "درخواست نامعتبر.")
@@ -398,20 +467,23 @@ def finish_exam(request, pk):
         UserStageExam,
         pk=pk,
         user=request.user,
-        status=UserStageExam.ExamStatus.IN_PROGRESS,
     )
+    exam_redirect = _ensure_active_exam(request, exam)
+    if exam_redirect:
+        return exam_redirect
 
     if request.method == "POST":
+        _save_exam_answers_from_request(exam, request.POST)
         try:
             exam.finish_exam()
         except ValidationError as exc:
-            messages.error(request, exc.messages[0])
-            return redirect("learning:user_learning_progress_detail", pk=exam.user_stage_progress.user_learning_progress.pk)
+            messages.error(request, "; ".join(exc.messages))
+            return _redirect_to_exam_progress(exam)
         if exam.status == UserStageExam.ExamStatus.PASSED:
             messages.success(request, f"تبریک! شما آزمون مرحله {exam.user_stage_progress.learning_stage.title} را با موفقیت پشت سر گذاشتید.")
         else:
             messages.error(request, f"متاسفانه شما در آزمون مرحله {exam.user_stage_progress.learning_stage.title} مردود شدید. لطفا مجددا مطالعه کرده و تلاش کنید.")
-        return redirect("learning:user_learning_progress_detail", pk=exam.user_stage_progress.user_learning_progress.pk)
+        return _redirect_to_exam_progress(exam)
 
     messages.error(request, "درخواست نامعتبر.")
     return redirect("learning:take_exam", pk=exam.pk)

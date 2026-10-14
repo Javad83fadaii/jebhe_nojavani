@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
 from accounts.models import Rank, User
 from learning.models import (
@@ -319,3 +322,142 @@ class LearningStageQuestionsAccessTestCase(TestCase):
             response,
             f"/learning/paths/{self.learning_path.pk}/stages/",
         )
+
+
+class ExamAnswerFlowTestCase(TestCase):
+    def setUp(self):
+        Rank.ensure_default_ranks()
+        self.rank = Rank.objects.get(level=1)
+        self.user = User.objects.create_user(
+            phone_number="09125556666",
+            password="StrongPass123!",
+            first_name="آزمون",
+            last_name="آزمایشی",
+        )
+        self.learning_path = LearningPath.objects.create(
+            rank=self.rank,
+            title="سیر آزمون",
+            publish_status=LearningPath.PublishStatus.PUBLISHED,
+        )
+        self.stage = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله آزمون",
+            stage_number=1,
+            content_type=LearningStage.ContentType.ARTICLE,
+        )
+        self.question_set = StageQuestionSet.objects.create(
+            learning_stage=self.stage,
+            set_number=1,
+            title="نمونه سوال",
+        )
+        self.stage_progress = UserStageProgress.objects.create(
+            user=self.user,
+            learning_stage=self.stage,
+            user_learning_progress=UserLearningProgress.objects.create(
+                user=self.user,
+                learning_path=self.learning_path,
+                current_stage=self.stage,
+            ),
+            status=UserStageProgress.StageStatus.READY_FOR_EXAM,
+        )
+
+    def test_short_answer_comparison_normalizes_arabic_letters_digits_and_spacing(self):
+        question = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="کد را وارد کنید",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.SHORT_ANSWER,
+            correct_answer="کد\u200cملی ۱۲۳",
+            question_points=20,
+        )
+
+        exam = self.stage_progress.start_exam(self.question_set)
+        is_correct, score_earned = exam.submit_answer(question, "كد ملي123")
+
+        self.assertTrue(is_correct)
+        self.assertEqual(score_earned, 20)
+
+    def test_true_false_answers_accept_persian_values_and_are_canonicalized(self):
+        question = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="جمله صحیح است؟",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.TRUE_FALSE,
+            correct_answer="صحیح",
+            question_points=20,
+        )
+        question.refresh_from_db()
+        exam = self.stage_progress.start_exam(self.question_set)
+        is_correct, score_earned = exam.submit_answer(question, "درست")
+
+        self.assertEqual(question.correct_answer, "True")
+        self.assertTrue(is_correct)
+        self.assertEqual(score_earned, 20)
+
+    def test_submit_view_saves_multiple_answers_in_single_request(self):
+        question_1 = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="پایتخت ایران چیست؟",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.MULTIPLE_CHOICE,
+            option1="تهران",
+            option2="قم",
+            option3="اصفهان",
+            option4="شیراز",
+            correct_answer="تهران",
+            question_points=10,
+        )
+        question_2 = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="عدد را بنویسید",
+            question_number=2,
+            question_type=StageQuestion.QuestionType.SHORT_ANSWER,
+            correct_answer="۱۲۳",
+            question_points=10,
+        )
+        exam = self.stage_progress.start_exam(self.question_set)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            f"/learning/exams/{exam.pk}/submit/",
+            {
+                f"question_{question_1.pk}": "تهران",
+                f"question_{question_2.pk}": "123",
+            },
+        )
+
+        self.assertRedirects(response, f"/learning/exams/{exam.pk}/")
+        self.assertEqual(exam.answers.count(), 2)
+        self.assertTrue(exam.answers.get(question=question_1).is_correct)
+        self.assertTrue(exam.answers.get(question=question_2).is_correct)
+
+    def test_expired_exam_is_finalized_on_access(self):
+        question = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="پایتخت ایران چیست؟",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.MULTIPLE_CHOICE,
+            option1="تهران",
+            option2="قم",
+            option3="اصفهان",
+            option4="شیراز",
+            correct_answer="تهران",
+            question_points=20,
+        )
+        exam = self.stage_progress.start_exam(self.question_set)
+        exam.submit_answer(question, "قم")
+        expired_started_at = timezone.now() - UserStageExam.EXAM_DURATION - timedelta(minutes=1)
+        UserStageExam.objects.filter(pk=exam.pk).update(started_at=expired_started_at)
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"/learning/exams/{exam.pk}/")
+
+        self.assertRedirects(
+            response,
+            f"/learning/progress/{self.stage_progress.user_learning_progress.pk}/",
+        )
+        exam.refresh_from_db()
+        self.stage_progress.refresh_from_db()
+        self.assertEqual(exam.status, UserStageExam.ExamStatus.FAILED)
+        self.assertIsNotNone(exam.completed_at)
+        self.assertEqual(self.stage_progress.status, UserStageProgress.StageStatus.FAILED_PREVIOUSLY)

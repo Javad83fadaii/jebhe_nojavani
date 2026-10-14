@@ -298,8 +298,8 @@
     color: #fff;
 }
 
-.exam-page .exam-answer-form {
-    margin-top: 1.2rem;
+.exam-page .exam-answer-sheet {
+    display: block;
 }
 
 .exam-page .exam-options {
@@ -368,6 +368,13 @@
 .exam-page .exam-finish {
     margin-top: 1.8rem;
     display: flex;
+    justify-content: flex-end;
+}
+
+.exam-page .exam-finish__form {
+    display: flex;
+    gap: 0.9rem;
+    flex-wrap: wrap;
     justify-content: flex-end;
 }
 
@@ -485,9 +492,11 @@
 
     .exam-page .exam-finish__form,
     .exam-page .exam-finish-btn,
+    .exam-page .exam-save-btn,
     .progress-page .progress-stage-btn {
         width: 100%;
     }
+
 
     .exam-page .exam-meta-chip,
     .progress-page .progress-meta-chip,

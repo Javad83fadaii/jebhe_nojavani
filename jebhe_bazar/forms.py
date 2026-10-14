@@ -57,22 +57,6 @@ class CartQuantityForm(StyledFormMixin, forms.Form):
     quantity = forms.IntegerField(min_value=1, label="تعداد")
 
 
-class CoinApplyForm(StyledFormMixin, forms.Form):
-    coins_to_use = forms.IntegerField(min_value=0, label="تعداد سکه")
-
-    def __init__(self, *args, max_coins: int = 0, **kwargs):
-        self.max_coins = max(0, int(max_coins))
-        super().__init__(*args, **kwargs)
-        self.fields["coins_to_use"].widget.attrs["max"] = self.max_coins
-        self.fields["coins_to_use"].help_text = f"حداکثر {self.max_coins} سکه قابل استفاده است."
-
-    def clean_coins_to_use(self):
-        value = self.cleaned_data["coins_to_use"]
-        if value > self.max_coins:
-            raise forms.ValidationError("تعداد سکه وارد شده بیشتر از سقف مجاز است.")
-        return value
-
-
 class WalletChargeRequestForm(StyledFormMixin, forms.Form):
     amount = forms.IntegerField(min_value=1, label="مبلغ درخواستی (تومان)")
 

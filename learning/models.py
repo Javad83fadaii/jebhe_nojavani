@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import random
+import re
+import unicodedata
 from datetime import timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Iterable
@@ -203,6 +205,78 @@ class StageQuestion(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.question_set.title} - سوال {self.question_number}"
+
+    @staticmethod
+    def _normalize_digits(value: str) -> str:
+        return value.translate(
+            str.maketrans(
+                "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
+                "01234567890123456789",
+            )
+        )
+
+    @classmethod
+    def normalize_text_answer(cls, value: str, *, ignore_whitespace: bool = False) -> str:
+        normalized = unicodedata.normalize("NFKC", str(value or ""))
+        normalized = cls._normalize_digits(normalized)
+        normalized = normalized.translate(
+            str.maketrans(
+                {
+                    "ي": "ی",
+                    "ى": "ی",
+                    "ك": "ک",
+                    "\u200c": " ",
+                    "\u200f": " ",
+                    "\u200e": " ",
+                    "\ufeff": " ",
+                    "\xa0": " ",
+                }
+            )
+        )
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        if ignore_whitespace:
+            normalized = normalized.replace(" ", "")
+        return normalized
+
+    @classmethod
+    def normalize_true_false_answer(cls, value: str) -> str:
+        normalized = cls.normalize_text_answer(value, ignore_whitespace=True).casefold()
+        if normalized in {"true", "1", "yes", "on", "صحیح", "درست", "بله"}:
+            return "True"
+        if normalized in {"false", "0", "no", "off", "غلط", "نادرست", "خیر"}:
+            return "False"
+        return cls.normalize_text_answer(value)
+
+    def normalize_answer(self, value: str) -> str:
+        if self.question_type == self.QuestionType.TRUE_FALSE:
+            return self.normalize_true_false_answer(value)
+        return self.normalize_text_answer(
+            value,
+            ignore_whitespace=self.question_type == self.QuestionType.SHORT_ANSWER,
+        )
+
+    def is_answer_correct(self, user_answer: str) -> bool:
+        return self.normalize_answer(user_answer) == self.normalize_answer(self.correct_answer)
+
+    def clean(self):
+        super().clean()
+        if self.question_type == self.QuestionType.TRUE_FALSE:
+            normalized_answer = self.normalize_true_false_answer(self.correct_answer)
+            if normalized_answer not in {"True", "False"}:
+                raise ValidationError(
+                    {
+                        "correct_answer": (
+                            "برای سوال صحیح/غلط، پاسخ صحیح را به یکی از شکل‌های صحیح/غلط یا True/False وارد کنید."
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        if self.question_type == self.QuestionType.TRUE_FALSE and self.correct_answer:
+            normalized_answer = self.normalize_true_false_answer(self.correct_answer)
+            if normalized_answer in {"True", "False"}:
+                self.correct_answer = normalized_answer
+        super().save(*args, **kwargs)
 
 
 class UserLearningProgress(TimestampedModel):
@@ -509,6 +583,7 @@ class UserStageExam(TimestampedModel):
     score = models.PositiveSmallIntegerField(default=0, verbose_name="نمره کسب شده (از 20)")
     status = models.CharField(max_length=20, choices=ExamStatus.choices, default=ExamStatus.IN_PROGRESS, verbose_name="وضعیت")
     time_spent = models.PositiveIntegerField(default=0, verbose_name="زمان صرف شده (ثانیه)")
+    EXAM_DURATION = timedelta(minutes=30)
 
     class Meta:
         ordering = ("-started_at",)
@@ -517,6 +592,22 @@ class UserStageExam(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.user.get_full_name()} - {self.user_stage_progress.learning_stage.title} - تلاش {self.attempt_number}"
+
+    def get_expires_at(self):
+        return self.started_at + self.EXAM_DURATION
+
+    def get_remaining_seconds(self, *, now=None) -> int:
+        if not self.started_at:
+            return 0
+        now = now or timezone.now()
+        remaining = int((self.get_expires_at() - now).total_seconds())
+        return max(remaining, 0)
+
+    def is_expired(self, *, now=None) -> bool:
+        if self.status != self.ExamStatus.IN_PROGRESS or not self.started_at:
+            return False
+        now = now or timezone.now()
+        return now >= self.get_expires_at()
 
     def start_exam(self, question_set: StageQuestionSet):
         if self.status != self.ExamStatus.IN_PROGRESS:
@@ -533,7 +624,7 @@ class UserStageExam(TimestampedModel):
         if self.status != self.ExamStatus.IN_PROGRESS:
             raise ValidationError("آزمون در حال انجام نیست.")
 
-        is_correct = (user_answer == question.correct_answer)
+        is_correct = question.is_answer_correct(user_answer)
         score_earned = question.question_points if is_correct else 0
 
         UserExamAnswer.objects.update_or_create(
@@ -554,8 +645,9 @@ class UserStageExam(TimestampedModel):
         self.save(update_fields=["score", "updated_at"])
         return total_score
 
-    def finish_exam(self):
+    def _complete_exam(self, *, completed_at=None):
         with transaction.atomic():
+            completion_time = completed_at or timezone.now()
             exam = (
                 self.__class__.objects.select_for_update()
                 .select_related("user_stage_progress__learning_stage")
@@ -572,7 +664,7 @@ class UserStageExam(TimestampedModel):
                 raise ValidationError("آزمون در حال انجام نیست.")
 
             exam.user_stage_progress = stage_progress
-            exam.completed_at = timezone.now()
+            exam.completed_at = completion_time
             if exam.started_at and exam.completed_at:
                 exam.time_spent = int((exam.completed_at - exam.started_at).total_seconds())
 
@@ -602,6 +694,15 @@ class UserStageExam(TimestampedModel):
             self.completed_at = exam.completed_at
             self.time_spent = exam.time_spent
             self.user_stage_progress = stage_progress
+
+    def finish_exam(self):
+        self._complete_exam()
+
+    def expire_if_needed(self) -> bool:
+        if not self.is_expired():
+            return False
+        self._complete_exam(completed_at=timezone.now())
+        return True
 
 
 class UserExamAnswer(TimestampedModel):

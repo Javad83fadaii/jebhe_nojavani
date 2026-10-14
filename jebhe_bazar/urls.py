@@ -14,7 +14,6 @@ urlpatterns = [
     path("cart/add/<int:product_id>/", views.add_to_cart, name="cart-add"),
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="cart-remove"),
     path("checkout/", views.checkout_view, name="checkout"),
-    path("checkout/apply-coins/", views.apply_coins_view, name="checkout-apply-coins"),
     path("checkout/pay/", views.pay_view, name="checkout-pay"),
     path("checkout/result/", views.payment_result_view, name="payment-result"),
     path("wallet/charge/", views.wallet_charge_view, name="wallet-charge"),

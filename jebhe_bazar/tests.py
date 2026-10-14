@@ -10,7 +10,6 @@ from accounts.models import CoinTransaction, Seller, User
 
 from .forms import ProductForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
-from .views import CHECKOUT_COINS_SESSION_KEY
 
 
 class BazarModelTests(TestCase):
@@ -764,6 +763,68 @@ class ProductListFilteringTests(TestCase):
         self.assertEqual(response.status_code, 200)
         products = list(response.context["products"])
         self.assertEqual([product.title for product in products], [cheaper_discounted.title, expensive_discounted.title])
+
+    def test_price_filter_and_sort_use_same_rounding_as_product_final_price(self):
+        rounded_up = Product.objects.create(
+            seller=self.seller,
+            category=self.shop,
+            title="محصول گرد شده رو به بالا",
+            description="تست گرد کردن",
+            price=101,
+            stock=3,
+            discount_percent=50,
+            discount_active=True,
+        )
+        Product.objects.create(
+            seller=self.seller,
+            category=self.shop,
+            title="محصول ارزان‌تر",
+            description="تست مقایسه",
+            price=50,
+            stock=3,
+            discount_percent=0,
+            discount_active=False,
+        )
+
+        response = self.client.get(
+            reverse("bazar:product-list"),
+            {"min_price": "51", "sort": "cheap"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        products = list(response.context["products"])
+        self.assertEqual([product.title for product in products], [rounded_up.title])
+        self.assertEqual(products[0].final_price, 51)
+
+    def test_coin_only_products_use_coin_price_for_price_filter(self):
+        Product.objects.create(
+            seller=self.seller,
+            category=self.shop,
+            title="محصول فقط سکه‌ای",
+            description="باید با قیمت سکه فیلتر شود",
+            price=90000,
+            coin_price=15000,
+            stock=4,
+            payment_method=Product.PaymentMethod.COIN,
+        )
+        money_product = Product.objects.create(
+            seller=self.seller,
+            category=self.shop,
+            title="محصول نقدی",
+            description="باید در نتیجه بماند",
+            price=25000,
+            stock=4,
+            payment_method=Product.PaymentMethod.MONEY,
+        )
+
+        response = self.client.get(
+            reverse("bazar:product-list"),
+            {"min_price": "20000", "sort": "cheap"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        products = list(response.context["products"])
+        self.assertEqual([product.title for product in products], [money_product.title])
 
 
 class BazarUploadValidationTests(TestCase):

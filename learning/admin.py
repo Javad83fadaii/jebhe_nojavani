@@ -13,8 +13,22 @@ from learning.models import (
 )
 
 
+class StageQuestionAdminForm(forms.ModelForm):
+    class Meta:
+        model = StageQuestion
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["correct_answer"].help_text = (
+            "برای سوال صحیح/غلط می‌توانید از «صحیح/غلط» یا «True/False» استفاده کنید. "
+            "در سوال کوتاه‌پاسخ، ی/ک عربی، فاصله، نیم‌فاصله و ارقام فارسی/انگلیسی هنگام مقایسه نرمال‌سازی می‌شوند."
+        )
+
+
 class StageQuestionInline(admin.TabularInline):
     model = StageQuestion
+    form = StageQuestionAdminForm
     extra = 0
     fields = ("question_number", "text", "question_type", "option1", "option2", "option3", "option4", "correct_answer", "question_points", "difficulty")
     readonly_fields = ("created_at", "updated_at")
@@ -174,6 +188,7 @@ class StageQuestionSetAdmin(admin.ModelAdmin):
 
 @admin.register(StageQuestion)
 class StageQuestionAdmin(admin.ModelAdmin):
+    form = StageQuestionAdminForm
     list_display = (
         "text",
         "question_set",
