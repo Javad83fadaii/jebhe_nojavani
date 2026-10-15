@@ -9,7 +9,7 @@ from typing import Any, Iterable
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.db.models import F
 from django.utils import timezone
@@ -58,6 +58,44 @@ def validate_birth_date_range(value):
     jalali_year, _, _ = _gregorian_to_jalali(value.year, value.month, value.day)
     if jalali_year < 1385 or jalali_year > 1395:
         raise ValidationError("ثبت‌نام برای این سن مقدور نمی‌باشد. فقط متولدین سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز هستند.")
+
+
+_DIGIT_TRANSLATION_TABLE = str.maketrans(
+    {
+        "۰": "0",
+        "۱": "1",
+        "۲": "2",
+        "۳": "3",
+        "۴": "4",
+        "۵": "5",
+        "۶": "6",
+        "۷": "7",
+        "۸": "8",
+        "۹": "9",
+        "٠": "0",
+        "١": "1",
+        "٢": "2",
+        "٣": "3",
+        "٤": "4",
+        "٥": "5",
+        "٦": "6",
+        "٧": "7",
+        "٨": "8",
+        "٩": "9",
+    }
+)
+
+
+def _normalize_digits(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return str(value).strip().translate(_DIGIT_TRANSLATION_TABLE)
+
+
+iranian_mobile_validator = RegexValidator(
+    regex=r"^09\d{9}$",
+    message="شماره تلفن باید ۱۱ رقمی و با ۰۹ شروع شود.",
+)
 
 
 class TimestampedModel(models.Model):
@@ -222,9 +260,10 @@ class UserManager(BaseUserManager):
         if not phone_number:
             raise ValueError("phone_number is required")
 
-        phone_number = str(phone_number).strip()
+        phone_number = _normalize_digits(phone_number) or ""
         user = self.model(phone_number=phone_number, **extra_fields)
         user.set_password(password)
+        user.full_clean()
         user.save(using=self._db)
         return user
 
@@ -261,7 +300,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ELEVENTH = 11, "یازدهم"
         TWELFTH = 12, "دوازدهم"
 
-    phone_number = models.CharField(max_length=11, unique=True)
+    phone_number = models.CharField(max_length=11, unique=True, validators=[iranian_mobile_validator])
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     national_code = models.CharField(max_length=10, unique=True, null=True, blank=True)
@@ -324,6 +363,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         full_name = self.get_full_name()
         return full_name or self.phone_number
 
+    def save(self, *args, **kwargs):
+        self.phone_number = _normalize_digits(self.phone_number) or ""
+        super().save(*args, **kwargs)
+
     @property
     def is_seller(self) -> bool:
         return hasattr(self, "seller_profile")
@@ -335,6 +378,18 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
+
+    def get_public_display_name(self) -> str:
+        first_name = (self.first_name or "").strip()
+        last_name = (self.last_name or "").strip()
+
+        if first_name and last_name:
+            return f"{first_name} {last_name[0]}."
+        if first_name:
+            return first_name
+        if last_name:
+            return f"{last_name[0]}."
+        return "کاربر"
 
     def calculate_rank(self) -> Rank | None:
         rank = Rank.get_rank_for_points(self.total_points)
@@ -489,6 +544,7 @@ class CoinTransaction(TimestampedModel):
     class TransactionType(models.TextChoices):
         CHALLENGE_EARNED = "challenge_earned", "کسب از چالش"
         SPEND = "spend", "خرج خرید"
+        REFUND = "refund", "استرداد"
         WALLET_TRANSFER = "wallet_transfer", "انتقال به کیف پول"
         REWARD = "reward", "جایزه"
         PENALTY = "penalty", "جریمه"

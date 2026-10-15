@@ -1,7 +1,7 @@
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
-from accounts.models import Rank, User
+from accounts.models import Rank, Seller, User
 from config.context_processors import user_points
 
 
@@ -105,3 +105,81 @@ class LogoutViewTests(TestCase):
 
         self.assertRedirects(response, "/?logout=true")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class HomeViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            phone_number="09120000001",
+            password="StrongPass123!",
+            first_name="مینا",
+            last_name="کریمی",
+            total_points=300,
+        )
+        self.public_top_user = User.objects.create_user(
+            phone_number="09120000002",
+            password="StrongPass123!",
+            first_name="رقیه",
+            last_name="صادقی",
+            total_points=500,
+        )
+        self.staff_user = User.objects.create_user(
+            phone_number="09120000003",
+            password="StrongPass123!",
+            first_name="ادمین",
+            last_name="نمونه",
+            total_points=900,
+            is_staff=True,
+        )
+        self.seller_user = User.objects.create_user(
+            phone_number="09120000004",
+            password="StrongPass123!",
+            first_name="فروشنده",
+            last_name="نمونه",
+            total_points=1000,
+        )
+        Seller.objects.create(
+            user=self.seller_user,
+            shop_name="فروشگاه نمونه",
+            shop_address="آدرس فروشگاه",
+        )
+
+    def test_home_leaderboard_excludes_staff_and_sellers(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [user.id for user in response.context["leaderboard"]],
+            [self.public_top_user.id, self.user.id],
+        )
+        self.assertEqual(response.context["user_rank"], 2)
+
+    def test_home_leaderboard_uses_abbreviated_public_name(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("home"))
+
+        self.assertContains(response, "رقیه ص.")
+        self.assertNotContains(response, "رقیه صادقی")
+
+
+class BaseTitleBlockTests(TestCase):
+    def setUp(self):
+        Rank.ensure_default_ranks()
+        self.client = Client()
+        self.user = User.objects.create_user(
+            phone_number="09120000005",
+            password="StrongPass123!",
+            first_name="کاربر",
+            last_name="تست",
+        )
+
+    def test_learning_template_title_block_overrides_base_title(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("learning:rank_cards"))
+
+        self.assertContains(response, "<title>درجه‌بندی | جبهه نوجوانی</title>", html=True)

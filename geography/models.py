@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from django.db import models
 
-try:
-    from django.contrib.gis.db.models import PointField as GISPointField
-except Exception:
-    GISPointField = None
-
 
 class Province(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -39,7 +34,7 @@ class School(models.Model):
     province = models.CharField(max_length=50)
     province_ref = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="schools")
     city_ref = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL, related_name="schools")
-    location = (GISPointField or models.JSONField)()
+    location = models.JSONField()
     phone = models.CharField(max_length=11, null=True, blank=True)
     principal_name = models.CharField(max_length=100, null=True, blank=True)
 
@@ -63,7 +58,7 @@ class Mosque(models.Model):
     province = models.CharField(max_length=50)
     province_ref = models.ForeignKey(Province, null=True, blank=True, on_delete=models.SET_NULL, related_name="mosques")
     city_ref = models.ForeignKey(City, null=True, blank=True, on_delete=models.SET_NULL, related_name="mosques")
-    location = (GISPointField or models.JSONField)()
+    location = models.JSONField()
     phone = models.CharField(max_length=11, null=True, blank=True)
     imam_name = models.CharField(max_length=100, null=True, blank=True)
 

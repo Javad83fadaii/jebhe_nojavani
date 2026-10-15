@@ -29,7 +29,7 @@ def _build_unique_slug(instance: models.Model, source_value: str, slug_field: st
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=120, unique=True, verbose_name="نام")
+    name = models.CharField(max_length=120, verbose_name="نام")
     slug = models.SlugField(max_length=200, unique=True, blank=True, verbose_name="اسلاگ")
     parent = models.ForeignKey(
         "self",
@@ -50,6 +50,9 @@ class Category(models.Model):
 
     class Meta:
         ordering = ("name",)
+        constraints = [
+            models.UniqueConstraint(fields=["parent", "name"], name="unique_bazar_category_name_per_parent"),
+        ]
         verbose_name = "دسته‌بندی بازار"
         verbose_name_plural = "دسته‌بندی‌های بازار"
 
@@ -65,10 +68,16 @@ class Category(models.Model):
         return reverse("bazar:category-products", kwargs={"slug": self.slug})
 
     def get_descendant_ids(self) -> list[int]:
+        descendants_by_parent: dict[int | None, list[int]] = {}
+        for category_id, parent_id in type(self).objects.filter(is_active=True).values_list("id", "parent_id"):
+            descendants_by_parent.setdefault(parent_id, []).append(category_id)
+
         descendant_ids: list[int] = []
-        for child in self.children.filter(is_active=True):
-            descendant_ids.append(child.pk)
-            descendant_ids.extend(child.get_descendant_ids())
+        pending_parent_ids = list(descendants_by_parent.get(self.pk, []))
+        while pending_parent_ids:
+            category_id = pending_parent_ids.pop()
+            descendant_ids.append(category_id)
+            pending_parent_ids.extend(descendants_by_parent.get(category_id, []))
         return descendant_ids
 
 
@@ -276,7 +285,12 @@ class Order(models.Model):
     total_amount = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="مبلغ کل (تومان)")
     coins_used = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="سکه مصرفی")
     wallet_used = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="کیف پول مصرفی")
-    online_paid = models.IntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="پرداخت آنلاین")
+    gateway_paid_amount = models.IntegerField(
+        default=0,
+        db_column="online_paid",
+        validators=[MinValueValidator(0)],
+        verbose_name="پرداخت درگاه",
+    )
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING, verbose_name="وضعیت")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
 
@@ -287,6 +301,120 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f"سفارش #{self.pk} - {self.user}"
+
+    @property
+    def online_paid(self) -> int:
+        return self.gateway_paid_amount
+
+    @online_paid.setter
+    def online_paid(self, value: int) -> None:
+        self.gateway_paid_amount = value
+
+    def cancel_and_refund(self) -> None:
+        if not self.pk:
+            raise ValidationError("لغو سفارش ذخیره‌نشده ممکن نیست.")
+
+        with transaction.atomic():
+            order = (
+                type(self)
+                .objects.select_for_update()
+                .select_related("user")
+                .get(pk=self.pk)
+            )
+            if order.status == self.Status.CANCELLED:
+                self.status = order.status
+                return
+
+            order_items = list(
+                order.items.select_for_update()
+                .select_related("product", "product__seller", "product__seller__user")
+                .order_by("id")
+            )
+            buyer = User.objects.select_for_update().get(pk=order.user_id)
+
+            seller_totals: dict[int, dict[str, int]] = {}
+            seller_user_ids: set[int] = set()
+            for item in order_items:
+                item.product.stock = F("stock") + item.quantity
+                item.product.save(update_fields=["stock"])
+
+                seller_id = item.product.seller_id
+                seller_user_ids.add(item.product.seller.user_id)
+                seller_summary = seller_totals.setdefault(
+                    seller_id,
+                    {"quantity": 0, "gross": 0, "commission": 0, "net": 0},
+                )
+                seller_summary["quantity"] += item.quantity
+                seller_summary["gross"] += item.seller_revenue_amount
+                seller_summary["commission"] += item.seller_commission
+                seller_summary["net"] += item.seller_net_settlement
+
+            seller_wallets = {
+                seller_user.pk: seller_user
+                for seller_user in User.objects.select_for_update().filter(pk__in=seller_user_ids)
+            }
+            for seller_id, seller_summary in seller_totals.items():
+                seller_user_id = next(
+                    item.product.seller.user_id for item in order_items if item.product.seller_id == seller_id
+                )
+                seller_user = seller_wallets[seller_user_id]
+                if Decimal(seller_summary["net"]) > seller_user.wallet_balance:
+                    raise ValidationError(
+                        "لغو این سفارش ممکن نیست، چون موجودی کیف پول فروشنده برای برگشت تسویه کافی نیست."
+                    )
+
+            if order.coins_used > 0:
+                User.objects.filter(pk=buyer.pk).update(challenge_coins=F("challenge_coins") + order.coins_used)
+                CoinTransaction.objects.create(
+                    user=buyer,
+                    amount=order.coins_used,
+                    transaction_type=CoinTransaction.TransactionType.REFUND,
+                    description=f"استرداد {order.coins_used} سکه بابت لغو سفارش #{order.pk}",
+                    challenge="bazar-refund",
+                )
+
+            refund_wallet_amount = int(order.wallet_used or 0) + int(order.gateway_paid_amount or 0)
+            if refund_wallet_amount > 0:
+                User.objects.filter(pk=buyer.pk).update(wallet_balance=F("wallet_balance") + Decimal(refund_wallet_amount))
+                Transaction.objects.create(
+                    user=buyer,
+                    order=order,
+                    amount=refund_wallet_amount,
+                    transaction_type=Transaction.TransactionType.REFUND,
+                    description=f"استرداد مبلغ سفارش #{order.pk} به کیف پول کاربر",
+                )
+
+            for seller_id, seller_summary in seller_totals.items():
+                seller = Seller.objects.select_for_update().select_related("user").get(pk=seller_id)
+                if seller_summary["net"] > 0:
+                    User.objects.filter(pk=seller.user_id).update(
+                        wallet_balance=F("wallet_balance") - Decimal(seller_summary["net"])
+                    )
+                    Transaction.objects.create(
+                        user=seller.user,
+                        order=order,
+                        amount=-seller_summary["net"],
+                        transaction_type=Transaction.TransactionType.SETTLEMENT,
+                        description=f"برگشت تسویه سفارش #{order.pk} برای فروشگاه {seller.shop_name}",
+                    )
+                if seller_summary["commission"] > 0:
+                    Transaction.objects.create(
+                        user=seller.user,
+                        order=order,
+                        amount=-seller_summary["commission"],
+                        transaction_type=Transaction.TransactionType.COMMISSION,
+                        description=f"برگشت کمیسیون سفارش #{order.pk} برای فروشگاه {seller.shop_name}",
+                    )
+                Seller.objects.filter(pk=seller_id).update(
+                    sales_count=F("sales_count") - seller_summary["quantity"],
+                    total_revenue=F("total_revenue") - Decimal(seller_summary["gross"]),
+                )
+
+            order.status = self.Status.CANCELLED
+            order.save(update_fields=["status"])
+
+        self.status = self.Status.CANCELLED
+        self.refresh_from_db()
 
 
 class OrderItem(models.Model):
@@ -339,6 +467,7 @@ class Transaction(models.Model):
     class TransactionType(models.TextChoices):
         CHARGE = "charge", "شارژ"
         PURCHASE = "purchase", "خرید"
+        REFUND = "refund", "استرداد"
         WALLET_TRANSFER = "wallet_transfer", "تبدیل سکه به کیف پول"
         COMMISSION = "commission", "کمیسیون"
         SETTLEMENT = "settlement", "تسویه فروشنده"

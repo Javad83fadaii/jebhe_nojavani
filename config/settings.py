@@ -82,14 +82,6 @@ INSTALLED_APPS = [
 if DEBUG and importlib.util.find_spec('silk') is not None:
     INSTALLED_APPS.append('silk')
 
-try:
-    from django.contrib.gis.gdal import libgdal
-except Exception:
-    libgdal = None
-
-if libgdal is not None:
-    INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'django.contrib.gis')
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

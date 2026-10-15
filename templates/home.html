@@ -88,7 +88,7 @@
             {% for u in leaderboard %}
             <div class="leaderboard-item glass-card {% if user.id == u.id %}leaderboard-item-current{% endif %}">
                 <div class="leaderboard-rank">{{ forloop.counter }}</div>
-                <span>{{ u.get_full_name|default:u.phone_number }}</span>
+                <span>{{ u.get_public_display_name }}</span>
                 <span class="text-gold">{{ u.total_points }} امتیاز</span>
             </div>
             {% empty %}

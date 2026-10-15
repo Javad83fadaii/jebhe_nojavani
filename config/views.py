@@ -46,6 +46,14 @@ def _redirect_seller_to_panel(request):
     return None
 
 
+def _public_leaderboard_queryset(user_model):
+    return user_model.objects.filter(
+        is_active=True,
+        is_staff=False,
+        seller_profile__isnull=True,
+    )
+
+
 def home(request):
     """
     نمایش صفحه خانه برای کاربران وارد شده
@@ -63,9 +71,11 @@ def home(request):
     user_rank = 0
     leaderboard = None
     if user.is_authenticated:
+        leaderboard_queryset = _public_leaderboard_queryset(user.__class__)
+
         # دریافت جدول رده‌بندی (۱۰ نفر برتر)
         leaderboard = (
-            user.__class__.objects.filter(is_active=True)
+            leaderboard_queryset
             .order_by("-total_points", "-date_joined")
             .select_related("current_rank")
         )[:10]
@@ -79,8 +89,7 @@ def home(request):
         # اگر کاربر در ۱۰ نفر برتر نبود، رتبه را محاسبه کنیم
         if user_rank == 0:
             user_rank = (
-                user.__class__.objects.filter(
-                    is_active=True,
+                leaderboard_queryset.filter(
                     total_points__gt=user.total_points
                 ).count() + 1
             )
