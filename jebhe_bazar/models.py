@@ -518,14 +518,16 @@ class WalletChargeRequest(models.Model):
         validators=[MinValueValidator(1)],
         verbose_name="مبلغ درخواستی (تومان)",
     )
-    requested_coins = models.PositiveIntegerField(
+    legacy_requested_coins = models.PositiveIntegerField(
         default=0,
         blank=True,
-        verbose_name="سکه درخواستی (قدیمی)",
+        db_column="requested_coins",
+        verbose_name="سکه درخواستی قدیمی",
     )
-    granted_coins = models.PositiveIntegerField(
+    granted_amount = models.PositiveIntegerField(
         default=0,
         blank=True,
+        db_column="granted_coins",
         verbose_name="مبلغ شارژ تایید شده (تومان)",
     )
     status = models.CharField(
@@ -550,6 +552,22 @@ class WalletChargeRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} - {self.requested_amount} تومان"
+
+    @property
+    def requested_coins(self) -> int:
+        return self.legacy_requested_coins
+
+    @requested_coins.setter
+    def requested_coins(self, value: int) -> None:
+        self.legacy_requested_coins = value
+
+    @property
+    def granted_coins(self) -> int:
+        return self.granted_amount
+
+    @granted_coins.setter
+    def granted_coins(self, value: int) -> None:
+        self.granted_amount = value
 
     def clean(self):
         if self.requested_amount <= 0:
@@ -584,7 +602,7 @@ class WalletChargeRequest(models.Model):
             if not updated:
                 return
 
-            credit_amount = self.granted_coins if self.granted_coins > 0 else self.requested_amount
+            credit_amount = self.granted_amount if self.granted_amount > 0 else self.requested_amount
             User.objects.filter(pk=self.user_id).update(wallet_balance=F("wallet_balance") + Decimal(credit_amount))
             Transaction.objects.create(
                 user=self.user,

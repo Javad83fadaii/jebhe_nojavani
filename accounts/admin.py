@@ -9,7 +9,17 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.html import format_html
 
-from accounts.models import CoinToWalletTransfer, CoinTransaction, ExamRecord, PasswordResetRequest, Rank, Seller, User
+from accounts.models import (
+    CoinToWalletTransfer,
+    CoinTransaction,
+    ExamRecord,
+    PasswordResetRequest,
+    Rank,
+    Seller,
+    User,
+    _normalize_digits,
+    iranian_mobile_validator,
+)
 from geography.models import City, Mosque, Province, School
 
 
@@ -28,6 +38,11 @@ class UserCreationForm(forms.ModelForm):
             raise forms.ValidationError("Passwords don't match")
         return password2
 
+    def clean_phone_number(self):
+        phone_number = _normalize_digits(self.cleaned_data.get("phone_number")) or ""
+        iranian_mobile_validator(phone_number)
+        return phone_number
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password1"])
@@ -42,6 +57,11 @@ class UserChangeForm(forms.ModelForm):
     class Meta:
         model = User
         fields = "__all__"
+
+    def clean_phone_number(self):
+        phone_number = _normalize_digits(self.cleaned_data.get("phone_number")) or ""
+        iranian_mobile_validator(phone_number)
+        return phone_number
 
 
 class UserAdminForm(UserChangeForm):

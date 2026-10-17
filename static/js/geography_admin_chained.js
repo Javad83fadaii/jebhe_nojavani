@@ -26,11 +26,26 @@
   }
 
   async function fetchJson(url) {
-    var response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) {
-      throw new Error("Request failed");
+    var items = [];
+    var nextUrl = url;
+
+    while (nextUrl) {
+      var response = await fetch(nextUrl, { headers: { Accept: "application/json" } });
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
+
+      var data = await response.json();
+      if (Array.isArray(data)) {
+        items = items.concat(data);
+        nextUrl = null;
+      } else {
+        items = items.concat(data.results || []);
+        nextUrl = data.next || null;
+      }
     }
-    return response.json();
+
+    return items;
   }
 
   async function loadCities(provinceSelect, citySelect, selectedCityId) {
@@ -49,12 +64,10 @@
       var data = await fetchJson(url);
 
       resetSelect(citySelect, "انتخاب کنید...", false);
-      if (Array.isArray(data)) {
-        data.forEach(function (item) {
-          if (!item || typeof item !== "object") return;
-          appendOption(citySelect, item.id, item.name);
-        });
-      }
+      data.forEach(function (item) {
+        if (!item || typeof item !== "object") return;
+        appendOption(citySelect, item.id, item.name);
+      });
 
       if (selectedCityId) {
         citySelect.value = selectedCityId;
@@ -117,8 +130,8 @@
         schoolSelect ? fetchJson("/api/geography/schools/?" + query) : Promise.resolve([]),
         mosqueSelect ? fetchJson("/api/geography/mosques/?" + query) : Promise.resolve([]),
       ]);
-      var schoolData = results[0] && (results[0].results || results[0]);
-      var mosqueData = results[1] && (results[1].results || results[1]);
+      var schoolData = results[0];
+      var mosqueData = results[1];
 
       if (schoolSelect) {
         fillPlaceSelect(schoolSelect, schoolData, "انتخاب مدرسه...");

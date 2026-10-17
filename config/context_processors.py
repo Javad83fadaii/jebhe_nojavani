@@ -1,6 +1,10 @@
+from django.core.cache import cache
 from django.db.models import Count, Sum
 
 from accounts.models import Rank
+
+_CART_UI_CACHE_KEY = "bazar:cart-ui:{user_id}"
+_CART_UI_CACHE_TIMEOUT = 60
 
 
 def user_points(request):
@@ -10,7 +14,8 @@ def user_points(request):
     if request.user.is_authenticated:
         user = request.user
         total_points = int(getattr(user, "total_points", 0) or 0)
-        progress_metrics = Rank.get_progress_metrics(total_points)
+        current_rank = Rank.get_cached_rank_by_id(getattr(user, "current_rank_id", None))
+        progress_metrics = Rank.get_progress_metrics(total_points, current_rank=current_rank)
         current_rank = progress_metrics["current_rank"]
         return {
             "user_total_points": total_points,
@@ -41,9 +46,14 @@ def cart_ui(request):
 
     from jebhe_bazar.models import Cart
 
-    cart_totals = Cart.objects.filter(user=request.user).aggregate(total_quantity=Sum("items__quantity"))
-    total_quantity = int(cart_totals["total_quantity"] or 0)
-    return {
-        "cart_total_quantity": total_quantity,
-        "cart_has_items": total_quantity > 0,
-    }
+    cache_key = _CART_UI_CACHE_KEY.format(user_id=request.user.pk)
+    cached_totals = cache.get(cache_key)
+    if cached_totals is None:
+        cart_totals = Cart.objects.filter(user=request.user).aggregate(total_quantity=Sum("items__quantity"))
+        total_quantity = int(cart_totals["total_quantity"] or 0)
+        cached_totals = {
+            "cart_total_quantity": total_quantity,
+            "cart_has_items": total_quantity > 0,
+        }
+        cache.set(cache_key, cached_totals, _CART_UI_CACHE_TIMEOUT)
+    return cached_totals

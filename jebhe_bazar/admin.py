@@ -1,6 +1,22 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+from django.http import HttpResponseRedirect
 
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
+
+
+@admin.action(description="لغو سفارش‌های انتخاب‌شده و استرداد موجودی")
+def cancel_orders_with_refund(modeladmin, request, queryset):
+    updated = 0
+    for order in queryset.exclude(status=Order.Status.CANCELLED):
+        try:
+            order.cancel_and_refund()
+        except ValidationError as exc:
+            modeladmin.message_user(request, "; ".join(exc.messages), level=messages.ERROR)
+            continue
+        updated += 1
+    if updated:
+        modeladmin.message_user(request, f"{updated} سفارش با موفقیت لغو و استرداد شد.", level=messages.SUCCESS)
 
 
 @admin.register(Category)
@@ -61,11 +77,39 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "total_amount", "coins_used", "wallet_used", "online_paid", "status", "created_at")
+    list_display = ("id", "user", "total_amount", "coins_used", "wallet_used", "gateway_paid_amount", "status", "created_at")
     list_filter = ("status", "created_at")
     search_fields = ("id", "user__phone_number", "user__first_name", "user__last_name")
     autocomplete_fields = ("user",)
     inlines = [OrderItemInline]
+    actions = [cancel_orders_with_refund]
+
+    def save_model(self, request, obj, form, change):
+        if change and obj.pk:
+            previous_order = Order.objects.get(pk=obj.pk)
+            is_cancellation = previous_order.status != Order.Status.CANCELLED and obj.status == Order.Status.CANCELLED
+            if is_cancellation:
+                non_status_fields = [field_name for field_name in form.changed_data if field_name != "status"]
+                try:
+                    if non_status_fields:
+                        for field_name in non_status_fields:
+                            setattr(previous_order, field_name, getattr(obj, field_name))
+                        previous_order.save(update_fields=non_status_fields)
+                    previous_order.cancel_and_refund()
+                except ValidationError as exc:
+                    request._bazar_order_admin_error_message = "; ".join(exc.messages)
+                    obj.status = previous_order.status
+                    return
+                obj.status = previous_order.status
+                return
+        super().save_model(request, obj, form, change)
+
+    def response_change(self, request, obj):
+        error_message = getattr(request, "_bazar_order_admin_error_message", "")
+        if error_message:
+            self.message_user(request, error_message, level=messages.ERROR)
+            return HttpResponseRedirect(".")
+        return super().response_change(request, obj)
 
 
 @admin.register(OrderItem)
@@ -100,6 +144,7 @@ class WalletChargeRequestAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "requested_amount",
+        "granted_amount",
         "status",
         "created_at",
         "reviewed_at",
@@ -107,6 +152,6 @@ class WalletChargeRequestAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "created_at", "reviewed_at", "completed_at")
     search_fields = ("user__phone_number", "user__first_name", "user__last_name", "admin_note", "payment_reference")
-    readonly_fields = ("requested_coins", "coins_granted_at", "created_at", "updated_at", "reviewed_at", "completed_at")
+    readonly_fields = ("legacy_requested_coins", "coins_granted_at", "created_at", "updated_at", "reviewed_at", "completed_at")
     autocomplete_fields = ("user",)
     actions = [approve_wallet_charge_requests]

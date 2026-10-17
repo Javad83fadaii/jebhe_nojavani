@@ -227,6 +227,7 @@ function setupProfileDropdown() {
         const starMeter = badge.querySelector('.star-meter');
         const rankNameEl = document.getElementById('user-rank-name');
         const pointsPerLevel = Number(badge.dataset.pointsPerLevel) || 1000;
+        let refreshTimerId = null;
 
         function applyProgress(data) {
             const nextPointsPerLevel = Number(data.points_per_level) || pointsPerLevel;
@@ -242,6 +243,7 @@ function setupProfileDropdown() {
         }
 
         async function refreshProgress() {
+            if (document.hidden) return;
             try {
                 const res = await fetch("{% url 'user-progress-api' %}", { credentials: 'same-origin' });
                 if (!res.ok) return;
@@ -250,10 +252,27 @@ function setupProfileDropdown() {
             } catch (_) {}
         }
 
+        function stopRefreshTimer() {
+            if (refreshTimerId !== null) {
+                clearInterval(refreshTimerId);
+                refreshTimerId = null;
+            }
+        }
+
+        function startRefreshTimer() {
+            if (document.hidden || refreshTimerId !== null) return;
+            refreshTimerId = setInterval(refreshProgress, 60000);
+        }
+
         refreshProgress();
-        setInterval(refreshProgress, 8000);
+        startRefreshTimer();
         document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible') refreshProgress();
+            if (document.hidden) {
+                stopRefreshTimer();
+                return;
+            }
+            refreshProgress();
+            startRefreshTimer();
         });
     });
 

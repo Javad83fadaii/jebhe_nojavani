@@ -6,6 +6,7 @@ import unicodedata
 from datetime import timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Iterable
+from urllib.parse import parse_qs, urlparse
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -72,10 +73,20 @@ class LearningPath(TimestampedModel):
 
     def sync_totals(self, *, save: bool = True):
         active_stages = self.get_active_stages()
-        self.total_stages = active_stages.count()
-        self.total_points = self.total_stages * self.DEFAULT_STAGE_POINTS
-        if save:
-            self.save(update_fields=["total_stages", "total_points", "updated_at"])
+        total_stages = active_stages.count()
+        total_points = total_stages * self.DEFAULT_STAGE_POINTS
+        changed_fields = []
+
+        if self.total_stages != total_stages:
+            self.total_stages = total_stages
+            changed_fields.append("total_stages")
+        if self.total_points != total_points:
+            self.total_points = total_points
+            changed_fields.append("total_points")
+
+        if save and changed_fields:
+            changed_fields.append("updated_at")
+            self.save(update_fields=changed_fields)
         return self.total_stages, self.total_points
 
     def can_user_access(self, user) -> bool:
@@ -102,7 +113,8 @@ class LearningStage(TimestampedModel):
         verbose_name="شماره مرحله",
     )
     content_type = models.CharField(max_length=20, choices=ContentType.choices, verbose_name="نوع محتوا")
-    content_link_or_file = models.CharField(max_length=500, blank=True, verbose_name="لینک یا فایل محتوا")
+    content_url = models.URLField(blank=True, verbose_name="لینک محتوا")
+    content_file = models.FileField(upload_to="learning/stages/content/", null=True, blank=True, verbose_name="فایل محتوا")
     estimated_study_time = models.PositiveSmallIntegerField(default=0, verbose_name="مدت زمان تقریبی مطالعه (دقیقه)")
     description = models.TextField(blank=True, verbose_name="توضیحات مرحله")
     detail_summary = models.TextField(blank=True, verbose_name="متن باکس توضیحات مرحله")
@@ -122,6 +134,11 @@ class LearningStage(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.learning_path.title} - مرحله {self.stage_number}: {self.title}"
 
+    def clean(self):
+        super().clean()
+        if self.content_url and self.content_file:
+            raise ValidationError("برای محتوای مرحله فقط یکی از فیلدهای لینک یا فایل را وارد کنید.")
+
     def save(self, *args, **kwargs):
         self.stage_points = LearningPath.DEFAULT_STAGE_POINTS
         self.required_points = max(self.stage_number - 1, 0) * LearningPath.DEFAULT_STAGE_POINTS
@@ -138,6 +155,62 @@ class LearningStage(TimestampedModel):
             f"در این مرحله با موضوع «{self.title}» آشنا می‌شوید. "
             "پس از مطالعه محتوا، وضعیت مرحله را تکمیل کنید و برای آزمون آن آماده شوید."
         )
+
+    @property
+    def has_content(self) -> bool:
+        return bool(self.content_url or self.content_file)
+
+    @property
+    def content_source_url(self) -> str:
+        if self.content_file:
+            try:
+                return self.content_file.url
+            except ValueError:
+                return ""
+        return self.content_url or ""
+
+    @staticmethod
+    def _extract_youtube_video_id(url: str) -> str:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower().removeprefix("www.")
+        if host == "youtu.be":
+            return parsed.path.strip("/").split("/", 1)[0]
+        if host.endswith("youtube.com"):
+            if parsed.path == "/watch":
+                return parse_qs(parsed.query).get("v", [""])[0]
+            if parsed.path.startswith("/embed/"):
+                return parsed.path.split("/embed/", 1)[1].split("/", 1)[0]
+            if parsed.path.startswith("/shorts/"):
+                return parsed.path.split("/shorts/", 1)[1].split("/", 1)[0]
+        return ""
+
+    @staticmethod
+    def _extract_aparat_video_hash(url: str) -> str:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower().removeprefix("www.")
+        if not host.endswith("aparat.com"):
+            return ""
+        if "/video/video/embed/videohash/" in parsed.path:
+            return parsed.path.split("/video/video/embed/videohash/", 1)[1].split("/", 1)[0]
+        match = re.search(r"/v/([A-Za-z0-9]+)", parsed.path)
+        if match:
+            return match.group(1)
+        return ""
+
+    @property
+    def embedded_content_url(self) -> str:
+        if not self.content_url:
+            return ""
+
+        youtube_video_id = self._extract_youtube_video_id(self.content_url)
+        if youtube_video_id:
+            return f"https://www.youtube.com/embed/{youtube_video_id}"
+
+        aparat_video_hash = self._extract_aparat_video_hash(self.content_url)
+        if aparat_video_hash:
+            return f"https://www.aparat.com/video/video/embed/videohash/{aparat_video_hash}/vt/frame"
+
+        return ""
 
 
 class StageQuestionSet(TimestampedModel):
@@ -311,11 +384,7 @@ class UserLearningProgress(TimestampedModel):
     def get_current_stage(self) -> LearningStage | None:
         if self.current_stage and self.current_stage.is_active:
             return self.current_stage
-        first_stage = self.learning_path.get_active_stages().first()
-        if first_stage:
-            self.current_stage = first_stage
-            self.save(update_fields=["current_stage", "updated_at"])
-        return self.current_stage
+        return self.learning_path.get_active_stages().first()
 
     def get_next_stage(self) -> LearningStage | None:
         if not self.current_stage:
@@ -331,61 +400,84 @@ class UserLearningProgress(TimestampedModel):
             stage_progress.learning_stage_id: stage_progress
             for stage_progress in self.stage_progress.select_related("learning_stage")
         }
+        missing_progresses = []
 
         completed_count = 0
         total_score = 0
         current_stage = None
         now = timezone.now()
+        progress_rows_to_update = []
+
+        for stage in ordered_stages:
+            if stage.pk not in existing_progresses:
+                missing_progresses.append(
+                    UserStageProgress(
+                        user=self.user,
+                        learning_stage=stage,
+                        user_learning_progress=self,
+                        status=UserStageProgress.StageStatus.LOCKED,
+                    )
+                )
+
+        if missing_progresses:
+            UserStageProgress.objects.bulk_create(missing_progresses)
+            for created_progress in missing_progresses:
+                existing_progresses[created_progress.learning_stage_id] = created_progress
 
         for i, stage in enumerate(ordered_stages):
-            user_stage_progress = existing_progresses.get(stage.pk)
-            if user_stage_progress is None:
-                user_stage_progress = UserStageProgress.objects.create(
+            user_stage_progress = existing_progresses[stage.pk]
+            changed = False
+
+            if user_stage_progress.pk is None:
+                user_stage_progress = UserStageProgress.objects.get(
                     user=self.user,
-                    learning_stage=stage,
                     user_learning_progress=self,
-                    status=UserStageProgress.StageStatus.LOCKED,
+                    learning_stage=stage,
                 )
                 existing_progresses[stage.pk] = user_stage_progress
 
             if user_stage_progress.status == UserStageProgress.StageStatus.PASSED:
                 if user_stage_progress.score_earned != stage.stage_points:
                     user_stage_progress.score_earned = stage.stage_points
-                    user_stage_progress.save(update_fields=["score_earned", "updated_at"])
+                    user_stage_progress.updated_at = now
+                    changed = True
                 completed_count += 1
                 total_score += stage.stage_points
+                if changed:
+                    progress_rows_to_update.append(user_stage_progress)
                 continue
 
             should_unlock = i == 0 or existing_progresses[ordered_stages[i - 1].pk].status == UserStageProgress.StageStatus.PASSED
-            updated_fields = []
 
             if should_unlock:
                 if user_stage_progress.status == UserStageProgress.StageStatus.LOCKED:
                     user_stage_progress.status = UserStageProgress.StageStatus.UNLOCKED
                     if not user_stage_progress.unlocked_at:
                         user_stage_progress.unlocked_at = now
-                        updated_fields.append("unlocked_at")
-                    updated_fields.extend(["status", "updated_at"])
+                    user_stage_progress.updated_at = now
+                    changed = True
                 if current_stage is None:
                     current_stage = stage
             elif user_stage_progress.status != UserStageProgress.StageStatus.LOCKED:
                 user_stage_progress.status = UserStageProgress.StageStatus.LOCKED
-                updated_fields.extend(["status", "updated_at"])
+                user_stage_progress.updated_at = now
+                changed = True
 
-            if updated_fields:
-                user_stage_progress.save(update_fields=updated_fields)
+            if changed:
+                progress_rows_to_update.append(user_stage_progress)
 
-        self.completed_stages_count = completed_count
-        self.total_score = total_score
-        self.current_stage = current_stage
+        if progress_rows_to_update:
+            UserStageProgress.objects.bulk_update(
+                progress_rows_to_update,
+                ["status", "score_earned", "unlocked_at", "updated_at"],
+            )
 
         total_stage_count = len(ordered_stages)
+        progress_percentage = Decimal("0.00")
         if total_stage_count:
-            self.progress_percentage = (
+            progress_percentage = (
                 Decimal(completed_count) / Decimal(total_stage_count)
             ) * Decimal("100.00")
-        else:
-            self.progress_percentage = Decimal("0.00")
 
         status = self.status
         completed_at = self.completed_at
@@ -396,15 +488,27 @@ class UserLearningProgress(TimestampedModel):
             status = self.ProgressStatus.IN_PROGRESS
             completed_at = None
 
-        self.__class__.objects.filter(pk=self.pk).update(
-            completed_stages_count=completed_count,
-            total_score=total_score,
-            current_stage=current_stage,
-            progress_percentage=self.progress_percentage,
-            status=status,
-            completed_at=completed_at,
-            updated_at=now,
-        )
+        changed_progress_fields = {}
+        if self.completed_stages_count != completed_count:
+            changed_progress_fields["completed_stages_count"] = completed_count
+        if self.total_score != total_score:
+            changed_progress_fields["total_score"] = total_score
+        if self.current_stage_id != getattr(current_stage, "id", None):
+            changed_progress_fields["current_stage_id"] = getattr(current_stage, "id", None)
+        if self.progress_percentage != progress_percentage:
+            changed_progress_fields["progress_percentage"] = progress_percentage
+        if self.status != status:
+            changed_progress_fields["status"] = status
+        if self.completed_at != completed_at:
+            changed_progress_fields["completed_at"] = completed_at
+
+        if changed_progress_fields:
+            changed_progress_fields["updated_at"] = now
+            self.__class__.objects.filter(pk=self.pk).update(**changed_progress_fields)
+        self.completed_stages_count = completed_count
+        self.total_score = total_score
+        self.current_stage = current_stage
+        self.progress_percentage = progress_percentage
         self.status = status
         self.completed_at = completed_at
         return existing_progresses

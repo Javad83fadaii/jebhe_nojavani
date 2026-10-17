@@ -14,25 +14,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.utils import get_md5_hash_password
 
 from accounts.models import Rank, Seller, User, validate_birth_date_range
+from config.jalali import jalali_to_gregorian
 from geography.models import Mosque, School
+from geography.serializers import MosqueDetailSerializer, SchoolDetailSerializer
 
 
 class RankSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rank
         fields = ["id", "name", "level", "min_points", "max_points", "icon", "color"]
-
-
-class SchoolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = School
-        fields = ["id", "name", "address", "city", "province", "location", "phone", "principal_name"]
-
-
-class MosqueSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Mosque
-        fields = ["id", "name", "address", "city", "province", "location", "phone", "imam_name"]
 
 
 class NestedWritablePKField(serializers.PrimaryKeyRelatedField):
@@ -100,41 +90,6 @@ def _normalize_text(value: str | None) -> str | None:
     return normalized or None
 
 
-def _jalali_to_gregorian(jy: int, jm: int, jd: int) -> tuple[int, int, int]:
-    jy += 1595
-    days = -355668 + (365 * jy) + (jy // 33) * 8 + ((jy % 33) + 3) // 4 + jd
-    if jm < 7:
-        days += (jm - 1) * 31
-    else:
-        days += 186 + ((jm - 7) * 30)
-
-    gy = 400 * (days // 146097)
-    days %= 146097
-
-    if days > 36524:
-        gy += 100 * ((days - 1) // 36524)
-        days = (days - 1) % 36524
-        if days >= 365:
-            days += 1
-
-    gy += 4 * (days // 1461)
-    days %= 1461
-
-    if days > 365:
-        gy += (days - 1) // 365
-        days = (days - 1) % 365
-
-    gd = days + 1
-    february_days = 29 if ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)) else 28
-    gregorian_month_days = [0, 31, february_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    gm = 1
-    while gm <= 12 and gd > gregorian_month_days[gm]:
-        gd -= gregorian_month_days[gm]
-        gm += 1
-
-    return gy, gm, gd
-
-
 class FlexibleBirthDateField(serializers.DateField):
     default_error_messages = {
         "invalid": "تاریخ تولد معتبر نیست.",
@@ -169,7 +124,7 @@ class FlexibleBirthDateField(serializers.DateField):
                     self.fail("invalid")
                 if month > 6 and day > 30:
                     self.fail("invalid")
-                gregorian_year, gregorian_month, gregorian_day = _jalali_to_gregorian(year, month, day)
+                gregorian_year, gregorian_month, gregorian_day = jalali_to_gregorian(year, month, day)
                 return date(gregorian_year, gregorian_month, gregorian_day)
 
             return date(year, month, day)
@@ -517,13 +472,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         error_messages={"invalid_choice": "پایه تحصیلی انتخاب شده معتبر نیست."},
     )
     school = NestedWritablePKField(
-        serializer_class=SchoolSerializer,
+        serializer_class=SchoolDetailSerializer,
         queryset=School.objects.all(),
         required=False,
         allow_null=True,
     )
     mosque = NestedWritablePKField(
-        serializer_class=MosqueSerializer,
+        serializer_class=MosqueDetailSerializer,
         queryset=Mosque.objects.all(),
         required=False,
         allow_null=True,

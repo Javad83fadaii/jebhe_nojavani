@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
@@ -13,6 +14,18 @@ class PublicPlacePagination(PageNumberPagination):
     page_size = 50
     page_size_query_param = "page_size"
     max_page_size = 200
+
+
+class LookupPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = "page_size"
+    max_page_size = 500
+
+
+def _paginate_lookup_items(request, items):
+    paginator = LookupPagination()
+    page = paginator.paginate_queryset(items, request)
+    return paginator.get_paginated_response(page)
 
 
 def _resolve_province_filter_data(province_name: str, province_id: str):
@@ -115,11 +128,17 @@ class ProvinceListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        model_provinces = Province.objects.values_list("name", flat=True)
-        school_provinces = School.objects.exclude(province__isnull=True).exclude(province="").values_list("province", flat=True)
-        mosque_provinces = Mosque.objects.exclude(province__isnull=True).exclude(province="").values_list("province", flat=True)
-        provinces = sorted({p.strip() for p in list(model_provinces) + list(school_provinces) + list(mosque_provinces) if str(p).strip()})
-        return Response(provinces)
+        cache_key = "geography:province-list:v1"
+        provinces = cache.get(cache_key)
+        if provinces is None:
+            model_provinces = Province.objects.values_list("name", flat=True)
+            school_provinces = School.objects.exclude(province__isnull=True).exclude(province="").values_list("province", flat=True)
+            mosque_provinces = Mosque.objects.exclude(province__isnull=True).exclude(province="").values_list("province", flat=True)
+            provinces = sorted(
+                {p.strip() for p in list(model_provinces) + list(school_provinces) + list(mosque_provinces) if str(p).strip()}
+            )
+            cache.set(cache_key, provinces, 3600)
+        return _paginate_lookup_items(request, provinces)
 
 
 class CityListView(APIView):
@@ -140,7 +159,7 @@ class CityListView(APIView):
             province_obj = Province.objects.filter(name__iexact=province).first()
 
         if province_obj is None and not province:
-            return Response([])
+            return _paginate_lookup_items(request, [])
 
         model_cities = City.objects.none()
         if province_obj:
@@ -165,8 +184,16 @@ class CityListView(APIView):
             .exclude(city="")
             .values_list("city", flat=True)
         )
+        cache_key = f"geography:city-list:v1:{province_obj.pk if province_obj else province.lower()}:{int(with_ids)}"
+        cached_items = cache.get(cache_key)
+        if cached_items is not None:
+            return _paginate_lookup_items(request, cached_items)
+
         if with_ids:
-            return Response(list(model_cities))
+            items = list(model_cities)
+            cache.set(cache_key, items, 3600)
+            return _paginate_lookup_items(request, items)
 
         cities = sorted({c.strip() for c in list(model_cities) + list(school_cities) + list(mosque_cities) if str(c).strip()})
-        return Response(cities)
+        cache.set(cache_key, cities, 3600)
+        return _paginate_lookup_items(request, cities)

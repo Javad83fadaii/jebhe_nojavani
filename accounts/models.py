@@ -8,54 +8,22 @@ from typing import Any, Iterable
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models, transaction
 from django.db.models import F
 from django.utils import timezone
 
+from config.jalali import gregorian_to_jalali
 from learning.models import LearningPath, UserLearningProgress, UserStageProgress
-
-
-def _gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
-    g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    j_days_in_month = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]
-
-    gy2 = gy - 1600
-    gm2 = gm - 1
-    gd2 = gd - 1
-
-    g_day_no = 365 * gy2 + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400
-    for index in range(gm2):
-        g_day_no += g_days_in_month[index]
-    if gm2 > 1 and ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)):
-        g_day_no += 1
-    g_day_no += gd2
-
-    j_day_no = g_day_no - 79
-    j_np = j_day_no // 12053
-    j_day_no %= 12053
-
-    jy = 979 + 33 * j_np + 4 * (j_day_no // 1461)
-    j_day_no %= 1461
-
-    if j_day_no >= 366:
-        jy += (j_day_no - 1) // 365
-        j_day_no = (j_day_no - 1) % 365
-
-    jm = 0
-    while jm < 11 and j_day_no >= j_days_in_month[jm]:
-        j_day_no -= j_days_in_month[jm]
-        jm += 1
-
-    return jy, jm + 1, j_day_no + 1
 
 
 def validate_birth_date_range(value):
     if value in (None, ""):
         return
 
-    jalali_year, _, _ = _gregorian_to_jalali(value.year, value.month, value.day)
+    jalali_year, _, _ = gregorian_to_jalali(value.year, value.month, value.day)
     if jalali_year < 1385 or jalali_year > 1395:
         raise ValidationError("ثبت‌نام برای این سن مقدور نمی‌باشد. فقط متولدین سال‌های ۱۳۸۵ تا ۱۳۹۵ مجاز هستند.")
 
@@ -108,6 +76,8 @@ class TimestampedModel(models.Model):
 
 class Rank(TimestampedModel):
     POINTS_PER_LEVEL = 1000
+    CACHE_KEY = "accounts:ordered-ranks:v1"
+    CACHE_TIMEOUT = 3600
     DEFAULT_RANKS = (
         (1, "افسر 6"),
         (2, "افسر 5"),
@@ -154,10 +124,36 @@ class Rank(TimestampedModel):
             self.max_points = None
 
         super().save(*args, **kwargs)
+        cache.delete(self.CACHE_KEY)
 
     @classmethod
-    def get_rank_for_points(cls, points: int | None) -> Rank | None:
+    def get_cached_ranks(cls) -> list["Rank"]:
+        ranks = cache.get(cls.CACHE_KEY)
+        if ranks is None:
+            ranks = list(cls.objects.order_by("level"))
+            cache.set(cls.CACHE_KEY, ranks, cls.CACHE_TIMEOUT)
+        return ranks
+
+    @classmethod
+    def get_cached_rank_by_id(cls, rank_id: int | None) -> "Rank | None":
+        if not rank_id:
+            return None
+        for rank in cls.get_cached_ranks():
+            if rank.id == rank_id:
+                return rank
+        return None
+
+    @classmethod
+    def get_rank_for_points(cls, points: int | None, *, ranks: Iterable["Rank"] | None = None) -> Rank | None:
         normalized_points = max(points or 0, 0)
+        if ranks is not None:
+            matched_rank = None
+            for rank in ranks:
+                if rank.is_unlocked_for_points(normalized_points):
+                    matched_rank = rank
+                else:
+                    break
+            return matched_rank
         return (
             cls.objects.filter(min_points__lte=normalized_points)
             .filter(models.Q(max_points__isnull=True) | models.Q(max_points__gte=normalized_points))
@@ -166,9 +162,15 @@ class Rank(TimestampedModel):
         )
 
     @classmethod
-    def get_progress_metrics(cls, points: int | None) -> dict[str, int | Rank | None]:
+    def get_progress_metrics(
+        cls,
+        points: int | None,
+        *,
+        current_rank: "Rank | None" = None,
+        ranks: Iterable["Rank"] | None = None,
+    ) -> dict[str, int | Rank | None]:
         normalized_points = max(points or 0, 0)
-        current_rank = cls.get_rank_for_points(normalized_points)
+        current_rank = current_rank or cls.get_rank_for_points(normalized_points, ranks=ranks)
 
         if current_rank is None:
             points_per_level = cls.POINTS_PER_LEVEL
@@ -253,6 +255,7 @@ class Rank(TimestampedModel):
             if changed_fields:
                 changed_fields.append("updated_at")
                 rank.save(update_fields=changed_fields)
+        cache.delete(cls.CACHE_KEY)
 
 
 class UserManager(BaseUserManager):
@@ -362,6 +365,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         full_name = self.get_full_name()
         return full_name or self.phone_number
+
+    def clean(self):
+        super().clean()
+        self.phone_number = _normalize_digits(self.phone_number) or ""
+        iranian_mobile_validator(self.phone_number)
 
     def save(self, *args, **kwargs):
         self.phone_number = _normalize_digits(self.phone_number) or ""
@@ -479,8 +487,6 @@ class User(AbstractBaseUser, PermissionsMixin):
                 "status": UserLearningProgress.ProgressStatus.IN_PROGRESS,
             },
         )
-        user_progress.learning_path.sync_totals()
-        user_progress.sync_stage_progresses()
         return user_progress
 
     def get_learning_paths(self):

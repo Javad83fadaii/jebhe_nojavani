@@ -16,6 +16,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import Seller, User
+from config.view_helpers import redirect_seller_to_panel as _redirect_seller_to_panel
 
 from .forms import CartQuantityForm, ProductForm, WalletChargeRequestForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest, record_coin_spend
@@ -183,12 +184,6 @@ def _build_payment_context_from_session(request: HttpRequest) -> dict:
         return context
 
     return context
-
-
-def _redirect_seller_to_panel(request: HttpRequest):
-    if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
-        return redirect("bazar:seller-dashboard")
-    return None
 
 
 def _require_seller(user: User) -> Seller:
@@ -686,7 +681,7 @@ def pay_view(request: HttpRequest) -> HttpResponse:
             total_amount=total_money_needed,
             coins_used=total_coins_needed,
             wallet_used=total_money_needed,
-            online_paid=0,
+            gateway_paid_amount=0,
             status=Order.Status.PAID,
         )
 
@@ -781,7 +776,7 @@ def wallet_charge_view(request: HttpRequest) -> HttpResponse:
             WalletChargeRequest.objects.create(
                 user=request.user,
                 requested_amount=amount,
-                requested_coins=0,
+                legacy_requested_coins=0,
             )
             messages.success(request, "درخواست افزایش اعتبار کیف پول ثبت شد و پس از بررسی و تایید ادمین، اعتبار به کیف پول شما افزوده می‌شود.")
             return redirect(safe_next_url or "bazar:wallet-charge")

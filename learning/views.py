@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView, View
 
 from accounts.models import Rank
+from config.view_helpers import redirect_seller_to_panel as _redirect_seller_to_panel
 from learning.models import (
     LearningPath,
     LearningStage,
@@ -37,12 +38,6 @@ def _get_active_rank_for_points(points, ranks):
         else:
             break
     return active_rank
-
-
-def _redirect_seller_to_panel(request):
-    if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
-        return redirect("bazar:seller-dashboard")
-    return None
 
 
 def _redirect_to_exam_progress(exam):
@@ -123,7 +118,6 @@ class LearningPathStagesView(SellerSiteAccessMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         learning_path = self.get_object()
-        learning_path.sync_totals()
         context["stages"] = learning_path.get_active_stages()
         context["user_progress"] = None
         context["user_stage_progresses_map"] = {}
@@ -135,8 +129,6 @@ class LearningPathStagesView(SellerSiteAccessMixin, DetailView):
             ).first()
 
             if user_progress:
-                user_progress.sync_stage_progresses()
-                user_progress.refresh_from_db()
                 user_stage_progresses = UserStageProgress.objects.filter(
                     user_learning_progress=user_progress
                 ).select_related("learning_stage")
@@ -225,9 +217,6 @@ class LearningStageDetailView(SellerSiteAccessMixin, DetailView):
                 user=user,
                 learning_path=learning_stage.learning_path,
             ).first()
-            if user_progress:
-                user_progress.sync_stage_progresses()
-                user_progress.refresh_from_db()
             user_stage_progress = UserStageProgress.objects.filter(
                 user=user,
                 learning_stage=learning_stage,
@@ -283,8 +272,6 @@ class LearningStageQuestionsView(SellerSiteAccessMixin, DetailView):
         if not user_progress:
             return redirect("learning:learning_path_stages", pk=learning_stage.learning_path.pk)
 
-        user_progress.sync_stage_progresses()
-        user_progress.refresh_from_db()
         user_stage_progress = UserStageProgress.objects.filter(
             user=request.user,
             learning_stage=learning_stage,
@@ -307,8 +294,6 @@ class LearningStageQuestionsView(SellerSiteAccessMixin, DetailView):
         user_stage_progress = None
 
         if user_progress:
-            user_progress.sync_stage_progresses()
-            user_progress.refresh_from_db()
             user_stage_progress = UserStageProgress.objects.filter(
                 user=self.request.user,
                 learning_stage=learning_stage,
@@ -495,7 +480,13 @@ class RankCardsView(SellerSiteAccessMixin, ListView):
     model = Rank
     template_name = "learning/rank_cards.html"
     context_object_name = "ranks"
-    queryset = Rank.objects.all().order_by("min_points", "level")
+    def get_queryset(self):
+        published_learning_paths = LearningPath.objects.filter(
+            publish_status=LearningPath.PublishStatus.PUBLISHED
+        ).order_by("display_order", "title")
+        return Rank.objects.order_by("min_points", "level").prefetch_related(
+            Prefetch("learning_paths", queryset=published_learning_paths, to_attr="published_learning_paths")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -532,9 +523,8 @@ class RankCardsView(SellerSiteAccessMixin, ListView):
                 progress_range = max(progress_end - progress_start, 1)
                 progress_percentage = min(max(((user_points - progress_start) / progress_range) * 100, 0), 100)
 
-            learning_path = rank.learning_paths.filter(
-                publish_status=LearningPath.PublishStatus.PUBLISHED
-            ).order_by("display_order", "title").first()
+            published_learning_paths = getattr(rank, "published_learning_paths", [])
+            learning_path = published_learning_paths[0] if published_learning_paths else None
 
             user_progress = None
             if learning_path and learning_path.id in user_progresses:

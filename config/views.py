@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from accounts.models import Rank
 from learning.models import LearningPath, LearningStage
 from challenges.models import Challenge, ChallengeParticipation
+from config.view_helpers import redirect_seller_to_panel as _redirect_seller_to_panel
 from django.utils import timezone
 
 
@@ -37,12 +38,6 @@ def _group_user_challenge_participations(user):
 def _redirect_guest_to_index(request):
     if not request.user.is_authenticated:
         return redirect("index")
-    return None
-
-
-def _redirect_seller_to_panel(request):
-    if request.user.is_authenticated and request.user.is_seller and not request.session.get("seller_site_view", False):
-        return redirect("bazar:seller-dashboard")
     return None
 
 
@@ -382,7 +377,8 @@ def logout_view(request):
 @login_required
 def user_progress_api(request):
     total_points = int(getattr(request.user, "total_points", 0) or 0)
-    progress_metrics = Rank.get_progress_metrics(total_points)
+    current_rank = Rank.get_cached_rank_by_id(getattr(request.user, "current_rank_id", None))
+    progress_metrics = Rank.get_progress_metrics(total_points, current_rank=current_rank)
     current_rank = progress_metrics["current_rank"]
 
     return JsonResponse(

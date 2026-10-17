@@ -1,13 +1,17 @@
 import io
 from decimal import Decimal
+from types import SimpleNamespace
 
+from django.contrib.admin.sites import AdminSite
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 from PIL import Image
 
 from accounts.models import CoinTransaction, Seller, User
 
+from .admin import OrderAdmin
 from .forms import ProductForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
 
@@ -398,6 +402,135 @@ class CheckoutFlowTests(TestCase):
         self.assertContains(result_response, "موجودی کیف پول شما کافی نیست")
         self.assertContains(result_response, "۲۰,۰۰۰")
         self.assertEqual(Order.objects.count(), 0)
+
+    def test_cancel_and_refund_restores_wallet_coins_stock_and_seller_totals(self):
+        self.user.wallet_balance = Decimal("50000")
+        self.user.save(update_fields=["wallet_balance"])
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.coin_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.COIN,
+        )
+        CartItem.objects.create(
+            cart=self.cart,
+            product=self.money_product,
+            quantity=1,
+            selected_payment_method=CartItem.SelectedPaymentMethod.MONEY,
+        )
+
+        self.client.post(reverse("bazar:checkout-pay"))
+
+        order = Order.objects.get()
+        order.cancel_and_refund()
+
+        order.refresh_from_db()
+        self.user.refresh_from_db()
+        self.seller_user.refresh_from_db()
+        self.seller.refresh_from_db()
+        self.coin_product.refresh_from_db()
+        self.money_product.refresh_from_db()
+
+        self.assertEqual(order.status, Order.Status.CANCELLED)
+        self.assertEqual(self.user.challenge_coins, 60000)
+        self.assertEqual(self.user.wallet_balance, Decimal("50000"))
+        self.assertEqual(self.seller_user.wallet_balance, Decimal("0"))
+        self.assertEqual(self.seller.sales_count, 0)
+        self.assertEqual(self.seller.total_revenue, Decimal("0"))
+        self.assertEqual(self.coin_product.stock, 4)
+        self.assertEqual(self.money_product.stock, 5)
+        self.assertTrue(
+            CoinTransaction.objects.filter(
+                user=self.user,
+                transaction_type=CoinTransaction.TransactionType.REFUND,
+                amount=45000,
+            ).exists()
+        )
+        self.assertTrue(
+            Transaction.objects.filter(
+                user=self.user,
+                order=order,
+                transaction_type=Transaction.TransactionType.REFUND,
+                amount=30000,
+            ).exists()
+        )
+
+
+class OrderAdminRefundTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.order_admin = OrderAdmin(Order, AdminSite())
+        self.buyer = User.objects.create_user(
+            phone_number="09127779990",
+            password="StrongPass123!",
+            first_name="خریدار",
+            last_name="ادمین",
+            wallet_balance=Decimal("0"),
+        )
+        self.seller_user = User.objects.create_user(
+            phone_number="09127779991",
+            password="StrongPass123!",
+            first_name="فروشنده",
+            last_name="ادمین",
+            wallet_balance=Decimal("25500"),
+        )
+        self.seller = Seller.objects.create(
+            user=self.seller_user,
+            shop_name="فروشگاه تست ادمین",
+            shop_address="تهران",
+            platform_commission_percent=Decimal("15.00"),
+            sales_count=1,
+            total_revenue=Decimal("30000"),
+        )
+        self.category = Category.objects.create(name="تست ادمین بازار")
+        self.product = Product.objects.create(
+            seller=self.seller,
+            category=self.category,
+            title="محصول تست ادمین",
+            description="برای تست لغو از ادمین",
+            price=30000,
+            stock=4,
+            payment_method=Product.PaymentMethod.MONEY,
+        )
+        self.order = Order.objects.create(
+            user=self.buyer,
+            total_amount=30000,
+            wallet_used=30000,
+            gateway_paid_amount=0,
+            status=Order.Status.PAID,
+        )
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            quantity=1,
+            unit_price=30000,
+            unit_coins=0,
+            paid_with="money",
+        )
+
+    def test_model_cancel_and_refund_raises_when_seller_wallet_is_insufficient(self):
+        self.seller_user.wallet_balance = Decimal("0")
+        self.seller_user.save(update_fields=["wallet_balance"])
+
+        with self.assertRaises(ValidationError):
+            self.order.cancel_and_refund()
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.Status.PAID)
+
+    def test_admin_save_model_catches_refund_validation_error(self):
+        self.seller_user.wallet_balance = Decimal("0")
+        self.seller_user.save(update_fields=["wallet_balance"])
+        edited_order = Order.objects.get(pk=self.order.pk)
+        edited_order.status = Order.Status.CANCELLED
+        request = self.factory.post(f"/admin/jebhe_bazar/order/{self.order.pk}/change/")
+        form = SimpleNamespace(changed_data=["status"])
+
+        self.order_admin.save_model(request, edited_order, form, change=True)
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.Status.PAID)
+        self.assertIn("موجودی کیف پول فروشنده", request._bazar_order_admin_error_message)
 
 
 class WalletChargeRequestTests(TestCase):
