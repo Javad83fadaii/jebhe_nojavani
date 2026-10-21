@@ -4,6 +4,7 @@ import re
 from datetime import date
 
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
@@ -88,6 +89,28 @@ def _normalize_text(value: str | None) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+
+def _build_password_validation_user(attrs, *, instance: User | None = None) -> User:
+    user = instance or User()
+    user.phone_number = _normalize_digits(attrs.get("phone_number")) or getattr(user, "phone_number", "") or ""
+    user.first_name = attrs.get("first_name", getattr(user, "first_name", "")) or ""
+    user.last_name = attrs.get("last_name", getattr(user, "last_name", "")) or ""
+    return user
+
+
+def _validate_password_with_validators(password: str, *, user: User | None = None) -> str:
+    try:
+        validate_password(password, user=user)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError(exc.messages)
+    return password
+
+
+def _get_login_user(phone_number: str | None) -> tuple[str, User | None]:
+    normalized_phone_number = _normalize_digits(phone_number) or ""
+    user = User.objects.filter(phone_number=normalized_phone_number).select_related("seller_profile").first()
+    return normalized_phone_number, user
 
 
 class FlexibleBirthDateField(serializers.DateField):
@@ -333,7 +356,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        return _sync_user_geography(attrs)
+        attrs = _sync_user_geography(attrs)
+        validation_user = _build_password_validation_user(attrs)
+        try:
+            _validate_password_with_validators(attrs["password"], user=validation_user)
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({"password": exc.detail})
+        return attrs
 
     def create(self, validated_data):
         password = validated_data.pop("password")
@@ -355,21 +384,32 @@ class UserLoginSerializer(serializers.Serializer):
         }
     )
 
+    def validate_phone_number(self, value: str) -> str:
+        return _normalize_digits(value) or ""
+
     def validate(self, attrs):
         phone_number = attrs.get("phone_number")
         password = attrs.get("password")
+        normalized_phone_number, user = _get_login_user(phone_number)
 
-        user = authenticate(request=self.context.get("request"), username=phone_number, password=password)
-        if not user:
+        if not user or not user.check_password(password):
             raise serializers.ValidationError("شماره تلفن یا رمز عبور اشتباه است.")
+        if not user.is_active:
+            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
         seller_profile = getattr(user, "seller_profile", None)
         if seller_profile and not seller_profile.verified:
             raise PermissionDenied("حساب فروشنده شما هنوز تایید نشده است.")
         if seller_profile and not seller_profile.is_active:
             raise serializers.ValidationError("حساب فروشنده شما غیرفعال است.")
-        if not user.is_active:
-            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
-        attrs["user"] = user
+        authenticated_user = authenticate(
+            request=self.context.get("request"),
+            username=normalized_phone_number,
+            password=password,
+        )
+        if not authenticated_user:
+            raise serializers.ValidationError("شماره تلفن یا رمز عبور اشتباه است.")
+        attrs["phone_number"] = normalized_phone_number
+        attrs["user"] = authenticated_user
         attrs["user_type"] = "seller" if seller_profile else "user"
         return attrs
 
@@ -438,6 +478,24 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["new_password"] != attrs["new_password_confirm"]:
             raise serializers.ValidationError({"new_password_confirm": "رمز عبور و تکرار آن باید یکسان باشند."})
+        existing_user = User.objects.filter(phone_number=attrs["phone_number"]).only(
+            "id",
+            "phone_number",
+            "first_name",
+            "last_name",
+        ).first()
+        validation_user = _build_password_validation_user(
+            {
+                "phone_number": attrs["phone_number"],
+                "first_name": getattr(existing_user, "first_name", ""),
+                "last_name": getattr(existing_user, "last_name", ""),
+            },
+            instance=existing_user,
+        )
+        try:
+            _validate_password_with_validators(attrs["new_password"], user=validation_user)
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({"new_password": exc.detail})
         return attrs
 
 
@@ -578,6 +636,14 @@ class SellerRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("این شماره تلفن قبلاً ثبت شده است.")
         return normalized_value
 
+    def validate(self, attrs):
+        validation_user = _build_password_validation_user(attrs)
+        try:
+            _validate_password_with_validators(attrs["password"], user=validation_user)
+        except serializers.ValidationError as exc:
+            raise serializers.ValidationError({"password": exc.detail})
+        return attrs
+
     def create(self, validated_data):
         password = validated_data.pop("password")
         shop_name = validated_data.pop("seller_shop_name")
@@ -612,21 +678,34 @@ class SellerLoginSerializer(serializers.Serializer):
         }
     )
 
+    def validate_phone_number(self, value: str) -> str:
+        return _normalize_digits(value) or ""
+
     def validate(self, attrs):
         phone_number = attrs.get("phone_number")
         password = attrs.get("password")
+        normalized_phone_number, user = _get_login_user(phone_number)
 
-        user = authenticate(request=self.context.get("request"), username=phone_number, password=password)
-        if not user:
+        if not user or not user.check_password(password):
             raise serializers.ValidationError("شماره تلفن یا رمز عبور اشتباه است.")
+        if not user.is_active:
+            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
         seller_profile = getattr(user, "seller_profile", None)
         if not seller_profile:
             raise serializers.ValidationError("این حساب کاربری فروشنده نیست.")
         if not seller_profile.verified:
             raise PermissionDenied("حساب فروشنده شما هنوز تایید نشده است.")
-        if not user.is_active:
-            raise serializers.ValidationError("حساب کاربری شما غیرفعال است.")
-        attrs["user"] = user
+        if not seller_profile.is_active:
+            raise serializers.ValidationError("حساب فروشنده شما غیرفعال است.")
+        authenticated_user = authenticate(
+            request=self.context.get("request"),
+            username=normalized_phone_number,
+            password=password,
+        )
+        if not authenticated_user:
+            raise serializers.ValidationError("شماره تلفن یا رمز عبور اشتباه است.")
+        attrs["phone_number"] = normalized_phone_number
+        attrs["user"] = authenticated_user
         return attrs
 
 

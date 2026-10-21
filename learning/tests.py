@@ -252,6 +252,65 @@ class LearningProgressFlowTestCase(TestCase):
         self.assertEqual(set(chosen_set_ids), {qs.pk for qs in question_sets})
 
 
+class LearningStageContentTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            phone_number="09127771111",
+            password="StrongPass123!",
+            first_name="محتوا",
+            last_name="آزمایشی",
+        )
+        self.learning_path = LearningPath.objects.create(
+            title="سیر محتوایی",
+            publish_status=LearningPath.PublishStatus.PUBLISHED,
+        )
+
+    def test_content_file_uses_filefield_url_without_manual_media_prefix(self):
+        stage = LearningStage(
+            learning_path=self.learning_path,
+            title="مرحله فایل",
+            stage_number=1,
+            content_type=LearningStage.ContentType.VIDEO,
+        )
+        stage.content_file.name = "learning/stages/content/sample-video.mp4"
+
+        self.assertEqual(stage.content_source_url, "/media/learning/stages/content/sample-video.mp4")
+
+    def test_stage_detail_renders_embedded_youtube_url(self):
+        stage = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله ویدئو",
+            stage_number=1,
+            content_type=LearningStage.ContentType.VIDEO,
+            content_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        )
+        self.user.enroll_in_path(self.learning_path)
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"/learning/stages/{stage.pk}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "https://www.youtube.com/embed/dQw4w9WgXcQ")
+        self.assertNotContains(response, 'iframe src="https://www.youtube.com/watch?v=dQw4w9WgXcQ"')
+
+    def test_stage_detail_falls_back_to_external_video_link_when_embed_is_not_supported(self):
+        stage = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله لینک خارجی",
+            stage_number=1,
+            content_type=LearningStage.ContentType.VIDEO,
+            content_url="https://example.com/videos/lesson-page",
+        )
+        self.user.enroll_in_path(self.learning_path)
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"/learning/stages/{stage.pk}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "مشاهده ویدئو")
+        self.assertNotContains(response, 'iframe src="https://example.com/videos/lesson-page"')
+
+
 class RankCardsViewContextTestCase(TestCase):
     def setUp(self):
         Rank.ensure_default_ranks()

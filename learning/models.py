@@ -170,6 +170,14 @@ class LearningStage(TimestampedModel):
         return self.content_url or ""
 
     @staticmethod
+    def _has_media_extension(url: str, extensions: tuple[str, ...]) -> bool:
+        if not url:
+            return False
+        parsed = urlparse(url)
+        path = (parsed.path or "").lower()
+        return any(path.endswith(extension) for extension in extensions)
+
+    @staticmethod
     def _extract_youtube_video_id(url: str) -> str:
         parsed = urlparse(url)
         host = parsed.netloc.lower().removeprefix("www.")
@@ -211,6 +219,24 @@ class LearningStage(TimestampedModel):
             return f"https://www.aparat.com/video/video/embed/videohash/{aparat_video_hash}/vt/frame"
 
         return ""
+
+    @property
+    def is_direct_video_content(self) -> bool:
+        if self.content_file:
+            return True
+        return self._has_media_extension(
+            self.content_url,
+            (".mp4", ".webm", ".ogg", ".mov", ".m4v", ".m3u8"),
+        )
+
+    @property
+    def is_direct_audio_content(self) -> bool:
+        if self.content_file:
+            return True
+        return self._has_media_extension(
+            self.content_url,
+            (".mp3", ".wav", ".ogg", ".m4a", ".aac"),
+        )
 
 
 class StageQuestionSet(TimestampedModel):

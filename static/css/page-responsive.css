@@ -1,3 +1,28 @@
+.form-grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.page-title-lg {
+    font-size: 2rem;
+}
+
+.profile-stats-push {
+    margin-right: auto;
+}
+
+.form-actions-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.modal-actions-row {
+    display: flex;
+    gap: 1rem;
+}
+
 @media (max-width: 768px) {
     .auth-container {
         min-height: calc(100vh - 180px) !important;
@@ -19,17 +44,15 @@
         grid-template-columns: 1fr !important;
     }
 
-    #seller-register-form > div[style*="grid-template-columns: 1fr 1fr"],
-    #profile-form > div[style*="grid-template-columns: 1fr 1fr"],
-    #password-fields > div[style*="grid-template-columns: 1fr 1fr"] {
-        display: grid !important;
+    #seller-register-form > .form-grid-two,
+    #profile-form > .form-grid-two,
+    #password-fields > .form-grid-two {
         grid-template-columns: 1fr !important;
         gap: 0.85rem !important;
     }
 
-    .profile-edit-container > .glass-card > form > div[style*="display: flex; gap: 1rem; margin-top: 2rem"],
-    #delete-modal div[style*="display: flex; gap: 1rem"] {
-        display: flex !important;
+    .profile-edit-container > .glass-card > form > .form-actions-row,
+    #delete-modal .modal-actions-row {
         flex-direction: column !important;
         gap: 0.85rem !important;
     }
@@ -93,8 +116,7 @@
     }
 
     .card-header h1,
-    .auth-container h1[style*="font-size: 2rem"],
-    .profile-edit-container h1[style*="font-size: 2rem"] {
+    .page-title-lg {
         font-size: 1.45rem !important;
         line-height: 1.35 !important;
     }
@@ -249,7 +271,7 @@
         width: 100% !important;
     }
 
-    .profile-stats[style*="margin-right: auto"] {
+    .profile-stats-push {
         margin-right: 0 !important;
         width: 100%;
     }

@@ -450,32 +450,51 @@
                     <h2>محتوای آموزشی</h2>
                 </div>
 
-                {% if learning_stage.content_link_or_file %}
+                {% if learning_stage.has_content %}
                     <div class="stage-content-wrapper">
                         {% if learning_stage.content_type == "podcast" %}
                             <div class="stage-media-placeholder">
                                 <div>
                                     <i class="fa-solid fa-microphone-lines"></i>
-                                    <p>فایل صوتی این مرحله را از همین بخش گوش کنید.</p>
-                                    <audio controls>
-                                        <source src="{{ learning_stage.content_link_or_file }}">
-                                    </audio>
+                                    {% if learning_stage.is_direct_audio_content %}
+                                        <p>فایل صوتی این مرحله را از همین بخش گوش کنید.</p>
+                                        <audio controls>
+                                            <source src="{{ learning_stage.content_source_url }}">
+                                        </audio>
+                                    {% else %}
+                                        <p>این فایل صوتی به صورت مستقیم درون صفحه قابل پخش نیست. از لینک زیر برای مشاهده یا دانلود استفاده کنید.</p>
+                                        <a href="{{ learning_stage.content_source_url }}" target="_blank" class="stage-action-btn stage-action-btn--primary" style="margin-top: 1rem;">
+                                            <i class="fa-solid fa-headphones"></i>
+                                            مشاهده فایل صوتی
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% elif learning_stage.content_type == "video" or learning_stage.content_type == "documentary" %}
-                            {% if learning_stage.content_link_or_file|slice:":4" == "http" %}
-                                <iframe src="{{ learning_stage.content_link_or_file }}" title="{{ learning_stage.title }}" allowfullscreen style="min-height: 420px; border: 0;"></iframe>
-                            {% else %}
+                            {% if learning_stage.embedded_content_url %}
+                                <iframe src="{{ learning_stage.embedded_content_url }}" title="{{ learning_stage.title }}" allowfullscreen style="min-height: 420px; border: 0;"></iframe>
+                            {% elif learning_stage.is_direct_video_content %}
                                 <video controls style="min-height: 420px; background: #000;">
-                                    <source src="{{ learning_stage.content_link_or_file }}">
+                                    <source src="{{ learning_stage.content_source_url }}">
                                 </video>
+                            {% else %}
+                                <div class="stage-media-placeholder">
+                                    <div>
+                                        <i class="fa-solid fa-up-right-from-square"></i>
+                                        <p>این ویدئو به صورت مستقیم قابل نمایش درون صفحه نیست. برای مشاهده، از لینک زیر استفاده کنید.</p>
+                                        <a href="{{ learning_stage.content_source_url }}" target="_blank" class="stage-action-btn stage-action-btn--primary" style="margin-top: 1rem;">
+                                            <i class="fa-solid fa-play"></i>
+                                            مشاهده ویدئو
+                                        </a>
+                                    </div>
+                                </div>
                             {% endif %}
                         {% else %}
                             <div class="stage-media-placeholder">
                                 <div>
                                     <i class="fa-solid fa-file-arrow-down"></i>
                                     <p>برای مشاهده یا دانلود محتوای این مرحله از دکمه زیر استفاده کنید.</p>
-                                    <a href="{{ learning_stage.content_link_or_file }}" target="_blank" class="stage-action-btn stage-action-btn--primary" style="margin-top: 1rem;">
+                                    <a href="{{ learning_stage.content_source_url }}" target="_blank" class="stage-action-btn stage-action-btn--primary" style="margin-top: 1rem;">
                                         <i class="fa-solid fa-download"></i>
                                         مشاهده محتوا
                                     </a>

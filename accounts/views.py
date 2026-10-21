@@ -77,6 +77,50 @@ def _extract_provider_error(raw: dict | None) -> str:
     return ""
 
 
+def _build_password_reset_success_payload(user: User) -> tuple[dict[str, str], bool]:
+    seller_profile = getattr(user, "seller_profile", None)
+    is_seller = bool(seller_profile)
+
+    if not user.is_active:
+        return (
+            {
+                "detail": "رمز عبور با موفقیت تغییر کرد، اما حساب کاربری شما غیرفعال است.",
+                "user_type": "seller" if is_seller else "user",
+                "redirect_url": reverse("login"),
+            },
+            False,
+        )
+
+    if seller_profile and not seller_profile.verified:
+        return (
+            {
+                "detail": "رمز عبور با موفقیت تغییر کرد. پس از تایید حساب فروشنده، می‌توانید وارد شوید.",
+                "user_type": "seller",
+                "redirect_url": reverse("seller_login"),
+            },
+            False,
+        )
+
+    if seller_profile and not seller_profile.is_active:
+        return (
+            {
+                "detail": "رمز عبور با موفقیت تغییر کرد، اما حساب فروشنده شما غیرفعال است.",
+                "user_type": "seller",
+                "redirect_url": reverse("seller_login"),
+            },
+            False,
+        )
+
+    return (
+        {
+            "detail": "رمز عبور با موفقیت تغییر کرد و وارد حساب کاربری شدید.",
+            "user_type": "seller" if is_seller else "user",
+            "redirect_url": reverse("bazar:seller-dashboard") if is_seller else reverse("home"),
+        },
+        True,
+    )
+
+
 class UserRegistrationView(APIView):
     permission_classes = [AllowAny]
 
@@ -331,18 +375,15 @@ class PasswordResetConfirmView(APIView):
             reset_request.used_at = timezone.now()
             reset_request.save(update_fields=["status", "used_at", "updated_at"])
 
+        response_payload, should_login = _build_password_reset_success_payload(user)
+        if not should_login:
+            return Response(response_payload, status=status.HTTP_200_OK)
+
         auth_login(request, user)
         refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "detail": "رمز عبور با موفقیت تغییر کرد و وارد حساب کاربری شدید.",
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-                "user_type": "seller" if user.is_seller else "user",
-                "redirect_url": reverse("bazar:seller-dashboard") if user.is_seller else reverse("home"),
-            },
-            status=status.HTTP_200_OK,
-        )
+        response_payload["refresh"] = str(refresh)
+        response_payload["access"] = str(refresh.access_token)
+        return Response(response_payload, status=status.HTTP_200_OK)
 
 
 class PasswordAwareTokenRefreshView(TokenRefreshView):

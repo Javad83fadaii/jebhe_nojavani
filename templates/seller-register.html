@@ -5,7 +5,7 @@
 <div class="auth-container" style="min-height: calc(100vh - 300px); display: flex; align-items: center; justify-content: center; padding: 3rem 5%;">
     <div class="glass-card" style="max-width: 650px; width: 100%; padding: 2.5rem;">
         <div style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="text-gold" style="font-size: 2rem; margin-bottom: 0.5rem;">ثبت‌نام فروشنده</h1>
+            <h1 class="text-gold page-title-lg" style="margin-bottom: 0.5rem;">ثبت‌نام فروشنده</h1>
             <p style="color: var(--gray-light); font-size: 0.9rem;">پس از تایید حساب، می‌توانید وارد شوید.</p>
         </div>
 
@@ -17,7 +17,7 @@
                 <input type="tel" id="phone_number" name="phone_number" pattern="09[0-9]{9}" placeholder="09123456789" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-grid-two">
                 <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">نام</label>
                     <input type="text" id="first_name" name="first_name" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
@@ -39,7 +39,7 @@
                 <textarea id="seller_shop_address" name="seller_shop_address" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem; min-height: 120px;"></textarea>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-grid-two">
                 <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">شهر</label>
                     <input type="text" id="city" name="city" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
@@ -51,7 +51,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-grid-two">
                 <div class="form-group" style="margin-bottom: 1.25rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">رمز عبور</label>
                     <input type="password" id="password" name="password" minlength="8" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">

@@ -49,7 +49,8 @@ class LearningStageInline(admin.TabularInline):
         "stage_number",
         "title",
         "content_type",
-        "content_link_or_file",
+        "content_url",
+        "content_file",
         "estimated_study_time",
         "required_points",
         "stage_points",
@@ -152,13 +153,14 @@ class LearningStageAdmin(admin.ModelAdmin):
         }),
         ("محتوا و امتیاز", {
             "fields": (
-                "content_link_or_file",
+                "content_url",
+                "content_file",
                 "estimated_study_time",
                 "required_points",
                 "stage_points",
                 "min_passing_score",
             ),
-            "description": "امتیاز هر مرحله به صورت ثابت 10 در نظر گرفته می‌شود و امتیاز مورد نیاز باز شدن نیز بر اساس شماره مرحله به صورت خودکار محاسبه می‌شود.",
+            "description": "در هر مرحله فقط یکی از فیلدهای لینک یا فایل را پر کنید. امتیاز هر مرحله به صورت ثابت 100 در نظر گرفته می‌شود و امتیاز مورد نیاز باز شدن نیز بر اساس شماره مرحله به صورت خودکار محاسبه می‌شود.",
         }),
         ("توضیحات مرحله", {
             "fields": ("description", "detail_summary"),

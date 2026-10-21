@@ -5,7 +5,7 @@
 <div class="profile-edit-container" style="max-width: 800px; margin: 0 auto; padding: 3rem 5%;">
     <div class="glass-card" style="padding: 2rem;">
         <div style="text-align: center; margin-bottom: 2rem;">
-            <h1 class="text-gold" style="font-size: 2rem; margin-bottom: 0.5rem;">ویرایش پروفایل</h1>
+            <h1 class="text-gold page-title-lg" style="margin-bottom: 0.5rem;">ویرایش پروفایل</h1>
             <p style="color: var(--gray-light);">اطلاعات خود را به‌روزرسانی کنید</p>
         </div>
         
@@ -37,7 +37,7 @@
         </div>
         
         <form id="profile-form">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-grid-two">
                 <div class="form-group" style="margin-bottom: 1.5rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">نام</label>
                     <input type="text" id="first_name" name="first_name" required style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
@@ -78,7 +78,7 @@
             </div>
             
             <div id="password-fields" style="display: none;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-grid-two">
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--gray-light);">رمز عبور جدید</label>
                         <input type="password" id="new_password" style="width: 100%; padding: 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: var(--white); font-size: 1rem;">
@@ -93,7 +93,7 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <div class="form-actions-row">
                 <button type="submit" class="btn btn-primary" style="flex: 1;">ذخیره تغییرات</button>
                 <a href="{% url 'profile' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">انصراف</a>
             </div>
@@ -113,7 +113,7 @@
         <h3 style="margin-bottom: 1rem;">حذف حساب کاربری</h3>
         <p style="margin-bottom: 1rem; color: var(--gray-light);">آیا از حذف حساب خود اطمینان دارید؟ این عمل غیرقابل بازگشت است و تمام داده‌های شما پاک خواهد شد.</p>
         <input type="text" id="delete-confirm" placeholder='برای تأیید عبارت "حذف" را وارد کنید' style="width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; margin-bottom: 1rem;">
-        <div style="display: flex; gap: 1rem;">
+        <div class="modal-actions-row">
             <button id="confirm-delete" class="btn btn-primary" style="flex: 1; background: #f44336;">حذف حساب</button>
             <button id="cancel-delete" class="btn btn-secondary" style="flex: 1;">انصراف</button>
         </div>

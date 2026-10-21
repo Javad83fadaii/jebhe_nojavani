@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 from unittest.mock import patch
 
 from accounts.admin import approve_transfers
-from accounts.models import CoinToWalletTransfer, PasswordResetRequest, User
+from accounts.models import CoinToWalletTransfer, PasswordResetRequest, Seller, User
 from accounts.signals import process_approved_transfer
 from accounts.services.smsir import SMSIRSendResult
 from geography.models import City, Mosque, Province, School
@@ -214,6 +214,36 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertTrue(User.objects.filter(phone_number="09133333333").exists())
 
+    def test_user_registration_uses_configured_password_validators(self):
+        register_payload = {
+            "phone_number": "09130000010",
+            "first_name": "کاربر",
+            "last_name": "جدید",
+            "password": "password123",
+        }
+
+        res = self.client.post("/api/accounts/register/", register_payload, format="json")
+
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("password", res.data)
+        self.assertFalse(User.objects.filter(phone_number="09130000010").exists())
+
+    def test_seller_registration_uses_configured_password_validators(self):
+        seller_register_payload = {
+            "phone_number": "09130000011",
+            "first_name": "فروشنده",
+            "last_name": "جدید",
+            "password": "password123",
+            "seller_shop_name": "فروشگاه تست",
+            "seller_shop_address": "آدرس تست",
+        }
+
+        res = self.client.post("/api/accounts/seller/register/", seller_register_payload, format="json")
+
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("password", res.data)
+        self.assertFalse(User.objects.filter(phone_number="09130000011").exists())
+
     def test_user_registration_rejects_mismatched_mosque_and_school(self):
         other_mosque = Mosque.objects.create(
             name="مسجد قم",
@@ -328,6 +358,24 @@ class AccountsAPITestCase(TestCase):
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
 
+    def test_user_login_returns_inactive_message_after_password_check(self):
+        user = User.objects.create_user(
+            phone_number="09120000003",
+            password="StrongPass123!",
+            first_name="غیرفعال",
+            last_name="نمونه",
+            is_active=False,
+        )
+
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"phone_number": user.phone_number, "password": "StrongPass123!"},
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("غیرفعال", str(res.data))
+
     @patch("accounts.views.randbelow", return_value=23456)
     def test_password_reset_flow_creates_hashed_request_and_updates_password(self, mocked_randbelow):
         user = User.objects.create_user(
@@ -386,6 +434,85 @@ class AccountsAPITestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         mocked_randbelow.assert_called()
+
+    @patch("accounts.views.randbelow", return_value=23456)
+    def test_password_reset_confirm_uses_configured_password_validators(self, mocked_randbelow):
+        user = User.objects.create_user(
+            phone_number="09123330001",
+            password="OldStrongPass123!",
+            first_name="اعتبار",
+            last_name="رمز",
+        )
+
+        request_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": user.phone_number},
+            format="json",
+        )
+        self.assertEqual(request_response.status_code, 200)
+
+        confirm_response = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {
+                "phone_number": user.phone_number,
+                "code": "123456",
+                "new_password": "password123",
+                "new_password_confirm": "password123",
+            },
+            format="json",
+        )
+
+        self.assertEqual(confirm_response.status_code, 400)
+        self.assertIn("new_password", confirm_response.data)
+        mocked_randbelow.assert_called_once()
+
+    @patch("accounts.views.randbelow", return_value=23456)
+    def test_unverified_seller_password_reset_does_not_log_in_user(self, mocked_randbelow):
+        seller_user = User.objects.create_user(
+            phone_number="09123330002",
+            password="OldStrongPass123!",
+            first_name="فروشنده",
+            last_name="تاییدنشده",
+        )
+        Seller.objects.create(
+            user=seller_user,
+            shop_name="فروشگاه تست",
+            shop_address="آدرس تست",
+            verified=False,
+        )
+
+        request_response = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"phone_number": seller_user.phone_number},
+            format="json",
+        )
+        self.assertEqual(request_response.status_code, 200)
+
+        confirm_response = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {
+                "phone_number": seller_user.phone_number,
+                "code": "123456",
+                "new_password": "NewStrongPass123!",
+                "new_password_confirm": "NewStrongPass123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(confirm_response.status_code, 200)
+        self.assertNotIn("access", confirm_response.data)
+        self.assertNotIn("refresh", confirm_response.data)
+        self.assertEqual(confirm_response.data["user_type"], "seller")
+        self.assertEqual(confirm_response.data["redirect_url"], "/seller/login/")
+        self.assertIn("تایید", confirm_response.data["detail"])
+
+        seller_login_response = self.client.post(
+            "/api/accounts/seller/login/",
+            {"phone_number": seller_user.phone_number, "password": "NewStrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(seller_login_response.status_code, 403)
+        mocked_randbelow.assert_called_once()
 
         too_new_payload = {
             "phone_number": "09120000002",

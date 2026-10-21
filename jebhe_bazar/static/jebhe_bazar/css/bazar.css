@@ -961,7 +961,7 @@ html.js .bazar-cart-update-btn {
 
 .bazar-checkout-summary {
     position: sticky;
-    top: 2rem;
+    top: 110px;
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
@@ -1098,11 +1098,6 @@ html.js .bazar-cart-update-btn {
         gap: 1.25rem;
     }
 
-    .bazar-hero,
-    .bazar-card,
-    .bazar-form-card,
-    .bazar-empty-state,
-    .bazar-table-card,
     .bazar-alert {
         flex-direction: column;
         gap: 0.6rem;
@@ -1196,15 +1191,6 @@ html.js .bazar-cart-update-btn {
         flex: 1;
         width: auto;
         max-width: none;
-    }
-    .bazar-alert {
-        flex-direction: column;
-        gap: 0.6rem;
-    }
-
-    .bazar-alert-icon {
-        width: 36px;
-        height: 36px;
     }
 }
 
