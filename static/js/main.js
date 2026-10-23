@@ -1,4 +1,4 @@
-// main.js - جشنواره دانش
+// main.js - جبهه نوجوانی
 
 // Mock Data
 const mockData = {
@@ -208,12 +208,18 @@ function showNotification(message, type = 'info') {
 
 // Initialize active nav link
 function initActiveNav() {
-    const currentPage = document.body.dataset.page;
-    const navLinks = document.querySelectorAll('.nav-links a[data-nav]');
+    const currentPage = typeof window.resolveNavKey === 'function'
+        ? window.resolveNavKey(window.location.pathname)
+        : document.body.dataset.page;
+    const navLinks = document.querySelectorAll('.nav-item[data-nav]');
     
     navLinks.forEach(link => {
-        if (link.dataset.nav === currentPage) {
-            link.classList.add('active');
+        const isActive = link.dataset.nav === currentPage;
+        link.classList.toggle('active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
         }
     });
 }

@@ -650,11 +650,11 @@ Ranks & Levels Section (1000 points per rank)
         
         <div class="ranks-grid">
             {% for rank in ranks %}
-                <div class="rank-card glass-card {% if 'افسر' in rank.name %}type-officer{% elif 'ارشد' in rank.name %}type-senior{% else %}type-medal{% endif %}">
+                <div class="rank-card glass-card {% if rank.level <= 6 %}type-officer{% elif rank.level <= 12 %}type-senior{% else %}type-medal{% endif %}">
                     <div class="rank-icon">
-                        {% if 'افسر' in rank.name %}
+                        {% if rank.level <= 6 %}
                             <i class="fa-solid fa-shield"></i>
-                        {% elif 'ارشد' in rank.name %}
+                        {% elif rank.level <= 12 %}
                             <i class="fa-solid fa-award"></i>
                         {% else %}
                             <i class="fa-solid fa-medal"></i>

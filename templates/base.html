@@ -125,8 +125,7 @@ function updateNavBar() {
         // منوی پروفایل دسکتاپ از سمت سرور (header.html) داخل #auth-nav-links رندر شده؛
         // پس دیگر آن را خالی نمی‌کنیم. در موبایل با CSS مخفی می‌شود.
         if (pointsBadge) {
-            pointsBadge.style.display =
-                (userType === 'seller' && !sellerSiteView) ? 'none' : 'flex';
+            pointsBadge.hidden = (userType === 'seller' && !sellerSiteView);
         }
     } else {
         if (authNav) {
@@ -139,7 +138,7 @@ function updateNavBar() {
                 </a>
             `;
         }
-        if (pointsBadge) pointsBadge.style.display = 'none';
+        if (pointsBadge) pointsBadge.hidden = true;
     }
 }
 
@@ -302,6 +301,10 @@ function setupProfileDropdown() {
             openGuestModal('حساب کاربری');
             document.getElementById('site-modal-title').textContent = 'خروج با موفقیت انجام شد';
             document.getElementById('site-modal-text').textContent = 'برای ورود دوباره یا ساخت حساب جدید، از دکمه‌های زیر استفاده کنید.';
+            params.delete('logout');
+            const nextQuery = params.toString();
+            const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`;
+            window.history.replaceState({}, document.title, nextUrl);
         }
     });
 
@@ -375,6 +378,20 @@ function setupProfileDropdown() {
             }
         }
         return document.body.dataset.page || null;
+    }
+    window.resolveNavKey = resolveNavKey;
+
+    function updateDesktopNavActive() {
+        const currentKey = resolveNavKey(window.location.pathname);
+        document.querySelectorAll('.nav-item[data-nav]').forEach(item => {
+            const isActive = item.dataset.nav === currentKey;
+            item.classList.toggle('active', isActive);
+            if (isActive) {
+                item.setAttribute('aria-current', 'page');
+            } else {
+                item.removeAttribute('aria-current');
+            }
+        });
     }
 
     // مدیریت Active State برای داک موبایل
@@ -517,7 +534,6 @@ function setupProfileDropdown() {
     }
 
     // باز و بسته کردن شیت «بیشتر»
-    const mobileNavMore = document.getElementById('mobile-nav-more');
     const mobileMoreModal = document.getElementById('mobile-more-modal');
     const mobileMoreClose = document.getElementById('mobile-more-close');
     const mobileMoreBackdrop = mobileMoreModal ? mobileMoreModal.querySelector('.mobile-more-backdrop') : null;
@@ -535,9 +551,6 @@ function setupProfileDropdown() {
         unlockPageScroll('mobile-more');
     }
 
-    if (mobileNavMore) {
-        mobileNavMore.addEventListener('click', openMobileMoreModal);
-    }
     // باز کردن منوی حساب کاربری از آیکون پایین موبایل
     const mobileNavProfile = document.getElementById('mobile-nav-profile');
 
@@ -605,6 +618,7 @@ function setupProfileDropdown() {
     })();
 
     // اعمال active state هنگام لود صفحه
+    document.addEventListener('DOMContentLoaded', updateDesktopNavActive);
     document.addEventListener('DOMContentLoaded', updateMobileNavActive);
 
     // اگر صفحه از حالت موبایل به دسکتاپ رفت (مثلاً چرخش صفحه) شیت باز نماند

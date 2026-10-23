@@ -14,6 +14,7 @@ from accounts.models import CoinTransaction, Seller, User
 from .admin import OrderAdmin
 from .forms import ProductForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product, Transaction, WalletChargeRequest
+from .templatetags.bazar_tags import digits
 
 
 class BazarModelTests(TestCase):
@@ -50,6 +51,9 @@ class BazarModelTests(TestCase):
 
         self.assertEqual(product.final_price, 80000)
         self.assertEqual(str(buyer), "خریدار تست")
+
+    def test_digits_filter_formats_order_ids_without_thousand_separator(self):
+        self.assertEqual(digits(1234), "۱۲۳۴")
 
 
 class CartInteractionTests(TestCase):

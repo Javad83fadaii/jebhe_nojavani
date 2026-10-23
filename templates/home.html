@@ -26,7 +26,7 @@
             <div class="glass-card feature-item">
                 <span role="img" aria-label="جایزه" style="font-size: 2rem;">🎁</span>
                 <h3 class="text-gold mt-3">جوایز ارزنده</h3>
-                <p style="margin-top: 1rem; color: var(--gray-light);">امتیازات خود را در فروشگاه جشنواره به جوایز فیزیکی و دیجیتالی تبدیل کنید.</p>
+                <p style="margin-top: 1rem; color: var(--gray-light);">امتیازات خود را در جبهه بازار به جوایز فیزیکی و دیجیتالی تبدیل کنید.</p>
             </div>
         </div>
     </section>
@@ -76,9 +76,14 @@
     </section>
 
     <section class="container mb-5 mt-5">
-        <h2 class="text-gold" style="text-align: center; margin-bottom: 2rem;">آخرین مسابقات</h2>
+        <h2 class="text-gold" style="text-align: center; margin-bottom: 2rem;">ادامه مسیر شما</h2>
         <div class="glass-card" style="padding: 3rem; text-align: center;">
-            <p style="color: var(--text-muted);">بخش مسابقات به زودی فعال خواهد شد.</p>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">از اینجا می‌توانی چالش‌های فعال، سیر مطالعاتی و جوایز جبهه بازار را بدون برگشت به منوی اصلی دنبال کنی.</p>
+            <div class="hero-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'challenges' %}" class="btn btn-secondary">رفتن به چالش‌ها</a>
+                <a href="{% url 'learning:rank_cards' %}" class="btn btn-primary">ادامه سیر مطالعاتی</a>
+                <a href="{% url 'bazar:product-list' %}" class="btn btn-secondary">مشاهده جبهه بازار</a>
+            </div>
         </div>
     </section>
 

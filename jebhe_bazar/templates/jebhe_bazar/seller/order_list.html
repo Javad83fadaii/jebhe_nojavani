@@ -40,7 +40,7 @@
             {% for order in orders %}
                 <article class="bazar-card bazar-order-card">
                     <div class="bazar-order-header">
-                        <strong>سفارش #{{ order.id }}</strong>
+                        <strong>سفارش #{{ order.id|digits }}</strong>
                         <span class="bazar-status {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
                     </div>
                     <div class="bazar-order-meta">

@@ -58,7 +58,13 @@
                     </a>
                 {% endif %}
                 <div class="nav-account-group">
-                    <div class="points-badge" id="points-badge" data-points-per-level="{{ user_points_per_level|default:1000 }}" data-total-points="{{ user_total_points|default:0 }}">
+                    <div
+                        class="points-badge"
+                        id="points-badge"
+                        data-points-per-level="{{ user_points_per_level|default:1000 }}"
+                        data-total-points="{{ user_total_points|default:0 }}"
+                        {% if not request.user.is_authenticated or seller_panel_mode or request.user.is_seller and not seller_site_view %}hidden aria-hidden="true"{% endif %}
+                    >
                         <span class="star-meter" aria-hidden="true" data-tooltip="امتیاز کل شما: {{ user_total_points|default:0 }}">
                             <i class="fa-regular fa-star star-outline"></i>
                             <span class="star-fill-wrap" style="width: {{ user_level_progress_percent|default:0 }}%;">

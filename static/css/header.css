@@ -377,7 +377,7 @@ body.mobile-menu-open .navbar.hide-nav {
 }
 
 .points-badge {
-    display: none;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     background: rgba(245, 166, 35, 0.15);

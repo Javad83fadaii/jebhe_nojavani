@@ -1,4 +1,4 @@
-/* style.css - جشنواره دانش */
+/* style.css - جبهه نوجوانی */
 :root {
     --primary-purple: #6C3FC5;
     --primary-purple-glow: rgba(108, 63, 197, 0.5);
@@ -30,7 +30,7 @@
 
 /* اضافه کردن هاله‌های نور متحرک در پس‌زمینه */
 body {
-    font-family: 'Manshoor', sans-serif;
+    font-family: var(--font-family-primary, 'Manshoor', 'Inter', sans-serif);
     background-color: var(--dark-bg);
     color: var(--white);
     line-height: 1.6;

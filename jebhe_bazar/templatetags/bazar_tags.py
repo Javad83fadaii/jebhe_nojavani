@@ -20,6 +20,14 @@ def toman(value):
 
 
 @register.filter
+def digits(value):
+    try:
+        return str(int(value)).translate(_PERSIAN_DIGITS_TRANSLATION)
+    except (TypeError, ValueError):
+        return value
+
+
+@register.filter
 def multiply(value, arg):
     try:
         return int(value) * int(arg)

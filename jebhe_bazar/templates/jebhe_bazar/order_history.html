@@ -17,7 +17,7 @@
             {% for order in orders %}
                 <article class="bazar-card">
                     <div class="bazar-inline-actions" style="justify-content: space-between; align-items: center;">
-                        <strong>سفارش #{{ order.id|toman }}</strong>
+                        <strong>سفارش #{{ order.id|digits }}</strong>
                         <span class="bazar-status {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
                     </div>
                     <div class="bazar-note" style="margin: 1rem 0;">ثبت در {{ order.created_at|jalali_datetime }}</div>

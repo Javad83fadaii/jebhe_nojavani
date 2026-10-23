@@ -165,6 +165,13 @@ class HomeViewTests(TestCase):
         self.assertContains(response, "رقیه ص.")
         self.assertNotContains(response, "رقیه صادقی")
 
+    def test_home_without_trailing_slash_redirects_to_canonical_url(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/home")
+
+        self.assertRedirects(response, reverse("home"), status_code=301, target_status_code=200)
+
 
 class BaseTitleBlockTests(TestCase):
     def setUp(self):
