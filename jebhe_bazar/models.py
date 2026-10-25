@@ -302,14 +302,6 @@ class Order(models.Model):
     def __str__(self) -> str:
         return f"سفارش #{self.pk} - {self.user}"
 
-    @property
-    def online_paid(self) -> int:
-        return self.gateway_paid_amount
-
-    @online_paid.setter
-    def online_paid(self, value: int) -> None:
-        self.gateway_paid_amount = value
-
     def cancel_and_refund(self) -> None:
         if not self.pk:
             raise ValidationError("لغو سفارش ذخیره‌نشده ممکن نیست.")

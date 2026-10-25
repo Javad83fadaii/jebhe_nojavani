@@ -16,6 +16,23 @@ from learning.models import (
 )
 
 
+def _create_exam(stage_progress: UserStageProgress, question_set: StageQuestionSet) -> UserStageExam:
+    if not stage_progress.can_take_exam():
+        raise ValidationError("شما قادر به شرکت در آزمون این مرحله نیستید.")
+
+    stage_progress.exam_attempts += 1
+    stage_progress.last_question_set_used = question_set
+    stage_progress.save(update_fields=["exam_attempts", "last_question_set_used", "updated_at"])
+
+    return UserStageExam.objects.create(
+        user=stage_progress.user,
+        user_stage_progress=stage_progress,
+        question_set=question_set,
+        attempt_number=stage_progress.exam_attempts,
+        status=UserStageExam.ExamStatus.IN_PROGRESS,
+    )
+
+
 class LearningPathAccessTestCase(TestCase):
     def setUp(self):
         Rank.ensure_default_ranks()
@@ -132,7 +149,7 @@ class LearningProgressFlowTestCase(TestCase):
             question_points=20,
         )
 
-        exam = stage_1_progress.start_exam(question_set)
+        exam = _create_exam(stage_1_progress, question_set)
         exam.submit_answer(question, "تهران")
         exam.finish_exam()
 
@@ -203,7 +220,7 @@ class LearningProgressFlowTestCase(TestCase):
             correct_answer="تهران",
             question_points=20,
         )
-        exam = stage_1_progress.start_exam(question_set)
+        exam = _create_exam(stage_1_progress, question_set)
         exam.submit_answer(question, "تهران")
 
         stale_first = UserStageExam.objects.get(pk=exam.pk)
@@ -244,7 +261,7 @@ class LearningProgressFlowTestCase(TestCase):
             question_set = stage_1_progress.get_next_question_set()
             self.assertIsNotNone(question_set)
             chosen_set_ids.append(question_set.pk)
-            exam = stage_1_progress.start_exam(question_set)
+            exam = _create_exam(stage_1_progress, question_set)
             exam.status = UserStageExam.ExamStatus.FAILED
             exam.save(update_fields=["status", "updated_at"])
 
@@ -409,16 +426,13 @@ class ExamAnswerFlowTestCase(TestCase):
             set_number=1,
             title="نمونه سوال",
         )
-        self.stage_progress = UserStageProgress.objects.create(
-            user=self.user,
+        self.user_progress = self.user.enroll_in_path(self.learning_path)
+        self.stage_progress = UserStageProgress.objects.get(
+            user_learning_progress=self.user_progress,
             learning_stage=self.stage,
-            user_learning_progress=UserLearningProgress.objects.create(
-                user=self.user,
-                learning_path=self.learning_path,
-                current_stage=self.stage,
-            ),
-            status=UserStageProgress.StageStatus.READY_FOR_EXAM,
         )
+        self.stage_progress.status = UserStageProgress.StageStatus.READY_FOR_EXAM
+        self.stage_progress.save(update_fields=["status", "updated_at"])
 
     def test_short_answer_comparison_normalizes_arabic_letters_digits_and_spacing(self):
         question = StageQuestion.objects.create(
@@ -430,7 +444,7 @@ class ExamAnswerFlowTestCase(TestCase):
             question_points=20,
         )
 
-        exam = self.stage_progress.start_exam(self.question_set)
+        exam = _create_exam(self.stage_progress, self.question_set)
         is_correct, score_earned = exam.submit_answer(question, "كد ملي123")
 
         self.assertTrue(is_correct)
@@ -446,7 +460,7 @@ class ExamAnswerFlowTestCase(TestCase):
             question_points=20,
         )
         question.refresh_from_db()
-        exam = self.stage_progress.start_exam(self.question_set)
+        exam = _create_exam(self.stage_progress, self.question_set)
         is_correct, score_earned = exam.submit_answer(question, "درست")
 
         self.assertEqual(question.correct_answer, "True")
@@ -474,7 +488,7 @@ class ExamAnswerFlowTestCase(TestCase):
             correct_answer="۱۲۳",
             question_points=10,
         )
-        exam = self.stage_progress.start_exam(self.question_set)
+        exam = _create_exam(self.stage_progress, self.question_set)
         self.client.force_login(self.user)
 
         response = self.client.post(
@@ -503,7 +517,7 @@ class ExamAnswerFlowTestCase(TestCase):
             correct_answer="تهران",
             question_points=20,
         )
-        exam = self.stage_progress.start_exam(self.question_set)
+        exam = _create_exam(self.stage_progress, self.question_set)
         exam.submit_answer(question, "قم")
         expired_started_at = timezone.now() - UserStageExam.EXAM_DURATION - timedelta(minutes=1)
         UserStageExam.objects.filter(pk=exam.pk).update(started_at=expired_started_at)

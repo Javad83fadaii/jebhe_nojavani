@@ -642,22 +642,6 @@ class UserStageProgress(TimestampedModel):
         unused_sets = [question_set for question_set in question_sets if question_set.pk not in used_ids]
         return random.choice(unused_sets or question_sets)
 
-    def start_exam(self, question_set: StageQuestionSet):
-        if not self.can_take_exam():
-            raise ValidationError("شما قادر به شرکت در آزمون این مرحله نیستید.")
-
-        self.exam_attempts += 1
-        self.last_question_set_used = question_set
-        self.save(update_fields=["exam_attempts", "last_question_set_used", "updated_at"])
-
-        return UserStageExam.objects.create(
-            user=self.user,
-            user_stage_progress=self,
-            question_set=question_set,
-            attempt_number=self.exam_attempts,
-            status=UserStageExam.ExamStatus.IN_PROGRESS,
-        )
-
     def pass_stage(self, score: int):
         from accounts.models import Rank
 
@@ -738,17 +722,6 @@ class UserStageExam(TimestampedModel):
             return False
         now = now or timezone.now()
         return now >= self.get_expires_at()
-
-    def start_exam(self, question_set: StageQuestionSet):
-        if self.status != self.ExamStatus.IN_PROGRESS:
-            self.status = self.ExamStatus.IN_PROGRESS
-            self.question_set = question_set
-            self.started_at = timezone.now()
-            self.save(update_fields=["status", "question_set", "started_at", "updated_at"])
-            self.user_stage_progress.exam_attempts = F("exam_attempts") + 1
-            self.user_stage_progress.last_question_set_used = question_set
-            self.user_stage_progress.save(update_fields=["exam_attempts", "last_question_set_used", "updated_at"])
-        # else: raise error or log that exam is already in progress
 
     def submit_answer(self, question: StageQuestion, user_answer: str):
         if self.status != self.ExamStatus.IN_PROGRESS:

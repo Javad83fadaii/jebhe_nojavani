@@ -253,7 +253,7 @@ class CheckoutFlowTests(TestCase):
         self.assertEqual(order.total_amount, 0)
         self.assertEqual(order.coins_used, 45000)
         self.assertEqual(order.wallet_used, 0)
-        self.assertEqual(order.online_paid, 0)
+        self.assertEqual(order.gateway_paid_amount, 0)
         self.assertEqual(order.status, Order.Status.PAID)
         self.assertEqual(self.user.challenge_coins, 15000)
         self.assertEqual(self.coin_product.stock, 3)

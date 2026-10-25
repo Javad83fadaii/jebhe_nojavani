@@ -1,13 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout
-from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from accounts.models import Rank
-from learning.models import LearningPath, LearningStage
+from learning.models import LearningPath
 from challenges.models import Challenge, ChallengeParticipation
 from config.view_helpers import redirect_seller_to_panel as _redirect_seller_to_panel
 from django.utils import timezone
@@ -293,14 +292,7 @@ def profile_edit(request):
     if guest_redirect:
         return guest_redirect
 
-    return render(
-        request,
-        "profile_edit.html",
-        {
-            "page_name": "profile",
-            "page_title": "ویرایش پروفایل | جبهه نوجوانی",
-        },
-    )
+    return redirect("profile")
 
 
 def seller_register(request):

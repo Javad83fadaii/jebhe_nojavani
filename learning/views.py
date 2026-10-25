@@ -14,7 +14,6 @@ from learning.models import (
     LearningPath,
     LearningStage,
     StageQuestionSet,
-    UserExamAnswer,
     UserLearningProgress,
     UserStageExam,
     UserStageProgress,
@@ -84,6 +83,23 @@ def _save_exam_answers_from_request(exam, post_data):
             cleared_count += 1
 
     return saved_count, cleared_count
+
+
+def _create_exam_for_stage_progress(stage_progress, question_set):
+    if not stage_progress.can_take_exam():
+        raise ValidationError("شما قادر به شرکت در آزمون این مرحله نیستید.")
+
+    stage_progress.exam_attempts += 1
+    stage_progress.last_question_set_used = question_set
+    stage_progress.save(update_fields=["exam_attempts", "last_question_set_used", "updated_at"])
+
+    return UserStageExam.objects.create(
+        user=stage_progress.user,
+        user_stage_progress=stage_progress,
+        question_set=question_set,
+        attempt_number=stage_progress.exam_attempts,
+        status=UserStageExam.ExamStatus.IN_PROGRESS,
+    )
 
 
 class SellerSiteAccessMixin(LoginRequiredMixin):
@@ -366,7 +382,7 @@ def start_exam(request, pk):
             messages.warning(request, "شما در حال حاضر یک آزمون فعال برای این مرحله دارید.")
             return redirect("learning:take_exam", pk=active_exam.pk)
 
-        new_exam = user_stage_progress.start_exam(question_set)
+        new_exam = _create_exam_for_stage_progress(user_stage_progress, question_set)
         return redirect("learning:take_exam", pk=new_exam.pk)
 
     messages.error(request, "درخواست نامعتبر.")

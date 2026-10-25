@@ -153,8 +153,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     });
-});
-document.addEventListener("DOMContentLoaded", function () {
+
     const checkoutForm = document.querySelector("[data-checkout-form]");
     if (!checkoutForm) return;
 

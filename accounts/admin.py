@@ -12,7 +12,6 @@ from django.utils.html import format_html
 from accounts.models import (
     CoinToWalletTransfer,
     CoinTransaction,
-    ExamRecord,
     PasswordResetRequest,
     Rank,
     Seller,
@@ -248,14 +247,6 @@ class SellerInline(admin.StackedInline):
     readonly_fields = ("rating", "sales_count", "total_revenue", "registered_at", "verified_at", "created_at", "updated_at")
 
 
-class ExamRecordInline(admin.TabularInline):
-    model = ExamRecord
-    extra = 0
-    fields = ("exam_name", "score", "max_score", "status", "exam_date", "rank_at_exam")
-    readonly_fields = ("created_at", "updated_at")
-    show_change_link = True
-
-
 class CoinTransactionInline(admin.TabularInline):
     model = CoinTransaction
     extra = 0
@@ -313,7 +304,7 @@ def reject_transfers(modeladmin, request, queryset):
 class UserAdmin(BaseUserAdmin):
     form = UserAdminForm
     add_form = UserCreationForm
-    inlines = [SellerInline, ExamRecordInline, CoinTransactionInline]
+    inlines = [SellerInline, CoinTransactionInline]
 
     list_display = (
         "phone_number",
@@ -368,15 +359,6 @@ class RankAdmin(admin.ModelAdmin):
     list_filter = ("level",)
     search_fields = ("name",)
     readonly_fields = ("created_at", "updated_at")
-
-
-@admin.register(ExamRecord)
-class ExamRecordAdmin(admin.ModelAdmin):
-    list_display = ("exam_name", "user", "score", "max_score", "status", "rank_at_exam", "exam_date")
-    list_filter = ("status", "rank_at_exam", "exam_date")
-    search_fields = ("exam_name", "user__phone_number", "user__first_name", "user__last_name")
-    readonly_fields = ("created_at", "updated_at")
-    autocomplete_fields = ("user", "rank_at_exam")
 
 
 @admin.register(CoinTransaction)

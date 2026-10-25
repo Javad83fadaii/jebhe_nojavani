@@ -4,7 +4,6 @@ import hashlib
 import hmac
 from decimal import Decimal
 from secrets import token_hex
-from typing import Any, Iterable
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -462,9 +461,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         )
         return max(current_coins - pending_total, 0)
 
-    def get_exam_history(self):
-        return self.exam_records.select_related("rank_at_exam").all()
-
     def has_perm(self, perm, obj=None) -> bool:
         if self.is_superuser:
             return True
@@ -500,50 +496,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         Returns the user's active learning path (in_progress).
         """
         return self.learning_progresses.filter(status=UserLearningProgress.ProgressStatus.IN_PROGRESS).first()
-
-
-class ExamRecord(TimestampedModel):
-    class ExamStatus(models.TextChoices):
-        PASSED = "passed", "قبول"
-        FAILED = "failed", "مردود"
-        ABSENT = "absent", "غایب"
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exam_records")
-    exam_name = models.CharField(max_length=255)
-    score = models.DecimalField(max_digits=7, decimal_places=2, default=0)
-    max_score = models.DecimalField(max_digits=7, decimal_places=2)
-    exam_date = models.DateField()
-    rank_at_exam = models.ForeignKey(
-        Rank,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="exam_records",
-    )
-    status = models.CharField(max_length=10, choices=ExamStatus.choices, default=ExamStatus.PASSED)
-    notes = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ("-exam_date", "-created_at")
-        verbose_name = "کارنامه آزمون"
-        verbose_name_plural = "کارنامه‌های آزمون"
-
-    def __str__(self) -> str:
-        return f"{self.user.get_full_name()} - {self.exam_name}"
-
-    def clean(self):
-        if self.max_score <= 0:
-            raise ValidationError({"max_score": "حداکثر نمره باید بیشتر از صفر باشد."})
-        if self.score < 0:
-            raise ValidationError({"score": "نمره نمی‌تواند منفی باشد."})
-        if self.score > self.max_score:
-            raise ValidationError({"score": "نمره کسب شده نمی‌تواند بیشتر از حداکثر نمره باشد."})
-
-    def save(self, *args, **kwargs):
-        if self.rank_at_exam_id is None and self.user_id:
-            self.rank_at_exam = self.user.calculate_rank()
-        self.full_clean()
-        super().save(*args, **kwargs)
 
 
 class CoinTransaction(TimestampedModel):
@@ -643,30 +595,6 @@ class Seller(TimestampedModel):
 
     def __str__(self) -> str:
         return self.shop_name
-
-    def calculate_rating(self, reviews: Iterable[Any] | None = None):
-        if reviews is None:
-            related_reviews = getattr(self, "reviews", None)
-            if related_reviews is None:
-                return self.rating
-            reviews = related_reviews.all() if hasattr(related_reviews, "all") else related_reviews
-
-        normalized_ratings: list[Decimal] = []
-        for review in reviews:
-            value = getattr(review, "rating", review)
-            try:
-                normalized_ratings.append(Decimal(str(value)))
-            except Exception:
-                continue
-
-        if not normalized_ratings:
-            return self.rating
-
-        average = sum(normalized_ratings) / Decimal(len(normalized_ratings))
-        average = min(max(average, Decimal("0.00")), Decimal("5.00")).quantize(Decimal("0.01"))
-        self.rating = average
-        self.save(update_fields=["rating", "updated_at"])
-        return self.rating
 
     def update_total_sales(self, sales_count: int | None = None, revenue=None):
         if sales_count is None or revenue is None:
