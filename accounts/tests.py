@@ -14,7 +14,7 @@ from accounts.services.smsir import SMSIRSendResult
 from geography.models import City, Mosque, Province, School
 
 
-@override_settings(SMS_BACKEND="dummy")
+@override_settings(SMS_BACKEND="dummy", SMS_TASK_BACKEND="sync")
 class AccountsAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -527,7 +527,7 @@ class AccountsAPITestCase(TestCase):
         self.assertTrue(res.data["birth_date"])
         self.assertIn("ثبت‌نام برای این سن مقدور نمی‌باشد", str(res.data["birth_date"][0]))
 
-    @patch("accounts.views.send_password_reset_code", side_effect=RuntimeError("SMS.ir connection error: timeout"))
+    @patch("accounts.tasks.send_password_reset_code", side_effect=RuntimeError("SMS.ir connection error: timeout"))
     def test_password_reset_request_stores_real_send_error(self, mocked_send):
         user = User.objects.create_user(
             phone_number="09124445555",
@@ -541,7 +541,7 @@ class AccountsAPITestCase(TestCase):
             {"phone_number": user.phone_number},
             format="json",
         )
-        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.status_code, 200)
 
         reset_request = PasswordResetRequest.objects.filter(phone_number=user.phone_number).order_by("-requested_at").first()
         self.assertIsNotNone(reset_request)
@@ -564,7 +564,7 @@ class AccountsAPITestCase(TestCase):
         self.assertEqual(res.data["detail"], "اگر حسابی با این شماره وجود داشته باشد، کد بازیابی برای آن ارسال خواهد شد.")
         self.assertFalse(PasswordResetRequest.objects.filter(phone_number="09129998877").exists())
 
-    @patch("accounts.views.send_password_reset_code", side_effect=RuntimeError("SMS.ir connection error: timeout"))
+    @patch("accounts.tasks.send_password_reset_code", side_effect=RuntimeError("SMS.ir connection error: timeout"))
     def test_failed_password_reset_delivery_does_not_block_retry(self, mocked_send):
         user = User.objects.create_user(
             phone_number="09127778899",
@@ -584,13 +584,43 @@ class AccountsAPITestCase(TestCase):
             format="json",
         )
 
-        self.assertEqual(first_response.status_code, 503)
-        self.assertEqual(second_response.status_code, 503)
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 200)
         self.assertEqual(
             PasswordResetRequest.objects.filter(phone_number=user.phone_number).count(),
             2,
         )
         mocked_send.assert_called()
+
+    def test_token_logout_blacklists_refresh_token(self):
+        user = User.objects.create_user(
+            phone_number="09123336666",
+            password="StrongPass123!",
+            first_name="توکن",
+            last_name="خروج",
+        )
+
+        login_response = self.client.post(
+            "/api/accounts/login/",
+            {"phone_number": user.phone_number, "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, 200)
+        refresh_token = login_response.data["refresh"]
+
+        logout_response = self.client.post(
+            "/api/accounts/token/logout/",
+            {"refresh": refresh_token},
+            format="json",
+        )
+        self.assertEqual(logout_response.status_code, 200)
+
+        refresh_response = self.client.post(
+            "/api/accounts/token/refresh/",
+            {"refresh": refresh_token},
+            format="json",
+        )
+        self.assertEqual(refresh_response.status_code, 401)
 
     @patch("accounts.views.randbelow", return_value=23456)
     def test_password_reset_confirm_fails_request_after_five_invalid_attempts(self, mocked_randbelow):

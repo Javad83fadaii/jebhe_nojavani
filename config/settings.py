@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from datetime import timedelta
-import os
 import importlib.util
+import os
 from pathlib import Path
+from datetime import timedelta
+
+try:
+    import dj_database_url
+except ImportError:  # pragma: no cover - dependency is pinned in requirements
+    dj_database_url = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +42,28 @@ def _load_env_file(file_path: Path) -> None:
 _load_env_file(BASE_DIR / ".env")
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw_value = os.environ.get(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _env_list(name: str) -> list[str]:
+    raw_value = os.environ.get(name, "")
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
+def _env_int(name: str, default: int) -> int:
+    raw_value = os.environ.get(name)
+    if raw_value in (None, ""):
+        return default
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return default
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -44,7 +71,7 @@ _load_env_file(BASE_DIR / ".env")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
-    if os.environ.get("DJANGO_DEBUG", "False").strip().lower() in ("1", "true", "yes"):
+    if _env_bool("DJANGO_DEBUG", False):
         # فقط برای توسعه‌ی محلی؛ هرگز در پروداکشن به این فال‌بک تکیه نکن
         SECRET_KEY = "django-insecure-dev-only-CHANGE-ME"
     else:
@@ -53,9 +80,9 @@ if not SECRET_KEY:
         )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "False").strip().lower() in ("1", "true", "yes")
+DEBUG = _env_bool("DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get("ALLOWED_HOSTS", "").split(",") if host.strip()]
+ALLOWED_HOSTS = _env_list("ALLOWED_HOSTS")
 if DEBUG and not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
 
@@ -71,6 +98,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'accounts',
     'geography',
@@ -79,6 +107,10 @@ INSTALLED_APPS = [
     'jebhe_bazar.apps.JebheBazarConfig',
     
     ]
+HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
+ENABLE_DJANGO_Q = _env_bool("ENABLE_DJANGO_Q", not DEBUG)
+if ENABLE_DJANGO_Q and importlib.util.find_spec('django_q') is not None:
+    INSTALLED_APPS.append('django_q')
 if DEBUG and importlib.util.find_spec('silk') is not None:
     INSTALLED_APPS.append('silk')
 
@@ -89,10 +121,13 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'config.middleware.AdminAccessMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     ]
+if HAS_WHITENOISE:
+    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 if DEBUG and importlib.util.find_spec('silk') is not None:
     MIDDLEWARE.insert(2, 'silk.middleware.SilkyMiddleware')
@@ -123,16 +158,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DB_NAME', 'dbN'),
-        'USER': os.environ.get('DB_USER', 'darkoob.org'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+DATABASE_URL = (os.environ.get("DATABASE_URL") or "").strip()
+if DATABASE_URL:
+    if dj_database_url is None:
+        raise RuntimeError("DATABASE_URL تنظیم شده اما بسته dj-database-url نصب نیست.")
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=_env_int("DB_CONN_MAX_AGE", 600),
+            ssl_require=_env_bool("DB_SSL_REQUIRE", not DEBUG),
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
+            'NAME': os.environ.get('DB_NAME', 'dbN'),
+            'USER': os.environ.get('DB_USER', ''),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': _env_int("DB_CONN_MAX_AGE", 600),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -171,12 +219,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = Path(os.environ.get("STATIC_ROOT", BASE_DIR / 'staticfiles'))
 
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / 'media'))
 PRIVATE_MEDIA_ROOT = BASE_DIR / 'private_media'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage'
+            if HAS_WHITENOISE
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
 PUBLIC_IMAGE_MAX_UPLOAD_BYTES = int(os.environ.get("PUBLIC_IMAGE_MAX_UPLOAD_BYTES", 5 * 1024 * 1024))
 CHALLENGE_EVIDENCE_IMAGE_MAX_UPLOAD_BYTES = int(
     os.environ.get("CHALLENGE_EVIDENCE_IMAGE_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
@@ -184,7 +245,23 @@ CHALLENGE_EVIDENCE_IMAGE_MAX_UPLOAD_BYTES = int(
 CHALLENGE_EVIDENCE_VIDEO_MAX_UPLOAD_BYTES = int(
     os.environ.get("CHALLENGE_EVIDENCE_VIDEO_MAX_UPLOAD_BYTES", 50 * 1024 * 1024)
 )
+ADMIN_URL = f"{(os.environ.get('ADMIN_URL', 'secure-admin') or 'secure-admin').strip('/')}/"
+ADMIN_IP_ALLOWLIST = frozenset(_env_list("ADMIN_IP_ALLOWLIST"))
+
+SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = _env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_SSL_REDIRECT = _env_bool("SECURE_SSL_REDIRECT", not DEBUG)
+SECURE_HSTS_SECONDS = _env_int("SECURE_HSTS_SECONDS", 31536000 if not DEBUG else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
+SECURE_HSTS_PRELOAD = _env_bool("SECURE_HSTS_PRELOAD", not DEBUG)
+USE_X_FORWARDED_HOST = _env_bool("USE_X_FORWARDED_HOST", not DEBUG)
+if _env_bool("USE_SECURE_PROXY_SSL_HEADER", not DEBUG):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+else:
+    SECURE_PROXY_SSL_HEADER = None
+CSRF_TRUSTED_ORIGINS = _env_list("CSRF_TRUSTED_ORIGINS")
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = os.environ.get("SECURE_REFERRER_POLICY", "same-origin")
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -197,10 +274,26 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'DEFAULT_RENDERER_CLASSES': (
+        ['rest_framework.renderers.JSONRenderer']
+        if not DEBUG
+        else [
+            'rest_framework.renderers.JSONRenderer',
+            'rest_framework.renderers.BrowsableAPIRenderer',
+        ]
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'accounts.throttles.IPScopedRateThrottle',
+        'accounts.throttles.PhoneNumberScopedRateThrottle',
+    ],
     'DEFAULT_THROTTLE_RATES': {
+        'auth_login_ip': '30/hour',
+        'auth_login_phone': '10/hour',
+        'auth_register_ip': '10/hour',
+        'auth_register_phone': '3/hour',
         'password_reset_request_ip': '20/hour',
         'password_reset_request_phone': '5/hour',
         'password_reset_confirm_ip': '60/hour',
@@ -209,14 +302,22 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
     'CHECK_REVOKE_TOKEN': True,
+    'UPDATE_LAST_LOGIN': True,
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
+CORS_ALLOWED_ORIGINS = _env_list("CORS_ALLOWED_ORIGINS")
 
 SMS_BACKEND = os.environ.get("SMS_BACKEND", "dummy" if DEBUG else "smsir")
+SMS_TASK_BACKEND = os.environ.get(
+    "SMS_TASK_BACKEND",
+    "django_q" if ENABLE_DJANGO_Q and importlib.util.find_spec('django_q') is not None else ("thread" if not DEBUG else "sync"),
+)
 SMSIR_API_KEY = os.environ.get("SMSIR_API_KEY", "")
 SMSIR_BASE_URL = os.environ.get("SMSIR_BASE_URL", "https://api.sms.ir/v1")
 SMSIR_LINE_NUMBER = os.environ.get("SMSIR_LINE_NUMBER", "")
@@ -227,6 +328,67 @@ PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "PASSWORD_RESET_SMS_TEXT",
     "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۵ دقیقه معتبر است.",
 )
+
+if ENABLE_DJANGO_Q and importlib.util.find_spec('django_q') is not None:
+    Q_CLUSTER = {
+        "name": "jebhe_nojavani",
+        "workers": _env_int("Q_CLUSTER_WORKERS", 2),
+        "timeout": _env_int("Q_CLUSTER_TIMEOUT", 90),
+        "retry": _env_int("Q_CLUSTER_RETRY", 120),
+        "queue_limit": _env_int("Q_CLUSTER_QUEUE_LIMIT", 50),
+        "bulk": _env_int("Q_CLUSTER_BULK", 10),
+        "orm": "default",
+    }
+
+LOG_DIR = Path(os.environ.get("LOG_DIR", BASE_DIR / "logs"))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO").upper()
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        },
+        "verbose": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s %(module)s %(process)d %(thread)d: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+        "app_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "app.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console", "app_file"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "app_file"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console", "app_file"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "jebhe_bazar": {
+            "handlers": ["console", "app_file"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
 
 if DEBUG and importlib.util.find_spec('silk') is not None:
     SILKY_PYTHON_PROFILER = True

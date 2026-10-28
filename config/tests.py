@@ -1,4 +1,4 @@
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import Rank, Seller, User
@@ -190,3 +190,24 @@ class BaseTitleBlockTests(TestCase):
         response = self.client.get(reverse("learning:rank_cards"))
 
         self.assertContains(response, "<title>درجه‌بندی | جبهه نوجوانی</title>", html=True)
+
+
+class AdminSecurityTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    @override_settings(ADMIN_URL="secret-admin/")
+    def test_admin_route_uses_configured_path(self):
+        self.assertEqual(reverse("admin:index"), "/secret-admin/")
+
+    @override_settings(DEBUG=False, ADMIN_URL="secret-admin/", ADMIN_IP_ALLOWLIST=("10.10.10.10",))
+    def test_admin_route_blocks_requests_outside_allowlist(self):
+        response = self.client.get(reverse("admin:index"), REMOTE_ADDR="127.0.0.1")
+
+        self.assertEqual(response.status_code, 403)
+
+    @override_settings(DEBUG=False, ADMIN_URL="secret-admin/", ADMIN_IP_ALLOWLIST=("127.0.0.1",))
+    def test_admin_route_allows_allowlisted_requests(self):
+        response = self.client.get(reverse("admin:index"), REMOTE_ADDR="127.0.0.1")
+
+        self.assertEqual(response.status_code, 302)

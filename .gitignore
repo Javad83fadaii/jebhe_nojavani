@@ -1,6 +1,7 @@
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Python & Django caches
 __pycache__/
@@ -9,8 +10,12 @@ __pycache__/
 
 # Profiler & Silk output files
 *.prof
+*.log
 silk_profiling/
+logs/
 media/*.prof
+media/
+staticfiles/
 
 # Virtual Environments
 venv/

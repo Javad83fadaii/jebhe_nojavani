@@ -81,12 +81,25 @@
     }
 
     // خروج از حساب (یک‌جا تعریف شده تا در منوی دسکتاپ و موبایل تکرار نشود)
-    function performLogout(formEl) {
+    async function performLogout(formEl) {
+        const refreshToken = localStorage.getItem('refresh_token');
+        const logoutForm = formEl || document.getElementById('logout-form');
+
+        if (refreshToken) {
+            try {
+                await fetch('/api/accounts/token/logout/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ refresh: refreshToken })
+                });
+            } catch (_) {}
+        }
+
         ['access_token', 'refresh_token', 'user_type', 'userSession'].forEach(function (key) {
             localStorage.removeItem(key);
         });
         sessionStorage.removeItem('userSession');
-        const logoutForm = formEl || document.getElementById('logout-form');
         if (logoutForm) {
             logoutForm.submit();
         }
@@ -173,7 +186,7 @@ function setupProfileDropdown() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function (event) {
             event.preventDefault();
-            performLogout(logoutBtn.form);
+            void performLogout(logoutBtn.form);
         });
     }
 }
@@ -529,7 +542,7 @@ function setupProfileDropdown() {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                performLogout(logoutBtn.form);
+                void performLogout(logoutBtn.form);
             });
         }
     }

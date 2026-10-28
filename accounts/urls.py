@@ -8,6 +8,7 @@ from accounts.views import (
     SellerLoginView,
     SellerProfileViewSet,
     SellerRegistrationView,
+    TokenLogoutView,
     UserLoginView,
     UserProfileViewSet,
     UserRegistrationView,
@@ -25,5 +26,6 @@ urlpatterns = [
     path("seller/register/", SellerRegistrationView.as_view(), name="seller-register"),
     path("seller/login/", SellerLoginView.as_view(), name="seller-login"),
     path("token/refresh/", PasswordAwareTokenRefreshView.as_view(), name="token-refresh"),
+    path("token/logout/", TokenLogoutView.as_view(), name="token-logout"),
     path("", include(router.urls)),
 ]

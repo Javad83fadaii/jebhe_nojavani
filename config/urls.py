@@ -10,7 +10,7 @@ from . import views
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path(settings.ADMIN_URL, admin.site.urls),
     path('', views.index_view, name='index'),
     path('home/', views.home, name='home'),
     path('home', RedirectView.as_view(pattern_name='home', permanent=True)),

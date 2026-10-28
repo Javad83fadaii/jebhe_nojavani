@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from datetime import timedelta
-import logging
 from secrets import randbelow
 
-from django.contrib.auth import login as auth_login
+from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -16,7 +15,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 from accounts.models import PasswordResetRequest, Seller, User
 from accounts.serializers import (
@@ -30,51 +29,16 @@ from accounts.serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
 )
-from accounts.services.sms import send_password_reset_code
+from accounts.tasks import enqueue_password_reset_code
 from accounts.throttles import IPScopedRateThrottle, PhoneNumberScopedRateThrottle
 
 PASSWORD_RESET_CODE_TTL_SECONDS = 5 * 60
 PASSWORD_RESET_REQUEST_DETAIL = "اگر حسابی با این شماره وجود داشته باشد، کد بازیابی برای آن ارسال خواهد شد."
-logger = logging.getLogger(__name__)
 
 
 def _get_client_ip(request) -> str | None:
     forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
     return forwarded or request.META.get("REMOTE_ADDR") or None
-
-
-def _mask_phone_number(phone_number: str) -> str:
-    normalized = str(phone_number or "").strip()
-    if len(normalized) < 4:
-        return normalized
-    return f"{normalized[:3]}****{normalized[-4:]}"
-
-
-def _extract_provider_error(raw: dict | None) -> str:
-    if not isinstance(raw, dict):
-        return ""
-
-    direct_error = raw.get("error")
-    if direct_error:
-        return str(direct_error).strip()
-
-    status_code = raw.get("status")
-    message = raw.get("message")
-    try:
-        if message and int(status_code) != 1:
-            return str(message).strip()
-    except (TypeError, ValueError):
-        if message:
-            return str(message).strip()
-
-    return_section = raw.get("return")
-    if isinstance(return_section, dict):
-        message = return_section.get("message")
-        status_code = return_section.get("status")
-        if message and str(status_code or "") != "200":
-            return str(message).strip()
-
-    return ""
 
 
 def _build_password_reset_success_payload(user: User) -> tuple[dict[str, str], bool]:
@@ -123,6 +87,9 @@ def _build_password_reset_success_payload(user: User) -> tuple[dict[str, str], b
 
 class UserRegistrationView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "auth_register_ip"
+    phone_throttle_scope = "auth_register_phone"
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
@@ -140,6 +107,9 @@ class UserRegistrationView(APIView):
 
 class UserLoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "auth_login_ip"
+    phone_throttle_scope = "auth_login_phone"
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data, context={"request": request})
@@ -229,20 +199,12 @@ class PasswordResetRequestView(APIView):
         reset_request.save()
 
         try:
-            sms_result = send_password_reset_code(phone_number=phone_number, code=verification_code)
-            reset_request.provider = sms_result.provider
-            reset_request.send_attempted_at = timezone.now()
-            reset_request.provider_message_id = sms_result.message_id
-            reset_request.provider_response = sms_result.raw
-        except Exception as exc:
-            logger.exception(
-                "Password reset SMS send crashed",
-                extra={
-                    "phone_number_masked": _mask_phone_number(phone_number),
-                    "request_id": reset_request.pk,
-                    "client_ip": reset_request.ip_address,
-                },
+            enqueue_password_reset_code(
+                reset_request_id=reset_request.pk,
+                phone_number=phone_number,
+                code=verification_code,
             )
+        except Exception as exc:
             reset_request.status = PasswordResetRequest.Status.FAILED
             reset_request.provider = "unknown"
             reset_request.send_attempted_at = timezone.now()
@@ -263,51 +225,9 @@ class PasswordResetRequestView(APIView):
                 ]
             )
             return Response(
-                {"detail": "سرویس پیامک در دسترس نیست. دوباره تلاش کنید."},
+                {"detail": "ثبت درخواست پیامک انجام شد، اما صف ارسال در دسترس نیست. دوباره تلاش کنید."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-
-        if not sms_result.ok:
-            provider_error = _extract_provider_error(sms_result.raw) or "ارسال پیامک ناموفق بود."
-            logger.warning(
-                "Password reset SMS send returned unsuccessful result",
-                extra={
-                    "phone_number_masked": _mask_phone_number(phone_number),
-                    "request_id": reset_request.pk,
-                    "provider": sms_result.provider,
-                    "provider_message_id": sms_result.message_id,
-                    "provider_error": provider_error,
-                    "provider_response": sms_result.raw,
-                },
-            )
-            reset_request.status = PasswordResetRequest.Status.FAILED
-            reset_request.send_error = provider_error
-            reset_request.save(
-                update_fields=[
-                    "status",
-                    "provider",
-                    "provider_message_id",
-                    "provider_response",
-                    "send_error",
-                    "send_attempted_at",
-                    "updated_at",
-                ]
-            )
-            return Response(
-                {"detail": "ارسال پیامک ناموفق بود. دوباره تلاش کنید."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
-        reset_request.save(
-            update_fields=[
-                "provider",
-                "provider_message_id",
-                "provider_response",
-                "send_error",
-                "send_attempted_at",
-                "updated_at",
-            ]
-        )
 
         return Response(response_payload, status=status.HTTP_200_OK)
 
@@ -390,6 +310,24 @@ class PasswordAwareTokenRefreshView(TokenRefreshView):
     serializer_class = PasswordAwareTokenRefreshSerializer
 
 
+class TokenLogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = str(request.data.get("refresh") or "").strip()
+        if not refresh_token:
+            return Response({"detail": "توکن refresh الزامی است."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            return Response({"detail": "توکن refresh معتبر نیست."}, status=status.HTTP_400_BAD_REQUEST)
+
+        auth_logout(request)
+        return Response({"detail": "خروج با موفقیت انجام شد."}, status=status.HTTP_200_OK)
+
+
 class UserProfileViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     queryset = User.objects.all()
@@ -467,6 +405,9 @@ class UserProfileViewSet(viewsets.GenericViewSet):
 
 class SellerRegistrationView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "auth_register_ip"
+    phone_throttle_scope = "auth_register_phone"
 
     def post(self, request):
         serializer = SellerRegistrationSerializer(data=request.data)
@@ -481,6 +422,9 @@ class SellerRegistrationView(APIView):
 
 class SellerLoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IPScopedRateThrottle, PhoneNumberScopedRateThrottle]
+    ip_throttle_scope = "auth_login_ip"
+    phone_throttle_scope = "auth_login_phone"
 
     def post(self, request):
         serializer = SellerLoginSerializer(data=request.data, context={"request": request})
