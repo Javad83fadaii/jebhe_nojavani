@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Iterable
 from urllib.parse import parse_qs, urlparse
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
@@ -275,6 +276,7 @@ class StageQuestion(TimestampedModel):
         MULTIPLE_CHOICE = "multiple_choice", "چهارگزینه‌ای"
         TRUE_FALSE = "true_false", "صحیح-غلط"
         SHORT_ANSWER = "short_answer", "کوتاه پاسخ"
+        DESCRIPTIVE = "descriptive", "تشریحی"
 
     class Difficulty(models.TextChoices):
         EASY = "easy", "آسان"
@@ -291,7 +293,12 @@ class StageQuestion(TimestampedModel):
     option2 = models.CharField(max_length=500, blank=True, verbose_name="گزینه 2")
     option3 = models.CharField(max_length=500, blank=True, verbose_name="گزینه 3")
     option4 = models.CharField(max_length=500, blank=True, verbose_name="گزینه 4")
-    correct_answer = models.CharField(max_length=500, verbose_name="پاسخ صحیح")
+    correct_answer = models.TextField(verbose_name="پاسخ صحیح")
+    ai_rubric = models.TextField(
+        blank=True,
+        verbose_name="نکات کلیدی برای تصحیح هوشمند (اختیاری)",
+        help_text="برای سوال تشریحی: مفاهیمی که باید در پاسخ باشد، هر کدام در یک خط.",
+    )
     question_points = models.PositiveSmallIntegerField(default=2, verbose_name="نمره سوال")
     answer_explanation = models.TextField(blank=True, verbose_name="توضیحات پاسخ")
     difficulty = models.CharField(max_length=10, choices=Difficulty.choices, default=Difficulty.MEDIUM, verbose_name="سطح دشواری")
@@ -727,6 +734,23 @@ class UserStageExam(TimestampedModel):
         if self.status != self.ExamStatus.IN_PROGRESS:
             raise ValidationError("آزمون در حال انجام نیست.")
 
+        answered_at = timezone.now()
+        if question.question_type == StageQuestion.QuestionType.DESCRIPTIVE:
+            UserExamAnswer.objects.update_or_create(
+                exam=self,
+                question=question,
+                defaults={
+                    "user_answer": user_answer,
+                    "is_correct": False,
+                    "score_earned": 0,
+                    "ai_similarity": None,
+                    "ai_feedback": "",
+                    "ai_graded_at": None,
+                    "answered_at": answered_at,
+                },
+            )
+            return False, 0
+
         is_correct = question.is_answer_correct(user_answer)
         score_earned = question.question_points if is_correct else 0
 
@@ -737,7 +761,7 @@ class UserStageExam(TimestampedModel):
                 "user_answer": user_answer,
                 "is_correct": is_correct,
                 "score_earned": score_earned,
-                "answered_at": timezone.now(),
+                "answered_at": answered_at,
             },
         )
         return is_correct, score_earned
@@ -747,6 +771,55 @@ class UserStageExam(TimestampedModel):
         self.score = total_score
         self.save(update_fields=["score", "updated_at"])
         return total_score
+
+    def grade_descriptive_answers(self):
+        if self.status != self.ExamStatus.IN_PROGRESS:
+            return
+
+        pending_answers = list(
+            self.answers.select_related("question").filter(
+                question__question_type=StageQuestion.QuestionType.DESCRIPTIVE,
+                ai_graded_at__isnull=True,
+            )
+        )
+        if not pending_answers:
+            return
+
+        from learning.services.ai_grader import GradeRequest, grade_many
+
+        results = grade_many(
+            GradeRequest(
+                key=answer.pk,
+                question_text=answer.question.text,
+                reference_answer=answer.question.correct_answer,
+                rubric=answer.question.ai_rubric,
+                student_answer=answer.user_answer,
+            )
+            for answer in pending_answers
+        )
+        graded_at = timezone.now()
+        correct_threshold = settings.AI_GRADING_CORRECT_THRESHOLD
+        graded_answers = []
+
+        for answer in pending_answers:
+            result = results.get(answer.pk)
+            if result is None:
+                continue
+
+            similarity = result.similarity
+            answer.score_earned = int(answer.question.question_points * similarity / 100 + 0.5)
+            answer.is_correct = similarity >= correct_threshold
+            answer.ai_similarity = similarity
+            answer.ai_feedback = result.feedback
+            answer.ai_graded_at = graded_at
+            answer.updated_at = graded_at
+            graded_answers.append(answer)
+
+        if graded_answers:
+            UserExamAnswer.objects.bulk_update(
+                graded_answers,
+                ["is_correct", "score_earned", "ai_similarity", "ai_feedback", "ai_graded_at", "updated_at"],
+            )
 
     def _complete_exam(self, *, completed_at=None):
         with transaction.atomic():
@@ -790,7 +863,6 @@ class UserStageExam(TimestampedModel):
                 stage_progress.save(update_fields=["status", "updated_at"])
 
             exam.save(update_fields=["completed_at", "time_spent", "status", "updated_at"])
-            exam.answers.all().delete()
 
             self.status = exam.status
             self.score = exam.score
@@ -799,11 +871,13 @@ class UserStageExam(TimestampedModel):
             self.user_stage_progress = stage_progress
 
     def finish_exam(self):
+        self.grade_descriptive_answers()
         self._complete_exam()
 
     def expire_if_needed(self) -> bool:
         if not self.is_expired():
             return False
+        self.grade_descriptive_answers()
         self._complete_exam(completed_at=timezone.now())
         return True
 
@@ -811,9 +885,12 @@ class UserStageExam(TimestampedModel):
 class UserExamAnswer(TimestampedModel):
     exam = models.ForeignKey(UserStageExam, on_delete=models.CASCADE, related_name="answers", verbose_name="آزمون کاربر")
     question = models.ForeignKey(StageQuestion, on_delete=models.CASCADE, verbose_name="سوال")
-    user_answer = models.CharField(max_length=500, blank=True, verbose_name="پاسخ کاربر")
+    user_answer = models.TextField(blank=True, verbose_name="پاسخ کاربر")
     is_correct = models.BooleanField(default=False, verbose_name="صحیح بودن پاسخ")
     score_earned = models.PositiveSmallIntegerField(default=0, verbose_name="نمره کسب شده")
+    ai_similarity = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="درصد تطابق هوش مصنوعی")
+    ai_feedback = models.TextField(blank=True, verbose_name="بازخورد هوش مصنوعی")
+    ai_graded_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان تصحیح هوشمند")
     answered_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان پاسخ")
 
     class Meta:
