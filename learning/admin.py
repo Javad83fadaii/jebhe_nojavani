@@ -22,7 +22,8 @@ class StageQuestionAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["correct_answer"].help_text = (
             "برای سوال صحیح/غلط می‌توانید از «صحیح/غلط» یا «True/False» استفاده کنید. "
-            "در سوال کوتاه‌پاسخ، ی/ک عربی، فاصله، نیم‌فاصله و ارقام فارسی/انگلیسی هنگام مقایسه نرمال‌سازی می‌شوند."
+            "در سوال کوتاه‌پاسخ، ی/ک عربی، فاصله، نیم‌فاصله و ارقام فارسی/انگلیسی هنگام مقایسه نرمال‌سازی می‌شوند. "
+            "برای سوال تشریحی، پاسخ نمونه‌ی کامل را در «پاسخ صحیح» و نکات کلیدی را در فیلد بعدی بنویسید."
         )
 
 
@@ -30,7 +31,7 @@ class StageQuestionInline(admin.TabularInline):
     model = StageQuestion
     form = StageQuestionAdminForm
     extra = 0
-    fields = ("question_number", "text", "question_type", "option1", "option2", "option3", "option4", "correct_answer", "question_points", "difficulty")
+    fields = ("question_number", "text", "question_type", "option1", "option2", "option3", "option4", "correct_answer", "ai_rubric", "question_points", "difficulty")
     readonly_fields = ("created_at", "updated_at")
 
 
@@ -97,6 +98,8 @@ class UserExamAnswerInline(admin.TabularInline):
         "user_answer",
         "is_correct",
         "score_earned",
+        "ai_similarity",
+        "ai_feedback",
         "answered_at",
     )
     readonly_fields = fields + ("created_at", "updated_at")
@@ -287,7 +290,7 @@ class UserStageExamAdmin(admin.ModelAdmin):
 
 @admin.register(UserExamAnswer)
 class UserExamAnswerAdmin(admin.ModelAdmin):
-    list_display = ("exam", "question", "user_answer", "is_correct", "score_earned", "answered_at")
+    list_display = ("exam", "question", "user_answer", "is_correct", "score_earned", "ai_similarity", "ai_feedback", "answered_at")
     list_filter = ("is_correct", "exam__status")
     search_fields = (
         "exam__user__phone_number",

@@ -324,6 +324,13 @@ SMSIR_LINE_NUMBER = os.environ.get("SMSIR_LINE_NUMBER", "")
 SMSIR_TEMPLATE_ID = os.environ.get("SMSIR_TEMPLATE_ID", "")
 SMSIR_VERIFY_PARAMETER_NAME = os.environ.get("SMSIR_VERIFY_PARAMETER_NAME", "Code")
 SMSIR_TIMEOUT_SECONDS = os.environ.get("SMSIR_TIMEOUT_SECONDS", "15")
+AI_GRADING_ENABLED = _env_bool("AI_GRADING_ENABLED", True)
+AI_GRADING_API_KEY = os.environ.get("AI_GRADING_API_KEY", "")
+AI_GRADING_BASE_URL = os.environ.get("AI_GRADING_BASE_URL", "https://api.gapgpt.app/v1")
+AI_GRADING_MODEL = os.environ.get("AI_GRADING_MODEL", "gpt-4o-mini")
+AI_GRADING_TIMEOUT = _env_int("AI_GRADING_TIMEOUT", 12)
+AI_GRADING_MAX_RETRIES = _env_int("AI_GRADING_MAX_RETRIES", 1)
+AI_GRADING_CORRECT_THRESHOLD = _env_int("AI_GRADING_CORRECT_THRESHOLD", 60)
 PASSWORD_RESET_SMS_TEXT = os.environ.get(
     "PASSWORD_RESET_SMS_TEXT",
     "کد بازیابی رمز عبور شما: {code}\nاین کد تا ۵ دقیقه معتبر است.",
@@ -378,6 +385,11 @@ LOGGING = {
             "propagate": False,
         },
         "accounts": {
+            "handlers": ["console", "app_file"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "learning": {
             "handlers": ["console", "app_file"],
             "level": LOG_LEVEL,
             "propagate": False,

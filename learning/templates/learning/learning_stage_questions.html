@@ -366,6 +366,8 @@
                                         </div>
                                     {% elif question.question_type == 'true_false' %}
                                         <div class="question-note">این سوال از نوع صحیح/غلط است.</div>
+                                    {% elif question.question_type == 'descriptive' %}
+                                        <div class="question-note">این سوال تشریحی است و پاسخ شما بر اساس مفهوم، با هوش مصنوعی بررسی می‌شود.</div>
                                     {% else %}
                                         <div class="question-note">این سوال به صورت پاسخ کوتاه طراحی شده است.</div>
                                     {% endif %}

@@ -87,8 +87,8 @@
                                     <span class="exam-option__text">غلط</span>
                                 </label>
                             </div>
-                        {% elif question.question_type == 'short_answer' %}
-                            <textarea class="exam-textarea" name="question_{{ question.pk }}" rows="4" placeholder="پاسخ خود را بنویسید...">{{ user_answers|get_item:question.pk }}</textarea>
+                        {% elif question.question_type == 'short_answer' or question.question_type == 'descriptive' %}
+                            <textarea class="exam-textarea" name="question_{{ question.pk }}" rows="{% if question.question_type == 'descriptive' %}7{% else %}4{% endif %}" {% if question.question_type == 'descriptive' %}maxlength="2000" placeholder="پاسخ را با کلمات خودت بنویس؛ مفهوم مهم‌تر از عین کلمات است..."{% else %}placeholder="پاسخ خود را بنویسید..."{% endif %}>{{ user_answers|get_item:question.pk }}</textarea>
                         {% endif %}
 
                         <div class="exam-question__actions">

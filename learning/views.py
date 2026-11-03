@@ -69,8 +69,7 @@ def _save_exam_answers_from_request(exam, post_data):
 
     for question in questions:
         answer_key = f"question_{question.pk}"
-        user_answer_text = post_data.get(answer_key)
-        user_answer_text = (user_answer_text or "").strip()
+        user_answer_text = (post_data.get(answer_key) or "").strip()[:2000]
         existing_answer = existing_answers.get(question.pk)
 
         if user_answer_text:
