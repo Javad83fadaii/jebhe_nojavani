@@ -534,3 +534,188 @@ class ExamAnswerFlowTestCase(TestCase):
         self.assertEqual(exam.status, UserStageExam.ExamStatus.FAILED)
         self.assertIsNotNone(exam.completed_at)
         self.assertEqual(self.stage_progress.status, UserStageProgress.StageStatus.FAILED_PREVIOUSLY)
+
+
+class DescriptiveGradingTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        Rank.ensure_default_ranks()
+        self.rank = Rank.objects.get(level=1)
+        self.user = User.objects.create_user(
+            phone_number="09126667777",
+            password="StrongPass123!",
+            first_name="تشریحی",
+            last_name="آزمایشی",
+        )
+        self.learning_path = LearningPath.objects.create(
+            rank=self.rank,
+            title="سیر تصحیح تشریحی",
+            publish_status=LearningPath.PublishStatus.PUBLISHED,
+        )
+        self.stage = LearningStage.objects.create(
+            learning_path=self.learning_path,
+            title="مرحله تشریحی",
+            stage_number=1,
+            content_type=LearningStage.ContentType.ARTICLE,
+        )
+        self.question_set = StageQuestionSet.objects.create(
+            learning_stage=self.stage,
+            set_number=1,
+            title="نمونه سوال تشریحی",
+        )
+        self.user_progress = self.user.enroll_in_path(self.learning_path)
+        self.stage_progress = UserStageProgress.objects.get(
+            user_learning_progress=self.user_progress,
+            learning_stage=self.stage,
+        )
+        self.stage_progress.status = UserStageProgress.StageStatus.READY_FOR_EXAM
+        self.stage_progress.save(update_fields=["status", "updated_at"])
+        self.question = StageQuestion.objects.create(
+            question_set=self.question_set,
+            text="دلیل اهمیت نظم را توضیح دهید.",
+            question_number=1,
+            question_type=StageQuestion.QuestionType.DESCRIPTIVE,
+            correct_answer="نظم باعث استفاده بهتر از زمان و کاهش خطا می‌شود.",
+            ai_rubric="اشاره به مدیریت زمان و کاهش خطا",
+            question_points=20,
+        )
+
+    def test_submit_answer_for_descriptive_question_does_not_call_ai_and_saves_zero_score(self):
+        from unittest.mock import patch
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+
+        with patch("learning.services.ai_grader.grade_many") as grade_many_mock:
+            is_correct, score_earned = exam.submit_answer(self.question, "پاسخ دانش آموز")
+
+        answer = exam.answers.get(question=self.question)
+        self.assertFalse(is_correct)
+        self.assertEqual(score_earned, 0)
+        self.assertEqual(answer.score_earned, 0)
+        self.assertIsNone(answer.ai_graded_at)
+        grade_many_mock.assert_not_called()
+
+    def test_finish_exam_with_similarity_eighty_sets_passed_score(self):
+        from unittest.mock import patch
+
+        from learning.services.ai_grader import GradeResult
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "پاسخ دانش آموز")
+        answer = exam.answers.get(question=self.question)
+
+        with patch(
+            "learning.services.ai_grader.grade_many",
+            return_value={answer.pk: GradeResult(similarity=80, feedback="خوب", source="ai")},
+        ):
+            exam.finish_exam()
+
+        exam.refresh_from_db()
+        self.assertEqual(exam.score, 16)
+        self.assertEqual(exam.status, UserStageExam.ExamStatus.PASSED)
+
+    def test_finish_exam_with_similarity_fifty_sets_failed_score(self):
+        from unittest.mock import patch
+
+        from learning.services.ai_grader import GradeResult
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "پاسخ دانش آموز")
+        answer = exam.answers.get(question=self.question)
+
+        with patch(
+            "learning.services.ai_grader.grade_many",
+            return_value={answer.pk: GradeResult(similarity=50, feedback="متوسط", source="ai")},
+        ):
+            exam.finish_exam()
+
+        exam.refresh_from_db()
+        self.assertEqual(exam.score, 10)
+        self.assertEqual(exam.status, UserStageExam.ExamStatus.FAILED)
+
+    def test_finish_exam_persists_ai_fields_on_answers(self):
+        from unittest.mock import patch
+
+        from learning.models import UserExamAnswer
+        from learning.services.ai_grader import GradeResult
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "پاسخ دانش آموز")
+        answer = exam.answers.get(question=self.question)
+
+        with patch(
+            "learning.services.ai_grader.grade_many",
+            return_value={answer.pk: GradeResult(similarity=80, feedback="خوب", source="ai")},
+        ):
+            exam.finish_exam()
+
+        saved_answer = UserExamAnswer.objects.get(pk=answer.pk)
+        self.assertEqual(UserExamAnswer.objects.filter(exam=exam).count(), 1)
+        self.assertEqual(saved_answer.ai_similarity, 80)
+        self.assertEqual(saved_answer.ai_feedback, "خوب")
+        self.assertIsNotNone(saved_answer.ai_graded_at)
+
+    def test_expire_if_needed_grades_descriptive_answers_before_completion(self):
+        from unittest.mock import patch
+
+        from learning.services.ai_grader import GradeResult
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "پاسخ دانش آموز")
+        answer = exam.answers.get(question=self.question)
+        expired_started_at = timezone.now() - UserStageExam.EXAM_DURATION - timedelta(minutes=1)
+        UserStageExam.objects.filter(pk=exam.pk).update(started_at=expired_started_at)
+        exam.refresh_from_db()
+
+        with patch(
+            "learning.services.ai_grader.grade_many",
+            return_value={answer.pk: GradeResult(similarity=80, feedback="خوب", source="ai")},
+        ):
+            expired = exam.expire_if_needed()
+
+        exam.refresh_from_db()
+        self.assertTrue(expired)
+        self.assertEqual(exam.score, 16)
+        self.assertEqual(exam.status, UserStageExam.ExamStatus.PASSED)
+
+    def test_stale_finish_exam_only_grades_once_and_second_call_fails(self):
+        from unittest.mock import patch
+
+        from learning.models import UserExamAnswer
+        from learning.services.ai_grader import GradeResult
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "پاسخ دانش آموز")
+        answer = exam.answers.get(question=self.question)
+        stale_first = UserStageExam.objects.get(pk=exam.pk)
+        stale_second = UserStageExam.objects.get(pk=exam.pk)
+
+        with patch(
+            "learning.services.ai_grader.grade_many",
+            return_value={answer.pk: GradeResult(similarity=80, feedback="خوب", source="ai")},
+        ) as grade_many_mock:
+            stale_first.finish_exam()
+            first_graded_at = UserExamAnswer.objects.get(pk=answer.pk).ai_graded_at
+
+            with self.assertRaises(ValidationError):
+                stale_second.finish_exam()
+
+        refreshed_answer = UserExamAnswer.objects.get(pk=answer.pk)
+        self.assertEqual(grade_many_mock.call_count, 1)
+        self.assertEqual(refreshed_answer.ai_graded_at, first_graded_at)
+
+    def test_finish_exam_completes_with_fallback_when_ai_is_disabled(self):
+        from django.test import override_settings
+
+        exam = _create_exam(self.stage_progress, self.question_set)
+        exam.submit_answer(self.question, "نظم باعث استفاده بهتر از زمان و کاهش خطا می شود.")
+
+        with override_settings(AI_GRADING_ENABLED=False):
+            exam.finish_exam()
+
+        answer = exam.answers.get(question=self.question)
+        exam.refresh_from_db()
+        self.assertIsNotNone(answer.ai_similarity)
+        self.assertLessEqual(answer.ai_similarity, 70)
+        self.assertIsNotNone(answer.ai_graded_at)
+        self.assertIn(exam.status, (UserStageExam.ExamStatus.PASSED, UserStageExam.ExamStatus.FAILED))
