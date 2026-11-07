@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'learning.apps.LearningConfig',
     'challenges',
     'jebhe_bazar.apps.JebheBazarConfig',
+    'tickets.apps.TicketsConfig',
     
     ]
 HAS_WHITENOISE = importlib.util.find_spec('whitenoise') is not None
@@ -245,8 +246,12 @@ CHALLENGE_EVIDENCE_IMAGE_MAX_UPLOAD_BYTES = int(
 CHALLENGE_EVIDENCE_VIDEO_MAX_UPLOAD_BYTES = int(
     os.environ.get("CHALLENGE_EVIDENCE_VIDEO_MAX_UPLOAD_BYTES", 50 * 1024 * 1024)
 )
+TICKET_ATTACHMENT_MAX_UPLOAD_BYTES = _env_int("TICKET_ATTACHMENT_MAX_UPLOAD_BYTES", 5 * 1024 * 1024)
 ADMIN_URL = f"{(os.environ.get('ADMIN_URL', 'secure-admin') or 'secure-admin').strip('/')}/"
 ADMIN_IP_ALLOWLIST = frozenset(_env_list("ADMIN_IP_ALLOWLIST"))
+TICKET_MAX_OPEN_PER_USER = _env_int("TICKET_MAX_OPEN_PER_USER", 5)
+TICKET_REOPEN_DAYS = _env_int("TICKET_REOPEN_DAYS", 7)
+TICKET_MAX_MESSAGES_PER_HOUR = _env_int("TICKET_MAX_MESSAGES_PER_HOUR", 10)
 
 SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 CSRF_COOKIE_SECURE = _env_bool("CSRF_COOKIE_SECURE", not DEBUG)

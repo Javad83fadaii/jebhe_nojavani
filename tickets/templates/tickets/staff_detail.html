@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'tickets/css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="tickets-page">
+    <div class="tickets-shell tickets-shell-wide">
+        <div class="tickets-hero">
+            <div>
+                <h1>{{ ticket.subject }}</h1>
+                <p class="tickets-note">جزئیات کامل تیکت، پیام‌ها، یادداشت‌های داخلی و تاریخچه اقدامات پشتیبانی.</p>
+            </div>
+            <div class="tickets-actions">
+                <a href="{% url 'tickets:staff-dashboard' %}" class="tickets-secondary-btn">بازگشت به داشبورد</a>
+            </div>
+        </div>
+
+        <div class="staff-detail-layout">
+            <div class="staff-detail-main">
+                <div class="ticket-thread">
+                    <div class="ticket-thread-header">
+                        <div>
+                            <h2 class="ticket-subject">{{ ticket.subject }}</h2>
+                            <div class="ticket-thread-header-meta">
+                                <span class="ticket-status-badge ticket-status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                                <span class="ticket-priority-badge ticket-priority-{{ ticket.priority }}">اولویت {{ ticket.get_priority_display }}</span>
+                                <span class="ticket-chip">{{ ticket.get_category_display }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-actions">
+                            {% if ticket.status != "closed" %}
+                                <form method="post" class="js-disable-submit">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="close">
+                                    <button type="submit" class="ticket-action-btn">بستن تیکت</button>
+                                </form>
+                            {% else %}
+                                <form method="post" class="js-disable-submit">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reopen">
+                                    <button type="submit" class="ticket-action-btn">بازگشایی تیکت</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="ticket-meta-grid">
+                        <div class="ticket-meta-item">
+                            <span>شماره تیکت</span>
+                            <strong>{{ ticket.id|digits }}</strong>
+                        </div>
+                        <div class="ticket-meta-item">
+                            <span>ارجاع فعلی</span>
+                            <strong>
+                                {% if ticket.assigned_to %}
+                                    {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.phone_number }}
+                                {% else %}
+                                    بدون ارجاع
+                                {% endif %}
+                            </strong>
+                        </div>
+                        <div class="ticket-meta-item">
+                            <span>آخرین بروزرسانی</span>
+                            <strong>{{ ticket.updated_at|jalali_datetime }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="ticket-messages">
+                        {% for message in ticket_messages %}
+                            <div class="ticket-message-row {% if message.is_internal_note %}is-note{% elif message.is_staff_reply %}is-staff{% else %}is-user{% endif %}">
+                                <article class="ticket-message {% if message.is_internal_note %}ticket-message-note{% endif %}">
+                                    <div class="ticket-message-header">
+                                        <div class="ticket-message-author">
+                                            {{ message.author.get_full_name|default:message.author.phone_number }}
+                                            {% if message.is_internal_note %}
+                                                <span class="ticket-support-label ticket-note-label">یادداشت داخلی</span>
+                                            {% elif message.is_staff_reply %}
+                                                <span class="ticket-support-label">پشتیبان</span>
+                                            {% else %}
+                                                <span class="ticket-support-label ticket-user-label">کاربر</span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="ticket-message-time">{{ message.created_at|jalali_datetime }}</span>
+                                    </div>
+                                    <p class="ticket-message-body">{{ message.body|linebreaksbr }}</p>
+                                    {% if message.attachment %}
+                                        <div class="ticket-message-attachment">
+                                            <a href="{% url 'tickets:attachment-download' message.pk %}" class="tickets-secondary-btn">دانلود پیوست</a>
+                                        </div>
+                                    {% endif %}
+                                </article>
+                            </div>
+                        {% empty %}
+                            <div class="ticket-empty-state">
+                                <h3>هنوز پیامی برای این تیکت ثبت نشده است</h3>
+                                <p>پس از ثبت پیام‌ها، همه گفت‌وگوها و یادداشت‌های داخلی در این بخش دیده می‌شوند.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="ticket-compose-box">
+                    <h2 class="tickets-section-title">ثبت پاسخ پشتیبان</h2>
+                    <form method="post" enctype="multipart/form-data" class="js-disable-submit">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reply">
+                        <div class="form-group">
+                            <label for="{{ reply_form.body.id_for_label }}">{{ reply_form.body.label }}</label>
+                            {{ reply_form.body }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ reply_form.attachment.id_for_label }}">{{ reply_form.attachment.label }}</label>
+                            {{ reply_form.attachment }}
+                        </div>
+                        <div class="staff-inline-check">
+                            <label class="staff-check-label" for="{{ reply_form.is_internal_note.id_for_label }}">
+                                {{ reply_form.is_internal_note }}
+                                <span>این پیام فقط برای تیم پشتیبانی نمایش داده شود</span>
+                            </label>
+                        </div>
+                        <div class="ticket-compose-actions">
+                            <button type="submit" class="submit-btn" {% if ticket.status == "closed" %}disabled{% endif %}>
+                                {% if ticket.status == "closed" %}تیکت بسته است{% else %}ثبت پاسخ{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="staff-detail-sidebar">
+                <div class="ticket-compose-box staff-sidebar-box">
+                    <h2 class="tickets-section-title">اطلاعات کاربر</h2>
+                    <div class="staff-sidebar-list">
+                        <div class="ticket-meta-item">
+                            <span>نام و نام خانوادگی</span>
+                            <strong>{{ ticket.user.get_full_name|default:"ثبت نشده" }}</strong>
+                        </div>
+                        <div class="ticket-meta-item">
+                            <span>شماره تماس</span>
+                            <strong>{{ ticket.user.phone_number|digits }}</strong>
+                        </div>
+                        <div class="ticket-meta-item">
+                            <span>درجه</span>
+                            <strong>{% if ticket.user.current_rank %}{{ ticket.user.current_rank.name }}{% else %}بدون درجه{% endif %}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                {% if can_manage_ticket %}
+                    <div class="ticket-compose-box staff-sidebar-box">
+                        <h2 class="tickets-section-title">ارجاع تیکت</h2>
+                        <form method="post" class="js-disable-submit">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="assign">
+                            <div class="form-group">
+                                <label for="{{ assign_form.assigned_to.id_for_label }}">{{ assign_form.assigned_to.label }}</label>
+                                {{ assign_form.assigned_to }}
+                            </div>
+                            <div class="ticket-compose-actions">
+                                <button type="submit" class="submit-btn">ثبت ارجاع</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="ticket-compose-box staff-sidebar-box">
+                        <h2 class="tickets-section-title">تغییر اولویت</h2>
+                        <form method="post" class="js-disable-submit">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="priority">
+                            <div class="form-group">
+                                <label for="{{ priority_form.priority.id_for_label }}">{{ priority_form.priority.label }}</label>
+                                {{ priority_form.priority }}
+                            </div>
+                            <div class="ticket-compose-actions">
+                                <button type="submit" class="submit-btn">ذخیره اولویت</button>
+                            </div>
+                        </form>
+                    </div>
+                {% endif %}
+
+                <div class="ticket-compose-box staff-sidebar-box">
+                    <h2 class="tickets-section-title">تاریخچه رویدادها</h2>
+                    <div class="staff-event-list">
+                        {% for event in ticket_events %}
+                            <div class="staff-event-item">
+                                <strong>{{ event.get_event_type_display }}</strong>
+                                {% if event.detail %}
+                                    <p>{{ event.detail }}</p>
+                                {% endif %}
+                                <span>{{ event.created_at|jalali_datetime }}</span>
+                                {% if event.actor %}
+                                    <small>{{ event.actor.get_full_name|default:event.actor.phone_number }}</small>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="tickets-note">هنوز رویدادی برای این تیکت ثبت نشده است.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-disable-submit').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (!submitBtn || submitBtn.disabled) {
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'در حال ارسال...';
+            });
+        });
+    });
+</script>
+{% endblock %}

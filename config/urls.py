@@ -36,6 +36,7 @@ urlpatterns = [
     path("learning/", include("learning.urls")),
     path("challenges-system/", include("challenges.urls")),
     path("bazar/", include("jebhe_bazar.urls")),
+    path("tickets/", include("tickets.urls")),
     ]
 
 

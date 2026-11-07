@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'tickets/css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="tickets-page">
+    <div class="tickets-shell">
+        <div class="tickets-hero">
+            <div>
+                <h1>ایجاد تیکت جدید</h1>
+                <p class="tickets-note">موضوع، دسته‌بندی و توضیحات کامل را وارد کنید تا تیم پشتیبانی سریع‌تر بررسی کند.</p>
+            </div>
+            <div class="tickets-actions">
+                <a href="{% url 'tickets:list' %}" class="tickets-secondary-btn">بازگشت به لیست</a>
+            </div>
+        </div>
+
+        <div class="ticket-thread">
+            <h2 class="tickets-section-title">فرم ثبت تیکت</h2>
+
+            {% if form.non_field_errors %}
+                <ul class="form-errors">
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="js-disable-submit">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                        <ul class="field-errors">
+                            {% for error in form.subject.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="ticket-meta-grid">
+                    <div class="form-group">
+                        <label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <ul class="field-errors">
+                                {% for error in form.category.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+                        {{ form.priority }}
+                        <p class="ticket-field-help">اولویت بالا برای کاربران عادی در سرویس بر اساس قوانین سیستم کنترل می‌شود.</p>
+                        {% if form.priority.errors %}
+                            <ul class="field-errors">
+                                {% for error in form.priority.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+                    {{ form.body }}
+                    {% if form.body.errors %}
+                        <ul class="field-errors">
+                            {% for error in form.body.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.attachment.id_for_label }}">{{ form.attachment.label }}</label>
+                    {{ form.attachment }}
+                    {% if form.attachment.errors %}
+                        <ul class="field-errors">
+                            {% for error in form.attachment.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="ticket-compose-actions">
+                    <button type="submit" class="submit-btn">ثبت تیکت</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-disable-submit').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (!submitBtn || submitBtn.disabled) {
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'در حال ارسال...';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -73,6 +73,13 @@ def _sniff_video_type(uploaded_file) -> str | None:
     return None
 
 
+def _sniff_pdf_type(uploaded_file) -> str | None:
+    header = _read_file_header(uploaded_file, size=8)
+    if header.startswith(b"%PDF-"):
+        return "pdf"
+    return None
+
+
 @dataclass(frozen=True)
 class UploadPolicy:
     allowed_extensions_by_type: dict[str, set[str]]
@@ -110,6 +117,16 @@ def _build_policies() -> dict[str, UploadPolicy]:
             max_size_bytes=int(getattr(settings, "CHALLENGE_EVIDENCE_VIDEO_MAX_UPLOAD_BYTES", 50 * 1024 * 1024)),
             kind="any",
         ),
+        "ticket_attachment": UploadPolicy(
+            allowed_extensions_by_type={
+                "jpeg": {".jpg", ".jpeg"},
+                "png": {".png"},
+                "webp": {".webp"},
+                "pdf": {".pdf"},
+            },
+            max_size_bytes=int(getattr(settings, "TICKET_ATTACHMENT_MAX_UPLOAD_BYTES", 5 * 1024 * 1024)),
+            kind="any",
+        ),
         "challenge_evidence_image": UploadPolicy(
             allowed_extensions_by_type={
                 "jpeg": {".jpg", ".jpeg"},
@@ -140,6 +157,10 @@ def _detect_file_type(uploaded_file, *, policy: UploadPolicy) -> str | None:
         detected_video_type = _sniff_video_type(uploaded_file)
         if detected_video_type is not None:
             return detected_video_type
+    if policy.kind == "any" and "pdf" in policy.allowed_extensions_by_type:
+        detected_pdf_type = _sniff_pdf_type(uploaded_file)
+        if detected_pdf_type is not None:
+            return detected_pdf_type
     return None
 
 
@@ -200,3 +221,21 @@ private_challenge_evidence_storage = PrivateChallengeEvidenceStorage()
 def private_challenge_evidence_upload_to(instance, filename: str) -> str:
     extension = _get_extension(filename) or ".bin"
     return f"challenge_evidence/{uuid4().hex}{extension}"
+
+
+@deconstructible
+class PrivateTicketAttachmentStorage(FileSystemStorage):
+    def __init__(self, location=None):
+        super().__init__(location=location)
+
+    @property
+    def base_location(self):
+        return self._value_or_setting(self._location, settings.PRIVATE_MEDIA_ROOT)
+
+
+private_ticket_attachment_storage = PrivateTicketAttachmentStorage()
+
+
+def private_ticket_attachment_upload_to(instance, filename: str) -> str:
+    extension = _get_extension(filename) or ".bin"
+    return f"ticket_attachments/{uuid4().hex}{extension}"

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'tickets/css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="tickets-page">
+    <div class="tickets-shell tickets-shell-wide">
+        <div class="tickets-hero">
+            <div>
+                <h1>داشبورد پشتیبانی تیکت</h1>
+                <p class="tickets-note">مدیریت، پاسخ‌گویی و پیگیری همه تیکت‌های کاربران از این بخش انجام می‌شود.</p>
+            </div>
+        </div>
+
+        <div class="staff-stats-grid">
+            <div class="staff-stat-card">
+                <span class="staff-stat-label">کل تیکت‌ها</span>
+                <strong class="staff-stat-value">{{ status_counts.total_count|digits }}</strong>
+            </div>
+            <div class="staff-stat-card">
+                <span class="staff-stat-label">در انتظار پاسخ</span>
+                <strong class="staff-stat-value">{{ status_counts.waiting_staff_count|digits }}</strong>
+            </div>
+            <div class="staff-stat-card">
+                <span class="staff-stat-label">باز</span>
+                <strong class="staff-stat-value">{{ status_counts.open_count|digits }}</strong>
+            </div>
+            <div class="staff-stat-card">
+                <span class="staff-stat-label">پاسخ داده شده</span>
+                <strong class="staff-stat-value">{{ status_counts.answered_count|digits }}</strong>
+            </div>
+            <div class="staff-stat-card">
+                <span class="staff-stat-label">بسته</span>
+                <strong class="staff-stat-value">{{ status_counts.closed_count|digits }}</strong>
+            </div>
+        </div>
+
+        <div class="ticket-compose-box staff-filter-box">
+            <form method="get" class="staff-filter-form">
+                <div class="form-group">
+                    <label for="staff-search-input">جست‌وجو</label>
+                    <input id="staff-search-input" type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="موضوع، نام کاربر یا شماره تلفن">
+                </div>
+                <div class="form-group">
+                    <label for="staff-status-filter">وضعیت</label>
+                    <select id="staff-status-filter" name="status" class="form-control">
+                        <option value="">همه وضعیت‌ها</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="staff-category-filter">دسته‌بندی</label>
+                    <select id="staff-category-filter" name="category" class="form-control">
+                        <option value="">همه دسته‌ها</option>
+                        {% for value, label in category_choices %}
+                            <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="staff-priority-filter">اولویت</label>
+                    <select id="staff-priority-filter" name="priority" class="form-control">
+                        <option value="">همه اولویت‌ها</option>
+                        {% for value, label in priority_choices %}
+                            <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="staff-assignment-filter">ارجاع</label>
+                    <select id="staff-assignment-filter" name="assignment" class="form-control">
+                        <option value="">همه</option>
+                        <option value="me" {% if assignment_filter == "me" %}selected{% endif %}>ارجاع‌شده به من</option>
+                        <option value="unassigned" {% if assignment_filter == "unassigned" %}selected{% endif %}>بدون ارجاع</option>
+                    </select>
+                </div>
+                <div class="ticket-compose-actions staff-filter-actions">
+                    <button type="submit" class="submit-btn">اعمال فیلتر</button>
+                    <a href="{% url 'tickets:staff-dashboard' %}" class="tickets-secondary-btn">حذف فیلترها</a>
+                </div>
+            </form>
+        </div>
+
+        {% if tickets %}
+            <div class="ticket-list">
+                {% for ticket in tickets %}
+                    <a href="{% url 'tickets:staff-detail' ticket.pk %}" class="tickets-card staff-ticket-card">
+                        <div class="ticket-card-header">
+                            <div>
+                                <h2 class="ticket-subject">{{ ticket.subject }}</h2>
+                                <div class="ticket-card-meta">
+                                    <span class="ticket-meta">کاربر: {{ ticket.user.get_full_name|default:ticket.user.phone_number }}</span>
+                                    <span class="ticket-meta">شماره تماس: {{ ticket.user.phone_number|digits }}</span>
+                                    <span class="ticket-meta">ثبت: {{ ticket.created_at|jalali_datetime }}</span>
+                                </div>
+                            </div>
+                            <div class="ticket-chips">
+                                <span class="ticket-status-badge ticket-status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                                <span class="ticket-priority-badge ticket-priority-{{ ticket.priority }}">اولویت {{ ticket.get_priority_display }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-card-footer">
+                            <div class="ticket-chips">
+                                <span class="ticket-chip">{{ ticket.get_category_display }}</span>
+                                {% if ticket.assigned_to %}
+                                    <span class="ticket-chip">ارجاع: {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.phone_number }}</span>
+                                {% else %}
+                                    <span class="ticket-chip">بدون ارجاع</span>
+                                {% endif %}
+                            </div>
+                            <span class="ticket-meta">شماره تیکت: {{ ticket.id|digits }}</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+                <div class="tickets-pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% query_transform page=page_obj.previous_page_number %}" class="tickets-secondary-btn">صفحه قبل</a>
+                    {% endif %}
+                    <span class="tickets-stat">صفحه {{ page_obj.number|digits }} از {{ page_obj.paginator.num_pages|digits }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?{% query_transform page=page_obj.next_page_number %}" class="tickets-secondary-btn">صفحه بعد</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="ticket-empty-state">
+                <h2>تیکتی با این فیلترها پیدا نشد</h2>
+                <p>فیلترها را تغییر بدهید یا جست‌وجو را پاک کنید تا تیکت‌های بیشتری نمایش داده شوند.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

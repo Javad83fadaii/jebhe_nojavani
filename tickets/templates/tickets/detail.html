@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'tickets/css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="tickets-page">
+    <div class="tickets-shell">
+        <div class="tickets-hero">
+            <div>
+                <h1>{{ ticket.subject }}</h1>
+                <p class="tickets-note">گفت‌وگوی شما با پشتیبانی در این صفحه نمایش داده می‌شود.</p>
+            </div>
+            <div class="tickets-actions">
+                <a href="{% url 'tickets:list' %}" class="tickets-secondary-btn">بازگشت به لیست</a>
+            </div>
+        </div>
+
+        <div class="ticket-thread">
+            <div class="ticket-thread-header">
+                <div>
+                    <h2 class="ticket-subject">{{ ticket.subject }}</h2>
+                    <div class="ticket-thread-header-meta">
+                        <span class="ticket-status-badge ticket-status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                        <span class="ticket-priority-badge ticket-priority-{{ ticket.priority }}">اولویت {{ ticket.get_priority_display }}</span>
+                        <span class="ticket-chip">{{ ticket.get_category_display }}</span>
+                    </div>
+                </div>
+                <div class="ticket-actions">
+                    {% if can_close_ticket %}
+                        <form method="post" action="{% url 'tickets:close' ticket.pk %}" class="js-disable-submit">
+                            {% csrf_token %}
+                            <button type="submit" class="ticket-action-btn">بستن تیکت</button>
+                        </form>
+                    {% endif %}
+                    {% if can_reopen_ticket %}
+                        <form method="post" action="{% url 'tickets:reopen' ticket.pk %}" class="js-disable-submit">
+                            {% csrf_token %}
+                            <button type="submit" class="ticket-action-btn">بازگشایی تیکت</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="ticket-meta-grid">
+                <div class="ticket-meta-item">
+                    <span>شماره تیکت</span>
+                    <strong>{{ ticket.id|digits }}</strong>
+                </div>
+                <div class="ticket-meta-item">
+                    <span>ایجاد</span>
+                    <strong>{{ ticket.created_at|jalali_datetime }}</strong>
+                </div>
+                <div class="ticket-meta-item">
+                    <span>آخرین بروزرسانی</span>
+                    <strong>{{ ticket.updated_at|jalali_datetime }}</strong>
+                </div>
+            </div>
+
+            <div class="ticket-messages">
+                {% for message in ticket_messages %}
+                    <div class="ticket-message-row {% if message.is_staff_reply %}is-staff{% else %}is-user{% endif %}">
+                        <article class="ticket-message">
+                            <div class="ticket-message-header">
+                                <div class="ticket-message-author">
+                                    {% if message.is_staff_reply %}
+                                        {{ message.author.get_full_name|default:message.author.phone_number }}
+                                        <span class="ticket-support-label">پشتیبان</span>
+                                    {% else %}
+                                        شما
+                                    {% endif %}
+                                </div>
+                                <span class="ticket-message-time">{{ message.created_at|jalali_datetime }}</span>
+                            </div>
+                            <p class="ticket-message-body">{{ message.body|linebreaksbr }}</p>
+                            {% if message.attachment %}
+                                <div class="ticket-message-attachment">
+                                    <a href="{% url 'tickets:attachment-download' message.pk %}" class="tickets-secondary-btn">دانلود پیوست</a>
+                                </div>
+                            {% endif %}
+                        </article>
+                    </div>
+                {% empty %}
+                    <div class="ticket-empty-state">
+                        <h3>هنوز پیامی در این تیکت ثبت نشده است</h3>
+                        <p>پس از ارسال اولین پیام، گفت‌وگو در اینجا نمایش داده می‌شود.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="ticket-compose-box">
+            <h2 class="tickets-section-title">ارسال پاسخ</h2>
+
+            {% if reply_form.non_field_errors %}
+                <ul class="form-errors">
+                    {% for error in reply_form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="js-disable-submit">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ reply_form.body.id_for_label }}">{{ reply_form.body.label }}</label>
+                    {{ reply_form.body }}
+                    {% if reply_form.body.errors %}
+                        <ul class="field-errors">
+                            {% for error in reply_form.body.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ reply_form.attachment.id_for_label }}">{{ reply_form.attachment.label }}</label>
+                    {{ reply_form.attachment }}
+                    {% if reply_form.attachment.errors %}
+                        <ul class="field-errors">
+                            {% for error in reply_form.attachment.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="ticket-compose-actions">
+                    <button type="submit" class="submit-btn" {% if ticket.status == "closed" %}disabled{% endif %}>
+                        {% if ticket.status == "closed" %}تیکت بسته است{% else %}ارسال پاسخ{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.js-disable-submit').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (!submitBtn || submitBtn.disabled) {
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'در حال ارسال...';
+            });
+        });
+    });
+</script>
+{% endblock %}

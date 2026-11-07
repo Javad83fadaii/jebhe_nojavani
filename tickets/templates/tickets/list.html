@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static bazar_tags %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'tickets/css/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="tickets-page">
+    <div class="tickets-shell">
+        <div class="tickets-hero">
+            <div>
+                <h1>تیکت‌های من</h1>
+                <p class="tickets-note">در این بخش می‌توانید درخواست‌های پشتیبانی خود را پیگیری کنید.</p>
+            </div>
+            <div class="tickets-actions">
+                <a href="{% url 'tickets:create' %}" class="tickets-primary-btn">ثبت تیکت جدید</a>
+            </div>
+        </div>
+
+        <div class="tickets-hero">
+            <div class="tickets-stats">
+                <span class="tickets-stat">تعداد کل: {{ page_obj.paginator.count|digits }}</span>
+                {% if status_filter %}
+                    <span class="tickets-stat">فیلتر فعال: {{ status_filter_label }}</span>
+                {% else %}
+                    <span class="tickets-stat">نمایش همه وضعیت‌ها</span>
+                {% endif %}
+            </div>
+            <div class="tickets-filters">
+                <a href="{% url 'tickets:list' %}" class="tickets-filter {% if not status_filter %}is-active{% endif %}">همه</a>
+                {% for status_value, status_label in status_choices %}
+                    <a href="{% url 'tickets:list' %}?{% query_transform status=status_value page=None %}" class="tickets-filter {% if status_filter == status_value %}is-active{% endif %}">{{ status_label }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if tickets %}
+            <div class="ticket-list">
+                {% for ticket in tickets %}
+                    <a href="{% url 'tickets:detail' ticket.pk %}" class="tickets-card">
+                        <div class="ticket-card-header">
+                            <div>
+                                <h2 class="ticket-subject">{{ ticket.subject }}</h2>
+                                <div class="ticket-card-meta">
+                                    <span class="ticket-meta">ثبت: {{ ticket.created_at|jalali_datetime }}</span>
+                                    {% if ticket.last_reply_at %}
+                                        <span class="ticket-meta">آخرین پاسخ: {{ ticket.last_reply_at|jalali_datetime }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ticket-chips">
+                                {% if ticket.user_has_unread %}
+                                    <span class="ticket-unread-badge">پاسخ جدید</span>
+                                {% endif %}
+                                <span class="ticket-status-badge ticket-status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                            </div>
+                        </div>
+                        <div class="ticket-card-footer">
+                            <div class="ticket-chips">
+                                <span class="ticket-chip">{{ ticket.get_category_display }}</span>
+                                <span class="ticket-priority-badge ticket-priority-{{ ticket.priority }}">اولویت {{ ticket.get_priority_display }}</span>
+                            </div>
+                            <span class="ticket-meta">شماره تیکت: {{ ticket.id|digits }}</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+                <div class="tickets-pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?{% query_transform page=page_obj.previous_page_number %}" class="tickets-secondary-btn">صفحه قبل</a>
+                    {% endif %}
+                    <span class="tickets-stat">صفحه {{ page_obj.number|digits }} از {{ page_obj.paginator.num_pages|digits }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?{% query_transform page=page_obj.next_page_number %}" class="tickets-secondary-btn">صفحه بعد</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="ticket-empty-state">
+                <h2>هنوز تیکتی ثبت نکرده‌اید</h2>
+                <p>هر زمان سوال، مشکل فنی یا درخواست پشتیبانی داشتید از همین‌جا تیکت جدید بسازید.</p>
+                <a href="{% url 'tickets:create' %}" class="tickets-primary-btn">ایجاد اولین تیکت</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
